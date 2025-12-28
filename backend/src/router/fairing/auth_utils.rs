@@ -67,19 +67,15 @@ pub fn my_decode_token<T: DeserializeOwned>(token: &str, validation: &Validation
 
 /// Try to authenticate via JWT cookie and check if user is admin
 pub fn try_jwt_cookie_auth(req: &Request<'_>, validation: &Validation) -> Result<Claims> {
-    info!("try_jwt_cookie_auth called");
     if let Some(jwt_cookie) = req.cookies().get("jwt") {
-        info!("Found JWT cookie, attempting to decode...");
         let token = jwt_cookie.value();
         let claims = my_decode_token::<Claims>(token, validation)?;
         if claims.is_admin() {
-            info!("JWT cookie auth successful - user is admin");
             return Ok(claims);
         } else {
             return Err(anyhow!("User is not an admin"));
         }
     }
-    info!("No JWT cookie found");
     Err(anyhow!("JWT not found in cookies"))
 }
 
@@ -107,9 +103,6 @@ fn validate_share_access(share: &Share, req: &Request<'_>) -> Result<(), ShareEr
             .duration_since(UNIX_EPOCH)
             .map_err(|e| ShareError::Internal(anyhow!("Time error: {}", e)))?
             .as_secs();
-
-        let distance = share.exp.saturating_sub(now);
-        info!("Expire 壽命距離現在時間是剩下 {} 秒", distance);
 
         if now > share.exp {
             return Err(ShareError::Expired);
