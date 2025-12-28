@@ -1,7 +1,12 @@
 import axios from 'axios'
 
-// Refactor: Renamed AppSettings to AppConfig to match backend
 export interface AppConfig {
+  // Rocket settings
+  address: string
+  port: number
+  limits: Record<string, string>
+
+  // App settings
   readOnlyMode: boolean
   disableImg: boolean
   password: string

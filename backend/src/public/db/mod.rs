@@ -1,4 +1,3 @@
-pub mod config;
 pub mod expire;
 pub mod query_snapshot;
 pub mod tree;

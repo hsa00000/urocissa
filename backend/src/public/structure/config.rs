@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 // 新增引入
 use rand::{TryRngCore, rngs::OsRng};
@@ -9,6 +9,13 @@ use std::sync::{LazyLock, OnceLock, RwLock};
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct AppConfig {
+    // --- Rocket Settings ---
+    pub address: String,
+    pub port: u16,
+    // 使用 HashMap<String, String> 來儲存 limits (例如 "json": "10MiB")
+    pub limits: HashMap<String, String>,
+
+    // --- App Settings ---
     /// 管理員密碼 (明文)
     pub password: String,
     /// 需要監聽/同步的資料夾路徑
@@ -21,20 +28,28 @@ pub struct AppConfig {
     pub read_only_mode: bool,
     /// 禁用圖片處理 (僅顯示檔案)
     pub disable_img: bool,
-    /// 上傳檔案大小限制 (MB)
+    /// 上傳檔案大小限制 (MB) - 這主要用於前端檢查，後端實際限制看 limits
     pub upload_limit_mb: u64,
 }
 
 impl Default for AppConfig {
     fn default() -> Self {
+        let mut limits = HashMap::new();
+        limits.insert("json".to_string(), "10MiB".to_string());
+        limits.insert("file".to_string(), "10GiB".to_string());
+        limits.insert("data-form".to_string(), "10GiB".to_string());
+
         Self {
-            password: "admin".to_string(),
+            address: "0.0.0.0".to_string(),
+            port: 5673,
+            limits,
+            password: "password".to_string(),
             sync_paths: HashSet::new(),
             auth_key: None,
             discord_hook_url: None,
             read_only_mode: false,
             disable_img: false,
-            upload_limit_mb: 2048, // 預設 2GB
+            upload_limit_mb: 2048,
         }
     }
 }

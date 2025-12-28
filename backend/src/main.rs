@@ -21,7 +21,10 @@ use crate::tasks::batcher::start_watcher::StartWatcherTask;
 use crate::tasks::batcher::update_tree::UpdateTreeTask;
 use crate::tasks::looper::start_expire_check_loop;
 
-// Refactor: Use CONFIG_TABLE
+use figment::{
+    Figment,
+    providers::{Format, Json},
+};
 use public::constant::redb::DATA_TABLE;
 use public::db::tree::TREE;
 use public::structure::abstract_data::AbstractData;
@@ -38,7 +41,11 @@ use std::thread;
 use std::time::Instant;
 
 async fn build_rocket() -> rocket::Rocket<rocket::Build> {
-    rocket::build()
+    // 直接載入 config.json，Rocket 會自動讀取 "default" 節點
+    let figment = Figment::from(rocket::Config::default()).merge(Json::file("config.json"));
+
+    // 使用 custom(figment) 啟動
+    rocket::custom(figment)
         .attach(cache_control_fairing())
         .mount("/assets", FileServer::from("../frontend/dist/assets"))
         .mount("/", generate_get_routes())
@@ -57,10 +64,12 @@ fn main() -> Result<()> {
         std::process::exit(1);
     }
 
+    // 0. 初始化 AppConfig (這會建立 config.json 若不存在)
+    init_config();
+
     let worker_handle = thread::spawn(|| {
         INDEX_RUNTIME.block_on(async {
             let rx = initialize();
-            init_config();
             let start_time = Instant::now();
             let txn = TREE.in_disk.begin_write().unwrap();
             {

@@ -28,6 +28,7 @@ env_logger = { version = "0.11.8", features = ["humantime", "color"] }
 envy = "0.4.2"
 filetime = "0.2.26"
 futures = "0.3.31"
+figment = { version = "0.10", features = ["json"] }
 image = "0.25.9"
 image_hasher = "3.0.0"
 jsonwebtoken = { version = "10.2.0", features = ["rust_crypto"] }
