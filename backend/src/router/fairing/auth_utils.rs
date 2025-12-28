@@ -49,7 +49,6 @@ pub fn extract_bearer_token<'a>(req: &'a Request<'_>) -> Result<&'a str> {
 
 /// Decode JWT token with given claims type and validation
 pub fn my_decode_token<T: DeserializeOwned>(token: &str, validation: &Validation) -> Result<T> {
-    // 獲取 Secret Key
     let secret_key = APP_CONFIG
         .get()
         .unwrap()
@@ -57,19 +56,8 @@ pub fn my_decode_token<T: DeserializeOwned>(token: &str, validation: &Validation
         .unwrap()
         .get_jwt_secret_key();
 
-    // Debug: 印出當前使用的 key 的前 8 個字元
-    let key_preview: String = secret_key
-        .iter()
-        .take(8)
-        .map(|b| format!("{:02x}", b))
-        .collect();
-    info!("Decoding token with key starting with: {}...", key_preview);
-
     match decode::<T>(token, &DecodingKey::from_secret(&secret_key), validation) {
-        Ok(token_data) => {
-            info!("Token decoded successfully");
-            Ok(token_data.claims)
-        }
+        Ok(token_data) => Ok(token_data.claims),
         Err(err) => {
             info!("Token decode failed: {:?}", err);
             return Err(Error::from(err).context("Failed to decode JWT token"));
@@ -276,33 +264,19 @@ pub fn try_resolve_share_from_query(req: &Request<'_>) -> Result<Option<Claims>,
 
 /// Try to authorize upload via share headers with upload permission
 pub fn try_authorize_upload_via_share(req: &Request<'_>) -> bool {
-    let album_id = req.headers().get_one("x-album-id");
-    let share_id = req.headers().get_one("x-share-id");
-
-    if let (Some(album_id), Some(share_id)) = (album_id, share_id) {
-        if let Ok(read_txn) = TREE.in_disk.begin_read() {
-            if let Ok(table) = read_txn.open_table(DATA_TABLE) {
-                if let Ok(Some(data_guard)) = table.get(album_id) {
-                    let abstract_data = data_guard.value();
-                    if let AbstractData::Album(mut album) = abstract_data {
-                        if let Some(share) = album.metadata.share_list.remove(share_id) {
-                            if share.show_upload {
-                                // Ensure password and expiration are also valid for upload
-                                if validate_share_access(&share, req).is_err() {
-                                    return false;
-                                }
-
-                                if let Some(Ok(album_id_parsed)) =
-                                    req.query_value::<&str>("presigned_album_id_opt")
-                                {
-                                    return album.object.id.as_str() == album_id_parsed;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+    if let Some(album_id) = req.headers().get_one("x-album-id")
+        && let Some(share_id) = req.headers().get_one("x-share-id")
+        && let Ok(read_txn) = TREE.in_disk.begin_read()
+        && let Ok(table) = read_txn.open_table(DATA_TABLE)
+        && let Ok(Some(data_guard)) = table.get(album_id)
+        && let AbstractData::Album(mut album) = data_guard.value()
+        && let Some(share) = album.metadata.share_list.remove(share_id)
+        && share.show_upload
+        && validate_share_access(&share, req).is_ok()
+        && let Some(Ok(album_id_parsed)) = req.query_value::<&str>("presigned_album_id_opt")
+    {
+        return album.object.id.as_str() == album_id_parsed;
     }
+
     false
 }

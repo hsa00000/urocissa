@@ -1,6 +1,5 @@
 use rocket::post;
 use rocket::serde::json::Json;
-// 移除 rand, LazyLock, get_config 等舊引入
 
 use crate::public::structure::config::APP_CONFIG;
 use crate::router::AppResult;

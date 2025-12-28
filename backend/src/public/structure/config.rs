@@ -10,10 +10,10 @@ use std::sync::{OnceLock, RwLock};
 
 const CONFIG_FILE: &str = "config.json";
 
-// 新增：定義全域的 Fallback Key
+/// Global fallback secret used when no `auth_key` is provided in the configuration.
+/// This value is ephemeral and regenerates on every application restart.
 pub static FALLBACK_SECRET_KEY: OnceLock<String> = OnceLock::new();
 
-// Helper function to generate a random secret key string
 fn generate_secret_key() -> String {
     let mut secret = vec![0u8; 32];
     OsRng
@@ -22,7 +22,7 @@ fn generate_secret_key() -> String {
     general_purpose::STANDARD.encode(secret)
 }
 
-// Refactor: Renamed AppSettings to AppConfig
+/// Core application configuration.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct AppConfig {
@@ -32,19 +32,26 @@ pub struct AppConfig {
     pub limits: HashMap<String, String>,
 
     // --- App Settings ---
-    /// 管理員密碼 (明文)
+    /// Plain text administrator password.
     pub password: String,
-    /// 需要監聽/同步的資料夾路徑
+
+    /// Directories to watch and sync.
     pub sync_paths: HashSet<PathBuf>,
-    /// 驗證金鑰 (JWT Secret)，若為 None 則使用隨機生成的 FALLBACK_SECRET_KEY
+
+    /// JWT Secret for authentication.
+    /// If `None`, the application uses an ephemeral `FALLBACK_SECRET_KEY`.
     pub auth_key: Option<String>,
-    /// Discord Webhook URL
+
+    /// Optional Discord Webhook URL for notifications.
     pub discord_hook_url: Option<String>,
-    /// 唯讀模式 (不允許上傳/刪除)
+
+    /// If true, prevents file uploads and deletions.
     pub read_only_mode: bool,
-    /// 禁用圖片處理 (僅顯示檔案)
+
+    /// If true, disables image processing features (files displayed as raw).
     pub disable_img: bool,
-    /// 上傳檔案大小限制 (MB)
+
+    /// Upload size limit in Megabytes.
     pub upload_limit_mb: u64,
 }
 
@@ -73,15 +80,15 @@ impl Default for AppConfig {
 pub static APP_CONFIG: OnceLock<RwLock<AppConfig>> = OnceLock::new();
 
 impl AppConfig {
-    /// 獲取 JWT Secret Key (實例方法)
+    /// Retrieves the active JWT secret.
+    /// Returns the configured `auth_key` or falls back to the ephemeral global secret.
     pub fn get_jwt_secret_key(&self) -> Vec<u8> {
         match self.auth_key.as_ref() {
-            // 如果設定檔中有 Key，直接使用
             Some(auth_key) => auth_key.as_bytes().to_vec(),
-            // 如果設定檔是 None (null)，使用全域的 Fallback Key
             None => {
-                // 這裡使用 get_or_init 是為了雙重保險，
-                // 正常流程下 init() 應該已經初始化過了。
+                // Determine logic: If the config doesn't have a key, we rely on the
+                // in-memory fallback. We use `get_or_init` here as a safety net
+                // to ensure a key always exists, even if `init()` wasn't called strictly sequentially.
                 FALLBACK_SECRET_KEY
                     .get_or_init(generate_secret_key)
                     .as_bytes()
@@ -90,9 +97,8 @@ impl AppConfig {
         }
     }
 
-    /// 初始化設定系統
+    /// Initializes the configuration system, handling migrations and global state setup.
     pub fn init() {
-        // 檢查是否需要遷移
         let should_migrate = if Path::new(CONFIG_FILE).exists() {
             match fs::read_to_string(CONFIG_FILE) {
                 Ok(content) => serde_json::from_str::<AppConfig>(&content).is_err(),
@@ -104,11 +110,8 @@ impl AppConfig {
 
         let config = if should_migrate {
             println!("Legacy configuration or missing file detected. Starting migration...");
-
-            // 1. 執行遷移邏輯
             let cfg = crate::migration::construct_migrated_config();
 
-            // 2. 將完整的設定寫入新格式
             if let Err(e) = Self::save_update(&cfg) {
                 eprintln!("Warning: Failed to save migrated config: {}", e);
             } else {
@@ -125,16 +128,12 @@ impl AppConfig {
             Self::load_from_file()
         };
 
-        // --- 關鍵邏輯：處理 Fallback Key ---
-        // 檢查載入的設定中 auth_key 是否為 None
+        // If no auth_key is persisted, we must ensure an ephemeral key exists
+        // immediately so the app is usable without manual configuration.
         if config.auth_key.is_none() {
-            println!(
-                "No authKey found in config (set to null). Initializing ephemeral fallback key."
-            );
-            // 初始化全域 Fallback Key，但不修改 config.auth_key
+            println!("No authKey found in config. Initializing ephemeral fallback key.");
             FALLBACK_SECRET_KEY.get_or_init(generate_secret_key);
         }
-        // --------------------------------
 
         println!("Configuration: {:?}", config);
 
@@ -143,7 +142,6 @@ impl AppConfig {
             .expect("Config already initialized");
     }
 
-    /// 從檔案載入設定 (內部使用)
     fn load_from_file() -> AppConfig {
         let file_content = fs::read_to_string(CONFIG_FILE).unwrap_or_else(|e| {
             println!(
@@ -168,36 +166,34 @@ impl AppConfig {
         }
     }
 
-    /// 更新設定並儲存
+    /// Persists new configuration to disk, updates memory, and triggers side effects (Watcher reload).
     pub fn update(new_config: AppConfig) -> anyhow::Result<()> {
         use crate::tasks::batcher::start_watcher::reload_watcher;
 
         println!("Updating configuration...");
 
-        // 1. 寫入檔案
         Self::save_update(&new_config).context("Failed to save configuration to file")?;
 
-        // 2. 更新記憶體
         {
             let mut w = APP_CONFIG.get().unwrap().write().unwrap();
 
-            // 如果使用者更新配置時，特地將 auth_key 改為 None
+            // Edge Case: If the user explicitly sets auth_key to null during runtime,
+            // we must ensure the fallback key is ready to take over immediately.
             if new_config.auth_key.is_none() {
-                // 確保 Fallback 有值 (雖然通常 init 時就有了，但以防萬一)
                 FALLBACK_SECRET_KEY.get_or_init(generate_secret_key);
             }
 
             *w = new_config.clone();
         }
 
-        // 3. 觸發副作用
+        // Side Effect: The file watcher must be restarted to reflect potential
+        // changes in `sync_paths`.
         reload_watcher();
 
         println!("Configuration updated successfully");
         Ok(())
     }
 
-    /// 將設定寫入檔案 (內部使用)
     fn save_update(config: &AppConfig) -> anyhow::Result<()> {
         let mut file = File::create(CONFIG_FILE)
             .context(format!("Failed to create config file {}", CONFIG_FILE))?;

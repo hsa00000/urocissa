@@ -1,5 +1,5 @@
 import { useDataStore } from '@/store/dataStore'
-import { IsolationId, MessageColor, SlicedData } from '@type/types'
+import { IsolationId, SlicedData } from '@type/types'
 import { usePrefetchStore } from '@/store/prefetchStore'
 import { useMessageStore } from '@/store/messageStore'
 import { useTagStore } from '@/store/tagStore'
@@ -16,6 +16,13 @@ import { useConstStore } from '@/store/constStore'
 
 const workerHandlerMap = new Map<Worker, (e: MessageEvent) => void>()
 
+/**
+ * Establishes the event listeners for the DataWorker based on a specific isolation context.
+ * Handles data synchronization, virtual scroll layout recalculations, and token management.
+ *
+ * @param dataWorker - The worker instance to attach listeners to.
+ * @param isolationId - The unique context ID (e.g., tab or session) for store isolation.
+ */
 export function handleDataWorkerReturn(dataWorker: Worker, isolationId: IsolationId) {
   const messageStore = useMessageStore('mainId')
   const modalStore = useModalStore('mainId')
@@ -28,52 +35,58 @@ export function handleDataWorkerReturn(dataWorker: Worker, isolationId: Isolatio
   const offsetStore = useOffsetStore(isolationId)
   const rowStore = useRowStore(isolationId)
   const locationStore = useLocationStore(isolationId)
-  const optimisticUpateStore = useOptimisticStore(isolationId)
+  const optimisticUpdateStore = useOptimisticStore(isolationId)
 
   const handler = createHandler<typeof fromDataWorker>({
     returnData: (payload) => {
       const slicedDataArray: SlicedData[] = payload.slicedDataArray
       slicedDataArray.forEach(({ index, data, hashToken }) => {
         dataStore.data.set(index, data)
-        // 新結構：data 是 UnifiedData，直接使用 data.id 和 data.type
         dataStore.hashMapData.set(data.id, index)
+
+        // Business Logic: Albums rely on 'cover' for token validation,
+        // whereas distinct media types (Images/Videos) use their unique ID.
         if (data.type === 'album') {
-          // Album 使用 cover 作為 token key
           if (data.cover !== null) {
             tokenStore.hashTokenMap.set(data.cover, hashToken)
           }
         } else {
-          // Image/Video 使用自己的 id 作為 token key
           tokenStore.hashTokenMap.set(data.id, hashToken)
         }
       })
       dataStore.batchFetched.set(payload.batch, true)
-      optimisticUpateStore.selfUpdate()
+      optimisticUpdateStore.selfUpdate()
     },
+
     fetchRowReturn: (payload) => {
-      const timestamp = payload.timestamp
-      const rowWithOffset = payload.rowWithOffset
+      const { timestamp, rowWithOffset, subRowHeightScale } = payload
       const windowWidth = rowWithOffset.windowWidth
-      const subRowHeightScale = payload.subRowHeightScale
+
+      // Discard calculation if viewport changed during worker processing to avoid layout trashing.
       if (windowWidth !== prefetchStore.windowWidth) {
         return
       }
 
       const offset = rowWithOffset.offset
-
       const row = rowWithOffset.row
+
+      // Prevent updates if the view is locked (anchored) to a specific row to maintain scroll stability.
       if (locationStore.anchor !== null && locationStore.anchor !== row.rowIndex) {
         return
       }
-      const index = row.rowIndex
 
+      const index = row.rowIndex
       const timestampMatched = timestamp === prefetchStore.timestamp
       const offsetNotComputed = !offsetStore.offset.has(index)
       const subRowHeightScaleMatched = subRowHeightScale === constStore.subRowHeightScale
 
+      //
+      // Why: If the computed height (offset) is valid and new, we must propagate this delta
+      // to all subsequent rows to ensure the virtual scroll total height remains accurate.
       if (timestampMatched && offsetNotComputed && subRowHeightScaleMatched) {
         offsetStore.offset.set(index, offset)
         row.offset = offsetStore.accumulatedOffset(row.rowIndex)
+
         rowStore.rowData.forEach((row) => {
           if (row.rowIndex > index) {
             row.offset = row.offset + offset
@@ -81,7 +94,6 @@ export function handleDataWorkerReturn(dataWorker: Worker, isolationId: Isolatio
         })
 
         rowStore.rowData.set(row.rowIndex, row)
-
         prefetchStore.totalHeight = prefetchStore.totalHeight + offset
         offsetStore.accumulatedAll = offsetStore.accumulatedAll + offset
       }
@@ -90,6 +102,7 @@ export function handleDataWorkerReturn(dataWorker: Worker, isolationId: Isolatio
       prefetchStore.updateVisibleRowTrigger = !prefetchStore.updateVisibleRowTrigger
       rowStore.firstRowFetched = true
     },
+
     editTagsReturn: (payload) => {
       if (payload.returnedTagsArray !== undefined) {
         tagStore.applyTags(payload.returnedTagsArray)
@@ -98,15 +111,19 @@ export function handleDataWorkerReturn(dataWorker: Worker, isolationId: Isolatio
       }
       modalStore.showEditTagsModal = false
     },
-    notification: function (payload: { text: string; color: MessageColor }): void {
+
+    notification: (payload) => {
       messageStore.push(payload.text, payload.color)
     },
+
     unauthorized: async () => {
       await redirectionStore.redirectionToLogin()
     },
+
     refreshTimestampToken: (payload) => {
       tokenStore.timestampToken = payload.timestampToken
     },
+
     refreshHashToken: (payload) => {
       tokenStore.hashTokenMap.set(payload.hash, payload.hashToken)
     }
@@ -120,6 +137,12 @@ export function handleDataWorkerReturn(dataWorker: Worker, isolationId: Isolatio
   workerHandlerMap.set(dataWorker, messageHandler)
 }
 
+/**
+ * Removes the message listener associated with the given DataWorker.
+ * Used for cleanup to prevent memory leaks when components unmount.
+ *
+ * @param dataWorker - The worker instance to clean up.
+ */
 export function removeHandleDataWorkerReturn(dataWorker: Worker) {
   const messageHandler = workerHandlerMap.get(dataWorker)
   if (messageHandler) {

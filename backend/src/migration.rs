@@ -170,9 +170,9 @@ const USER_DEFINED_DESCRIPTION: &str = "_user_defined_description";
 fn transform_database_to_abstract_data(old_data: OldDatabase) -> AbstractData {
     let description = old_data.exif_vec.get(USER_DEFINED_DESCRIPTION).cloned();
 
-    // Business Logic:
-    // Legacy tags starting with "_" (e.g., _favorite) were used as pseudo-flags.
-    // We convert them to explicit boolean fields and remove them from the generic tag list.
+    // Legacy Business Logic:
+    // Tags starting with "_" (e.g., _favorite) were previously used as boolean flags.
+    // We must extract them to explicit fields in the new schema.
     let mut tags = old_data.tag.clone();
     let is_favorite = tags.remove("_favorite");
     let is_archived = tags.remove("_archived");
@@ -271,7 +271,7 @@ fn transform_album_to_abstract_data(old_album: OldAlbum) -> AbstractData {
         .and_then(|v| v.first())
         .cloned();
 
-    // Business Logic: Convert legacy tag-flags to boolean fields
+    // Legacy Business Logic: Handle pseudo-flags in tags
     let mut tags = old_album.tag.clone();
     let is_favorite = tags.remove("_favorite");
     let is_archived = tags.remove("_archived");
@@ -324,11 +324,7 @@ fn transform_album_to_abstract_data(old_album: OldAlbum) -> AbstractData {
     AbstractData::Album(AlbumCombined { object, metadata })
 }
 
-/// Checks if a migration is required.
-///
-/// Strategy:
-/// 1. Try opening with the NEW driver (v3.1). If successful, no migration needed.
-/// 2. If step 1 fails, try opening with the OLD driver (v2.6) to confirm it is a valid legacy DB.
+/// Checks if a migration is required by attempting to open the DB with the new and old drivers.
 fn needs_migration() -> bool {
     if !Path::new(OLD_DB_PATH).exists() {
         return false;
@@ -339,14 +335,13 @@ fn needs_migration() -> bool {
         return false;
     }
 
-    // Defensive: Use catch_unwind as a safety net against potential FFI/panic issues
-    // when the old driver encounters a corrupted or unrecognized file format.
+    // Defensive: Use catch_unwind as a safety net. The old driver might panic if it
+    // encounters a corrupted header or a completely unknown format.
     let result = std::panic::catch_unwind(|| redb_old::Database::open(OLD_DB_PATH));
 
     match result {
         Ok(Ok(db)) => {
             if let Ok(txn) = db.begin_read() {
-                // Check for existence of legacy tables
                 let has_db_table = txn
                     .open_table(redb_old::TableDefinition::<&str, OldDatabase>::new(
                         "database",
@@ -367,10 +362,8 @@ fn needs_migration() -> bool {
 
 /// Executes the migration from redb 2.6 to 3.1.
 ///
-/// This process involves:
-/// 1. Verifying migration necessity.
-/// 2. Creating a backup of the old database.
-/// 3. Transforming all data records to the new `AbstractData` format.
+/// This requires user confirmation via stdin. It backs up the old database to `.bak`,
+/// transforms all records, and creates a new database at the original path.
 pub fn migrate() -> Result<()> {
     if !needs_migration() {
         return Ok(());
@@ -380,9 +373,7 @@ pub fn migrate() -> Result<()> {
     println!(" DETECTED OLD DATABASE (redb 2.6.x) at {}", OLD_DB_PATH);
     println!(" A MIGRATION IS REQUIRED TO UPGRADE TO VERSION 0.19+");
     println!("========================================================");
-
     println!(" Please ensure you have BACKED UP your './db' folder.");
-    println!(" The migration will read from the old DB and create a new one.");
     println!("Type 'yes' to start migration:");
 
     let mut input = String::new();
@@ -412,9 +403,7 @@ pub fn migrate() -> Result<()> {
 
     // Migrating DATA (Images/Videos)
     {
-        println!("Migrating Data...");
         let mut data_table = write_txn.open_table(DATA_TABLE)?;
-
         let total_items = old_data_table.len()?;
         println!("Found {} items to migrate.", total_items);
 
@@ -422,8 +411,7 @@ pub fn migrate() -> Result<()> {
         let mut batch_buffer: Vec<OldDatabase> = Vec::with_capacity(BATCH_SIZE);
 
         let mut commit_batch = |batch: Vec<OldDatabase>| -> Result<()> {
-            // Performance: Use parallel iterator as struct transformation and bitcode decoding
-            // are CPU-bound operations.
+            // Optimization: Struct transformation and bitcode decoding are CPU-bound.
             let transformed_batch: Vec<AbstractData> = batch
                 .into_par_iter()
                 .map(transform_database_to_abstract_data)
@@ -441,7 +429,6 @@ pub fn migrate() -> Result<()> {
 
             if batch_buffer.len() >= BATCH_SIZE {
                 commit_batch(std::mem::take(&mut batch_buffer))?;
-
                 processed_count += BATCH_SIZE;
                 println!("Migrated {} / {} items...", processed_count, total_items);
             }
@@ -452,15 +439,12 @@ pub fn migrate() -> Result<()> {
             commit_batch(batch_buffer)?;
             processed_count += len;
         }
-
         println!("Data migration completed. Total: {}", processed_count);
     }
 
     // Migrating ALBUMS
     {
-        println!("Migrating Albums...");
         let mut data_table = write_txn.open_table(DATA_TABLE)?;
-
         let total_albums = old_album_table.len()?;
         println!("Found {} albums to migrate.", total_albums);
 
@@ -476,15 +460,13 @@ pub fn migrate() -> Result<()> {
                 println!("Migrated {} / {} albums...", processed_count, total_albums);
             }
         }
-
         println!("Album migration completed. Total: {}", processed_count);
     }
 
     write_txn.commit()?;
-
     println!("Migration completed successfully.");
 
-    // Explicitly drop handles to release file locks before renaming
+    // Explicitly drop handles to release file locks (crucial for Windows) before renaming
     drop(read_txn);
     drop(old_db);
 
@@ -497,7 +479,6 @@ pub fn migrate() -> Result<()> {
         .context("Failed to rename new DB to original path")?;
     println!("New database moved to {}", OLD_DB_PATH);
 
-    println!("SUCCESS: Migration completed. Backup at {}", backup_path);
     Ok(())
 }
 
@@ -505,54 +486,50 @@ pub fn migrate() -> Result<()> {
 // Config Migration Logic
 // ==================================================================================
 
-/// 遷移舊的 .env 和 config.json 邏輯
-/// 讀取環境變數與舊版 config.json，並構建新的 AppConfig 物件
+/// Reads legacy configuration sources (config.json, .env) and constructs a modern `AppConfig`.
 pub fn construct_migrated_config() -> AppConfig {
     let mut config = AppConfig::default();
 
-    // 1. 嘗試讀取舊的 config.json
-    // 我們只關心能否讀到 readOnlyMode 和 disableImg
     if let Ok(file) = File::open("config.json") {
         #[derive(serde::Deserialize)]
-        struct OldPublic {
+        struct LegacyConfigJson {
             #[serde(default)]
             read_only_mode: bool,
             #[serde(default)]
             disable_img: bool,
         }
-        // 如果解析失敗（因為有未知的 Rocket 欄位等），我們會忽略它，這沒關係
-        if let Ok(old) = serde_json::from_reader::<_, OldPublic>(file) {
+
+        // We only care about specific fields; ignore unknown fields from other frameworks (e.g., Rocket)
+        if let Ok(old) = serde_json::from_reader::<_, LegacyConfigJson>(file) {
             config.read_only_mode = old.read_only_mode;
             config.disable_img = old.disable_img;
             println!("Migrated settings from legacy config.json");
         }
     }
 
-    // 2. 讀取 .env
     dotenv().ok();
 
     if let Ok(pwd) = std::env::var("PASSWORD") {
         if !pwd.trim().is_empty() {
-            config.password = pwd.clone();
+            config.password = pwd;
             println!("Migrated PASSWORD from environment");
         }
     }
 
     if let Ok(key) = std::env::var("AUTH_KEY") {
         if !key.trim().is_empty() {
-            config.auth_key = Some(key.clone());
+            config.auth_key = Some(key);
             println!("Migrated AUTH_KEY from environment");
         }
     }
 
     if let Ok(hook) = std::env::var("DISCORD_HOOK_URL") {
         if !hook.trim().is_empty() {
-            config.discord_hook_url = Some(hook.clone());
+            config.discord_hook_url = Some(hook);
             println!("Migrated DISCORD_HOOK_URL from environment");
         }
     }
 
-    // 3. 處理 SYNC_PATH
     if let Ok(sync_paths_str) = std::env::var("SYNC_PATH") {
         let mut count = 0;
         for path_str in sync_paths_str.split(',') {
@@ -567,7 +544,8 @@ pub fn construct_migrated_config() -> AppConfig {
         }
     }
 
-    // 4. 過濾掉 upload 路徑
+    // Constraint: Prevent recursive syncing.
+    // Ensure the application's own upload directory is not included in the sync paths.
     if let Ok(upload_path) = fs::canonicalize(PathBuf::from("./upload")) {
         config.sync_paths.retain(|p| match fs::canonicalize(p) {
             Ok(c) => c != upload_path,
@@ -578,7 +556,7 @@ pub fn construct_migrated_config() -> AppConfig {
     config
 }
 
-/// 移除舊的設定檔 (.env, Rocket.toml)
+/// Removes legacy configuration files (.env, Rocket.toml) to finalize migration.
 pub fn cleanup_legacy_config_files() {
     if Path::new(".env").exists() {
         if let Err(e) = fs::remove_file(".env") {

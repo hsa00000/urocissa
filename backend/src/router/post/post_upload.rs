@@ -3,30 +3,28 @@ use crate::router::fairing::guard_read_only_mode::GuardReadOnlyMode;
 use crate::router::fairing::guard_upload::GuardUpload;
 use crate::router::{AppResult, GuardResult};
 use crate::workflow::index_for_watch;
-use anyhow::{Result, anyhow, bail};
+use anyhow::{Result, anyhow};
 use arrayvec::ArrayString;
 use rocket::form::{Errors, Form};
 use rocket::fs::TempFile;
 use std::path::PathBuf;
-use std::time::Instant;
 use tokio::task::spawn_blocking;
 use uuid::Uuid;
 
+/// Data structure representing the multipart form for file uploads.
 #[derive(FromForm, Debug)]
 pub struct UploadForm<'r> {
-    /// 依序收到的多個檔案
+    /// Sequential list of uploaded files.
     #[field(name = "file")]
     pub files: Vec<TempFile<'r>>,
 
-    /// 與檔案順序對應的 lastModified 時戳
+    /// Timestamps (Unix epoch in milliseconds) corresponding to each file by index.
     #[field(name = "lastModified")]
     pub last_modified: Vec<u64>,
 }
 
 fn get_filename(file: &TempFile<'_>) -> String {
-    file.name()
-        .map(|name| name.to_string())
-        .unwrap_or_else(|| "".to_string())
+    file.name().map(|name| name.to_string()).unwrap_or_default()
 }
 
 #[post("/upload?<presigned_album_id_opt>", data = "<form>")]
@@ -38,98 +36,95 @@ pub async fn upload(
 ) -> AppResult<()> {
     let _ = auth?;
     let _ = read_only_mode?;
-    let mut inner_form = match form {
-        Ok(form) => form.into_inner(),
-        Err(errors) => {
-            let error_chain = errors
-                .iter()
-                .map(|e| anyhow!(e.to_string()))
-                .reduce(|acc, e| acc.context(e.to_string()));
 
-            return match error_chain {
-                Some(chain) => Err(chain.context("Failed to parse form").into()),
-                None => Err(anyhow!("Failed to parse form with unknown error").into()),
-            };
+    let mut inner_form = match form {
+        Ok(f) => f.into_inner(),
+        Err(errors) => {
+            // Flatten generic Rocket errors into a single context for debugging
+            let error_msg = errors
+                .iter()
+                .fold(String::from("Form parsing failed: "), |acc, e| {
+                    format!("{}; {}", acc, e)
+                });
+            return Err(anyhow!(error_msg).into());
         }
     };
 
-    let presigned_album_id_opt: Option<ArrayString<64>> = if let Some(s) = presigned_album_id_opt {
-        Some(
-            ArrayString::from(&s)
-                .map_err(|_| anyhow!("Failed to create ArrayString from presigned_album_id_opt"))?,
-        )
-    } else {
-        None
+    let album_id: Option<ArrayString<64>> = match presigned_album_id_opt {
+        Some(s) => Some(ArrayString::from(&s).map_err(|_| anyhow!("Album ID exceeds 64 bytes"))?),
+        None => None,
     };
 
+    // Ensure strict 1:1 mapping between files and metadata
     if inner_form.files.len() != inner_form.last_modified.len() {
-        return Err(
-            anyhow!("Mismatch between number of files and lastModified timestamps.").into(),
-        );
+        return Err(anyhow!("Mismatch between file count and timestamp count.").into());
     }
 
     for (i, file) in inner_form.files.iter_mut().enumerate() {
-        let last_modified_time = inner_form.last_modified[i];
-        let start_time = Instant::now();
+        let last_modified = inner_form.last_modified[i];
         let filename = get_filename(file);
         let extension = get_extension(file)?;
 
-        warn!(duration = &*format!("{:?}", start_time.elapsed()); "Get filename and extension");
         if VALID_IMAGE_EXTENSIONS.contains(&extension.as_str())
             || VALID_VIDEO_EXTENSIONS.contains(&extension.as_str())
         {
-            let final_path = save_file(file, filename, extension, last_modified_time).await?;
-            index_for_watch(PathBuf::from(final_path), presigned_album_id_opt).await?;
+            let final_path = save_file(file, filename, extension, last_modified).await?;
+            index_for_watch(PathBuf::from(final_path), album_id).await?;
         } else {
-            error!("Invalid file type");
-            return Err(anyhow::anyhow!("Invalid file type: {}", extension).into());
+            error!("Rejected invalid file type: {}", extension);
+            return Err(anyhow!("Invalid file type: {}", extension).into());
         }
     }
 
     Ok(())
 }
 
+/// Persists the temporary file to disk with the correct modification time.
+///
+/// Returns the absolute path of the saved file.
 async fn save_file(
     file: &mut TempFile<'_>,
     filename: String,
     extension: String,
-    last_modified_time: u64,
+    last_modified_ms: u64,
 ) -> Result<String> {
     let unique_id = Uuid::new_v4();
-    let path_tmp = format!("./upload/{}-{}.tmp", filename, unique_id);
+    let tmp_path = format!("./upload/{}-{}.tmp", filename, unique_id);
 
-    file.move_copy_to(&path_tmp).await?;
+    // Move to a temp location first to avoid blocking the async runtime with IO
+    file.move_copy_to(&tmp_path).await?;
 
-    let filename = filename.clone(); // Needed because filename is moved in path_tmp
+    let filename_owned = filename.clone();
 
-    let path_final = spawn_blocking(move || -> Result<String> {
-        let path_final = format!("./upload/{}-{}.{}", filename, unique_id, extension);
-        set_last_modified_time(&path_tmp, last_modified_time)?;
-        std::fs::rename(&path_tmp, &path_final)?;
-        Ok(path_final)
+    // Perform metadata operations and rename in a blocking thread.
+    // 1. Set mtime on the .tmp file.
+    // 2. Atomic rename to .ext (final state).
+    // This ensures the file watcher (workflow) only picks up the file once it is fully written and has the correct timestamp.
+    let final_path = spawn_blocking(move || -> Result<String> {
+        let final_path = format!("./upload/{}-{}.{}", filename_owned, unique_id, extension);
+
+        set_last_modified_time(&tmp_path, last_modified_ms)?;
+        std::fs::rename(&tmp_path, &final_path)?;
+
+        Ok(final_path)
     })
     .await??;
 
-    Ok(path_final)
+    Ok(final_path)
 }
-fn set_last_modified_time(path: &str, last_modified_time: u64) -> Result<()> {
-    let mtime = filetime::FileTime::from_unix_time((last_modified_time / 1000) as i64, 0);
+
+fn set_last_modified_time(path: &str, last_modified_ms: u64) -> Result<()> {
+    let mtime = filetime::FileTime::from_unix_time((last_modified_ms / 1000) as i64, 0);
     filetime::set_file_mtime(path, mtime)?;
     Ok(())
 }
 
 fn get_extension(file: &TempFile<'_>) -> Result<String> {
-    match file.content_type() {
-        Some(ct) => match ct.extension() {
-            Some(ext) => Ok(ext.as_str().to_lowercase()),
-            None => {
-                error!("Failed to extract file extension.");
-                bail!("Failed to extract file extension.")
-            }
-        },
-        None => {
-            error!("Failed to get content type.");
-            bail!("Failed to get content type.")
-        }
-    }
+    file.content_type()
+        .and_then(|ct| ct.extension())
+        .map(|ext| ext.as_str().to_lowercase())
+        .ok_or_else(|| {
+            error!("Failed to determine file extension from Content-Type");
+            anyhow!("Missing or unknown file extension")
+        })
 }
