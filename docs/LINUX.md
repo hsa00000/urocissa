@@ -43,7 +43,7 @@ Make sure the following software is installed on your system:
 
 ### 3. Build the Frontend
 
-In the `frontend` directory, run:
+In the `gallery-frontend` directory, run:
 
 ```bash
 npm run build
@@ -56,7 +56,7 @@ npm run build
 1. Navigate to the backend directory:
 
    ```bash
-   cd ./Urocissa/backend
+   cd ./Urocissa/gallery-backend
    ```
 
 2. Copy the default config file and fill in the necessary settings:
@@ -88,7 +88,7 @@ npm run build
 
 ### 5. Run the Application
 
-Navigate to the `backend` directory and run the following command to start the app:
+Navigate to the `gallery-backend` directory and run the following command to start the app:
 
 ```bash
 cargo run --release
@@ -132,10 +132,10 @@ If you are not using Docker and prefer to build from source, follow these manual
 
 ### Rebuild the Frontend
 
-1. Navigate to the `frontend` directory:
+1. Navigate to the `gallery-frontend` directory:
 
    ```bash
-   cd ./Urocissa/frontend
+   cd ./Urocissa/gallery-frontend
    ```
 
 2. Build the frontend:
@@ -146,10 +146,10 @@ If you are not using Docker and prefer to build from source, follow these manual
 
 ### Rebuild the Backend
 
-1. Navigate to the `backend` directory:
+1. Navigate to the `gallery-backend` directory:
 
    ```bash
-   cd ./Urocissa/backend
+   cd ./Urocissa/gallery-backend
    ```
 
 2. Build and run the backend using Cargo:

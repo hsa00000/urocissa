@@ -30,14 +30,14 @@ Copy the default configuration files:
 
 ```bash
 # Backend configuration
-cp backend/config.default.json backend/config.json
-cp backend/Rocket.default.toml backend/Rocket.toml
-cp backend/.env.default backend/.env
+cp gallery-backend/config.default.json gallery-backend/config.json
+cp gallery-backend/Rocket.default.toml gallery-backend/Rocket.toml
+cp gallery-backend/.env.default gallery-backend/.env
 ```
 
 #### 3. Configure Environment Variables
 
-Edit `backend/.env` to configure your installation:
+Edit `gallery-backend/.env` to configure your installation:
 
 ```dotenv
 # Required: Set a secure password for the web interface
@@ -164,9 +164,9 @@ docker compose down
 
 Check if all required configuration files exist:
 
-- `backend/.env`
-- `backend/Rocket.toml`
-- `backend/config.json`
+- `gallery-backend/.env`
+- `gallery-backend/Rocket.toml`
+- `gallery-backend/config.json`
 
 #### Photos not appearing
 
@@ -176,7 +176,7 @@ Check if all required configuration files exist:
 
 #### Port already in use
 
-Change the port in `backend/Rocket.toml` and update the compose file:
+Change the port in `gallery-backend/Rocket.toml` and update the compose file:
 
 ```bash
 UROCISSA_PORT=8080 docker compose up -d
@@ -210,14 +210,14 @@ cd Urocissa
 
 ```bash
 # 後端設定
-cp backend/config.default.json backend/config.json
-cp backend/Rocket.default.toml backend/Rocket.toml
-cp backend/.env.default backend/.env
+cp gallery-backend/config.default.json gallery-backend/config.json
+cp gallery-backend/Rocket.default.toml gallery-backend/Rocket.toml
+cp gallery-backend/.env.default gallery-backend/.env
 ```
 
 #### 3. 設定環境變數
 
-編輯 `backend/.env` 來配置您的安裝：
+編輯 `gallery-backend/.env` 來配置您的安裝：
 
 ```dotenv
 # 必填：設定網頁介面的安全密碼
@@ -344,9 +344,9 @@ docker compose down
 
 檢查所有必要的設定檔是否存在：
 
-- `backend/.env`
-- `backend/Rocket.toml`
-- `backend/config.json`
+- `gallery-backend/.env`
+- `gallery-backend/Rocket.toml`
+- `gallery-backend/config.json`
 
 #### 照片未顯示
 
@@ -356,7 +356,7 @@ docker compose down
 
 #### 連接埠已被使用
 
-在 `backend/Rocket.toml` 中更改連接埠，並更新 compose 檔案：
+在 `gallery-backend/Rocket.toml` 中更改連接埠，並更新 compose 檔案：
 
 ```bash
 UROCISSA_PORT=8080 docker compose up -d

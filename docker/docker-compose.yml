@@ -13,7 +13,7 @@ x-base-config: &base-config
 
   # 讀取後端設定檔
   env_file:
-    - ../backend/.env
+    - ../gallery-backend/.env
 
   # 連接埠
   ports:
@@ -23,31 +23,31 @@ x-base-config: &base-config
   volumes:
     # --- 核心設定檔 (檔案類型：嚴格檢查，若缺少會報錯) ---
     - type: bind
-      source: ../backend/.env
-      target: /urocissa/backend/.env
+      source: ../gallery-backend/.env
+      target: /urocissa/gallery-backend/.env
       read_only: true
 
     - type: bind
-      source: ../backend/Rocket.toml
-      target: /urocissa/backend/Rocket.toml
+      source: ../gallery-backend/Rocket.toml
+      target: /urocissa/gallery-backend/Rocket.toml
       read_only: true
 
     - type: bind
-      source: ../backend/config.json
-      target: /urocissa/backend/config.json
+      source: ../gallery-backend/config.json
+      target: /urocissa/gallery-backend/config.json
       read_only: true
 
     # --- 資料儲存 (資料夾類型) ---
-    # 改用 Long Syntax 後，如果本機 ../backend/db 不存在，啟動也會報錯。
+    # 改用 Long Syntax 後，如果本機 ../gallery-backend/db 不存在，啟動也會報錯。
     # 這強迫你要確保資料夾存在，而不是讓 Docker 默默建立。
     - type: bind
-      source: ../backend/db
-      target: /urocissa/backend/db
+      source: ../gallery-backend/db
+      target: /urocissa/gallery-backend/db
       read_only: false
 
     - type: bind
-      source: ../backend/object
-      target: /urocissa/backend/object
+      source: ../gallery-backend/object
+      target: /urocissa/gallery-backend/object
       read_only: false
 
 services:
