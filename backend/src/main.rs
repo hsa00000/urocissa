@@ -12,9 +12,9 @@ mod tasks;
 mod workflow;
 
 use crate::process::initialization::initialize;
-use crate::public::config::init_config;
 use crate::public::constant::runtime::{INDEX_RUNTIME, ROCKET_RUNTIME};
 use crate::public::error_data::handle_error;
+use crate::public::structure::config::AppConfig;
 use crate::public::tui::{DASHBOARD, tui_task};
 use crate::tasks::BATCH_COORDINATOR;
 use crate::tasks::batcher::start_watcher::StartWatcherTask;
@@ -65,7 +65,7 @@ fn main() -> Result<()> {
     }
 
     // 0. 初始化 AppConfig (這會建立 config.json 若不存在)
-    init_config();
+    AppConfig::init();
 
     let worker_handle = thread::spawn(|| {
         INDEX_RUNTIME.block_on(async {

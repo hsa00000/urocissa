@@ -3,7 +3,6 @@ use rocket::http::{ContentType, Status};
 use rocket::serde::json::Json;
 use rocket::{get, post, put};
 
-use crate::public::config::update_config;
 use crate::public::structure::config::{AppConfig, APP_CONFIG};
 use crate::router::fairing::guard_auth::GuardAuth;
 
@@ -16,7 +15,7 @@ pub fn get_config_handler(_auth: GuardAuth) -> Json<AppConfig> {
 // Refactor: Route path changed to /put/config
 #[put("/put/config", data = "<config>")]
 pub fn update_config_handler(_auth: GuardAuth, config: Json<AppConfig>) -> Result<Status, Status> {
-    match update_config(config.into_inner()) {
+    match AppConfig::update(config.into_inner()) {
         Ok(_) => Ok(Status::Ok),
         Err(e) => {
             error!("Failed to update config: {}", e);
@@ -36,7 +35,7 @@ pub fn export_config_handler(_auth: GuardAuth) -> (ContentType, String) {
 // Refactor: Route path changed to /post/config/import
 #[post("/post/config/import", data = "<file>")]
 pub fn import_config_handler(_auth: GuardAuth, file: Json<AppConfig>) -> Result<Status, Status> {
-    match update_config(file.into_inner()) {
+    match AppConfig::update(file.into_inner()) {
         Ok(_) => Ok(Status::Ok),
         Err(e) => {
             error!("Import failed: {}", e);
