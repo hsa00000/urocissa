@@ -5,11 +5,13 @@
 use anyhow::{Context, Result};
 use arrayvec::ArrayString;
 use bitcode::{Decode, Encode};
+use dotenv::dotenv;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap, HashSet};
+use std::fs::{self, File};
 use std::io::{self, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use redb_old::{ReadableTable as OldReadableTable, ReadableTableMetadata};
 
@@ -19,6 +21,7 @@ use crate::public::structure::album::{
     combined::AlbumCombined, metadata::AlbumMetadata, share::Share as NewShare,
 };
 use crate::public::structure::common::FileModify;
+use crate::public::structure::config::AppConfig;
 use crate::public::structure::image::{combined::ImageCombined, metadata::ImageMetadata};
 use crate::public::structure::object::{ObjectSchema, ObjectType};
 use crate::public::structure::video::{combined::VideoCombined, metadata::VideoMetadata};
@@ -496,4 +499,100 @@ pub fn migrate() -> Result<()> {
 
     println!("SUCCESS: Migration completed. Backup at {}", backup_path);
     Ok(())
+}
+
+// ==================================================================================
+// Config Migration Logic
+// ==================================================================================
+
+/// 遷移舊的 .env 和 config.json 邏輯
+/// 讀取環境變數與舊版 config.json，並構建新的 AppConfig 物件
+pub fn construct_migrated_config() -> AppConfig {
+    let mut config = AppConfig::default();
+
+    // 1. 嘗試讀取舊的 config.json
+    // 我們只關心能否讀到 readOnlyMode 和 disableImg
+    if let Ok(file) = File::open("config.json") {
+        #[derive(serde::Deserialize)]
+        struct OldPublic {
+            #[serde(default)]
+            read_only_mode: bool,
+            #[serde(default)]
+            disable_img: bool,
+        }
+        // 如果解析失敗（因為有未知的 Rocket 欄位等），我們會忽略它，這沒關係
+        if let Ok(old) = serde_json::from_reader::<_, OldPublic>(file) {
+            config.read_only_mode = old.read_only_mode;
+            config.disable_img = old.disable_img;
+            println!("Migrated settings from legacy config.json");
+        }
+    }
+
+    // 2. 讀取 .env
+    dotenv().ok();
+
+    if let Ok(pwd) = std::env::var("PASSWORD") {
+        if !pwd.trim().is_empty() {
+            config.password = pwd.clone();
+            println!("Migrated PASSWORD from environment");
+        }
+    }
+
+    if let Ok(key) = std::env::var("AUTH_KEY") {
+        if !key.trim().is_empty() {
+            config.auth_key = Some(key.clone());
+            println!("Migrated AUTH_KEY from environment");
+        }
+    }
+
+    if let Ok(hook) = std::env::var("DISCORD_HOOK_URL") {
+        if !hook.trim().is_empty() {
+            config.discord_hook_url = Some(hook.clone());
+            println!("Migrated DISCORD_HOOK_URL from environment");
+        }
+    }
+
+    // 3. 處理 SYNC_PATH
+    if let Ok(sync_paths_str) = std::env::var("SYNC_PATH") {
+        let mut count = 0;
+        for path_str in sync_paths_str.split(',') {
+            let path_str = path_str.trim();
+            if !path_str.is_empty() {
+                config.sync_paths.insert(PathBuf::from(path_str));
+                count += 1;
+            }
+        }
+        if count > 0 {
+            println!("Migrated {} sync paths from SYNC_PATH", count);
+        }
+    }
+
+    // 4. 過濾掉 upload 路徑
+    if let Ok(upload_path) = fs::canonicalize(PathBuf::from("./upload")) {
+        config.sync_paths.retain(|p| match fs::canonicalize(p) {
+            Ok(c) => c != upload_path,
+            Err(_) => p != &upload_path,
+        });
+    }
+
+    config
+}
+
+/// 移除舊的設定檔 (.env, Rocket.toml)
+pub fn cleanup_legacy_config_files() {
+    if Path::new(".env").exists() {
+        if let Err(e) = fs::remove_file(".env") {
+            eprintln!("Failed to remove legacy .env file: {}", e);
+        } else {
+            println!("Removed legacy .env file");
+        }
+    }
+
+    if Path::new("Rocket.toml").exists() {
+        if let Err(e) = fs::remove_file("Rocket.toml") {
+            eprintln!("Failed to remove legacy Rocket.toml file: {}", e);
+        } else {
+            println!("Removed legacy Rocket.toml file");
+        }
+    }
 }

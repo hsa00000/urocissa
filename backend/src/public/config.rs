@@ -1,8 +1,7 @@
-use dotenv::dotenv;
 use serde_json::{Value, json};
 use std::fs::{self, File};
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::RwLock;
 
 use crate::public::structure::config::{APP_CONFIG, AppConfig};
@@ -29,12 +28,18 @@ pub fn init_config() {
 
     let config = if should_migrate {
         println!("Legacy configuration or missing file detected. Starting migration...");
-        // 1. 執行遷移 (會讀取 .env 和 舊的 config.json 內容)
-        let cfg = migrate_or_default();
+
+        // 1. 執行遷移邏輯 (從 migration.rs)
+        let cfg = crate::migration::construct_migrated_config();
+
         // 2. 將完整的設定 (包含 Rocket 預設值) 寫入新格式
         if let Err(e) = save_config_update(&cfg) {
             eprintln!("Warning: Failed to save migrated config: {}", e);
+        } else {
+            // 3. 只有在成功儲存新設定後，才刪除舊檔案
+            crate::migration::cleanup_legacy_config_files();
         }
+
         println!(
             "Migration completed. New configuration saved to {}",
             CONFIG_FILE
@@ -128,76 +133,4 @@ fn save_config_update(config: &AppConfig) -> anyhow::Result<()> {
         .context(format!("Failed to write configuration to {}", CONFIG_FILE))?;
 
     Ok(())
-}
-
-/// 遷移舊的 .env 和 config.json 邏輯
-fn migrate_or_default() -> AppConfig {
-    let mut config = AppConfig::default();
-
-    // 1. 嘗試讀取舊的 config.json
-    // 我們只關心能否讀到 readOnlyMode 和 disableImg
-    if let Ok(file) = File::open("config.json") {
-        #[derive(serde::Deserialize)]
-        struct OldPublic {
-            #[serde(default)]
-            read_only_mode: bool,
-            #[serde(default)]
-            disable_img: bool,
-        }
-        // 如果解析失敗（因為有未知的 Rocket 欄位等），我們會忽略它，這沒關係
-        if let Ok(old) = serde_json::from_reader::<_, OldPublic>(file) {
-            config.read_only_mode = old.read_only_mode;
-            config.disable_img = old.disable_img;
-            println!("Migrated settings from legacy config.json");
-        }
-    }
-
-    // 2. 讀取 .env
-    dotenv().ok();
-
-    if let Ok(pwd) = std::env::var("PASSWORD") {
-        if !pwd.trim().is_empty() {
-            config.password = pwd.clone();
-            println!("Migrated PASSWORD from environment");
-        }
-    }
-
-    if let Ok(key) = std::env::var("AUTH_KEY") {
-        if !key.trim().is_empty() {
-            config.auth_key = Some(key.clone());
-            println!("Migrated AUTH_KEY from environment");
-        }
-    }
-
-    if let Ok(hook) = std::env::var("DISCORD_HOOK_URL") {
-        if !hook.trim().is_empty() {
-            config.discord_hook_url = Some(hook.clone());
-            println!("Migrated DISCORD_HOOK_URL from environment");
-        }
-    }
-
-    // 3. 處理 SYNC_PATH
-    if let Ok(sync_paths_str) = std::env::var("SYNC_PATH") {
-        let mut count = 0;
-        for path_str in sync_paths_str.split(',') {
-            let path_str = path_str.trim();
-            if !path_str.is_empty() {
-                config.sync_paths.insert(PathBuf::from(path_str));
-                count += 1;
-            }
-        }
-        if count > 0 {
-            println!("Migrated {} sync paths from SYNC_PATH", count);
-        }
-    }
-
-    // 4. 過濾掉 upload 路徑
-    if let Ok(upload_path) = fs::canonicalize(PathBuf::from("./upload")) {
-        config.sync_paths.retain(|p| match fs::canonicalize(p) {
-            Ok(c) => c != upload_path,
-            Err(_) => p != &upload_path,
-        });
-    }
-
-    config
 }
