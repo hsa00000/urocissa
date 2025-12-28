@@ -130,6 +130,7 @@ impl Expression {
                     AbstractData::Image(img) => {
                         img.object.tags.contains(&any_identifier)
                             || "image".contains(&any_identifier)
+                            || img.object.id.as_str().to_ascii_lowercase().contains(&any_lower)
                             || img.metadata.ext.to_ascii_lowercase().contains(&any_lower)
                             || img.metadata.exif_vec.get("Make").map_or(false, |make_of_exif| {
                                 make_of_exif.to_ascii_lowercase().contains(&any_lower)
@@ -144,6 +145,7 @@ impl Expression {
                     AbstractData::Video(vid) => {
                         vid.object.tags.contains(&any_identifier)
                             || "video".contains(&any_identifier)
+                            || vid.object.id.as_str().to_ascii_lowercase().contains(&any_lower)
                             || vid.metadata.ext.to_ascii_lowercase().contains(&any_lower)
                             || vid.metadata.exif_vec.get("Make").map_or(false, |make_of_exif| {
                                 make_of_exif.to_ascii_lowercase().contains(&any_lower)
@@ -158,6 +160,7 @@ impl Expression {
                     AbstractData::Album(alb) => {
                         alb.object.tags.contains(&any_identifier)
                             || "album".to_ascii_lowercase().contains(&any_lower)
+                            || alb.object.id.as_str().to_ascii_lowercase().contains(&any_lower)
                     }
                 })
             }
