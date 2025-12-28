@@ -41,7 +41,7 @@ use std::thread;
 use std::time::Instant;
 
 async fn build_rocket() -> rocket::Rocket<rocket::Build> {
-    // 直接載入 config.json，Rocket 會自動讀取 "default" 節點
+    // 載入 config.json
     let figment = Figment::from(rocket::Config::default()).merge(Json::file("config.json"));
 
     // 使用 custom(figment) 啟動

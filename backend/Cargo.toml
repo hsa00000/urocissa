@@ -56,3 +56,4 @@ tokio-rayon = "2.1.0"
 unicode-width = "0.2.2"
 uuid = { version = "1.19.0", features = ["v4"] }
 walkdir = "2.5.0"
+base64 = "0.22.1"

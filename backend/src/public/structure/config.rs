@@ -1,14 +1,26 @@
 use anyhow::Context;
+use base64::{Engine as _, engine::general_purpose};
 use rand::{TryRngCore, rngs::OsRng};
 use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
 use std::collections::{HashMap, HashSet};
 use std::fs::{self, File};
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::sync::{LazyLock, OnceLock, RwLock};
+use std::sync::{OnceLock, RwLock};
 
 const CONFIG_FILE: &str = "config.json";
+
+// 新增：定義全域的 Fallback Key
+pub static FALLBACK_SECRET_KEY: OnceLock<String> = OnceLock::new();
+
+// Helper function to generate a random secret key string
+fn generate_secret_key() -> String {
+    let mut secret = vec![0u8; 32];
+    OsRng
+        .try_fill_bytes(&mut secret)
+        .expect("Failed to generate random secret key");
+    general_purpose::STANDARD.encode(secret)
+}
 
 // Refactor: Renamed AppSettings to AppConfig
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -17,7 +29,6 @@ pub struct AppConfig {
     // --- Rocket Settings ---
     pub address: String,
     pub port: u16,
-    // 使用 HashMap<String, String> 來儲存 limits (例如 "json": "10MiB")
     pub limits: HashMap<String, String>,
 
     // --- App Settings ---
@@ -25,8 +36,7 @@ pub struct AppConfig {
     pub password: String,
     /// 需要監聽/同步的資料夾路徑
     pub sync_paths: HashSet<PathBuf>,
-    /// 驗證金鑰 (JWT Secret)
-    /// 注意：如果從 JSON 讀取為 None，則會在記憶體中生成一次性的隨機金鑰
+    /// 驗證金鑰 (JWT Secret)，若為 None 則使用隨機生成的 FALLBACK_SECRET_KEY
     pub auth_key: Option<String>,
     /// Discord Webhook URL
     pub discord_hook_url: Option<String>,
@@ -34,7 +44,7 @@ pub struct AppConfig {
     pub read_only_mode: bool,
     /// 禁用圖片處理 (僅顯示檔案)
     pub disable_img: bool,
-    /// 上傳檔案大小限制 (MB) - 這主要用於前端檢查，後端實際限制看 limits
+    /// 上傳檔案大小限制 (MB)
     pub upload_limit_mb: u64,
 }
 
@@ -62,53 +72,46 @@ impl Default for AppConfig {
 
 pub static APP_CONFIG: OnceLock<RwLock<AppConfig>> = OnceLock::new();
 
-static FALLBACK_SECRET_KEY: LazyLock<Vec<u8>> = LazyLock::new(|| {
-    let mut secret = vec![0u8; 32];
-    OsRng
-        .try_fill_bytes(&mut secret)
-        .expect("Failed to generate random secret key");
-    secret
-});
-
 impl AppConfig {
     /// 獲取 JWT Secret Key (實例方法)
-    /// 如果配置中沒有 auth_key，則使用記憶體中隨機生成的一次性金鑰
     pub fn get_jwt_secret_key(&self) -> Vec<u8> {
         match self.auth_key.as_ref() {
+            // 如果設定檔中有 Key，直接使用
             Some(auth_key) => auth_key.as_bytes().to_vec(),
-            None => FALLBACK_SECRET_KEY.clone(),
+            // 如果設定檔是 None (null)，使用全域的 Fallback Key
+            None => {
+                // 這裡使用 get_or_init 是為了雙重保險，
+                // 正常流程下 init() 應該已經初始化過了。
+                FALLBACK_SECRET_KEY
+                    .get_or_init(generate_secret_key)
+                    .as_bytes()
+                    .to_vec()
+            }
         }
     }
 
     /// 初始化設定系統
     pub fn init() {
         // 檢查是否需要遷移
-        // 條件：檔案不存在，或是檔案存在但是是舊格式（沒有 "default" 鍵）
         let should_migrate = if Path::new(CONFIG_FILE).exists() {
             match fs::read_to_string(CONFIG_FILE) {
-                Ok(content) => {
-                    let json: Value = serde_json::from_str(&content).unwrap_or(json!({}));
-                    // 如果沒有 "default" 鍵，代表是舊的 config.json，需要執行遷移流程
-                    json.get("default").is_none()
-                }
-                Err(_) => true, // 讀取失敗當作不存在
+                Ok(content) => serde_json::from_str::<AppConfig>(&content).is_err(),
+                Err(_) => true,
             }
         } else {
-            true // 檔案不存在
+            true
         };
 
         let config = if should_migrate {
             println!("Legacy configuration or missing file detected. Starting migration...");
 
-            // 1. 執行遷移邏輯 (從 migration.rs)
-            // 注意：這裡假設 migration 模組在 crate 根目錄下可用
+            // 1. 執行遷移邏輯
             let cfg = crate::migration::construct_migrated_config();
 
-            // 2. 將完整的設定 (包含 Rocket 預設值) 寫入新格式
+            // 2. 將完整的設定寫入新格式
             if let Err(e) = Self::save_update(&cfg) {
                 eprintln!("Warning: Failed to save migrated config: {}", e);
             } else {
-                // 3. 只有在成功儲存新設定後，才刪除舊檔案
                 crate::migration::cleanup_legacy_config_files();
             }
 
@@ -121,6 +124,19 @@ impl AppConfig {
             println!("Loading configuration from {}", CONFIG_FILE);
             Self::load_from_file()
         };
+
+        // --- 關鍵邏輯：處理 Fallback Key ---
+        // 檢查載入的設定中 auth_key 是否為 None
+        if config.auth_key.is_none() {
+            println!(
+                "No authKey found in config (set to null). Initializing ephemeral fallback key."
+            );
+            // 初始化全域 Fallback Key，但不修改 config.auth_key
+            FALLBACK_SECRET_KEY.get_or_init(generate_secret_key);
+        }
+        // --------------------------------
+
+        println!("Configuration: {:?}", config);
 
         APP_CONFIG
             .set(RwLock::new(config))
@@ -137,34 +153,18 @@ impl AppConfig {
             "{}".to_string()
         });
 
-        let json: Value = serde_json::from_str(&file_content).unwrap_or_else(|e| {
-            println!(
-                "Failed to parse config file {} as JSON: {}, using defaults",
-                CONFIG_FILE, e
-            );
-            json!({})
-        });
-
-        // 只讀取 "default" 區塊
-        if let Some(default_section) = json.get("default") {
-            match serde_json::from_value(default_section.clone()) {
-                Ok(config) => {
-                    println!("Successfully loaded configuration from {}", CONFIG_FILE);
-                    config
-                }
-                Err(e) => {
-                    // 如果解析失敗（例如欄位型別錯誤），我們顯示錯誤並回退預設值
-                    println!(
-                        "Failed to deserialize 'default' section from {}: {:?}, using defaults",
-                        CONFIG_FILE, e
-                    );
-                    AppConfig::default()
-                }
+        match serde_json::from_str(&file_content) {
+            Ok(config) => {
+                println!("Successfully loaded configuration from {}", CONFIG_FILE);
+                config
             }
-        } else {
-            // 理論上 init 已經擋掉了這種情況，但為了安全起見
-            println!("Config file format is invalid (missing 'default' section), using defaults");
-            AppConfig::default()
+            Err(e) => {
+                println!(
+                    "Failed to deserialize config from {}: {:?}, using defaults",
+                    CONFIG_FILE, e
+                );
+                AppConfig::default()
+            }
         }
     }
 
@@ -180,6 +180,13 @@ impl AppConfig {
         // 2. 更新記憶體
         {
             let mut w = APP_CONFIG.get().unwrap().write().unwrap();
+
+            // 如果使用者更新配置時，特地將 auth_key 改為 None
+            if new_config.auth_key.is_none() {
+                // 確保 Fallback 有值 (雖然通常 init 時就有了，但以防萬一)
+                FALLBACK_SECRET_KEY.get_or_init(generate_secret_key);
+            }
+
             *w = new_config.clone();
         }
 
@@ -192,15 +199,10 @@ impl AppConfig {
 
     /// 將設定寫入檔案 (內部使用)
     fn save_update(config: &AppConfig) -> anyhow::Result<()> {
-        // 構造 Rocket 需要的 profile 結構
-        let final_json = json!({
-            "default": config
-        });
-
         let mut file = File::create(CONFIG_FILE)
             .context(format!("Failed to create config file {}", CONFIG_FILE))?;
 
-        let pretty_json = serde_json::to_string_pretty(&final_json)
+        let pretty_json = serde_json::to_string_pretty(config)
             .context("Failed to serialize configuration to JSON")?;
 
         file.write_all(pretty_json.as_bytes())

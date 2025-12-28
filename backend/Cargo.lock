@@ -4368,6 +4368,7 @@ dependencies = [
  "anyhow",
  "arrayvec",
  "atomic_float",
+ "base64 0.22.1",
  "bitcode",
  "blake3",
  "bytesize",

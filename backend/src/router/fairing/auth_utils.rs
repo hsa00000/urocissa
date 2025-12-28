@@ -50,15 +50,28 @@ pub fn extract_bearer_token<'a>(req: &'a Request<'_>) -> Result<&'a str> {
 /// Decode JWT token with given claims type and validation
 pub fn my_decode_token<T: DeserializeOwned>(token: &str, validation: &Validation) -> Result<T> {
     // 獲取 Secret Key
-    let secret_key = APP_CONFIG.get().unwrap().read().unwrap().get_jwt_secret_key();
+    let secret_key = APP_CONFIG
+        .get()
+        .unwrap()
+        .read()
+        .unwrap()
+        .get_jwt_secret_key();
 
-    match decode::<T>(
-        token,
-        &DecodingKey::from_secret(&secret_key),
-        validation,
-    ) {
-        Ok(token_data) => Ok(token_data.claims),
+    // Debug: 印出當前使用的 key 的前 8 個字元
+    let key_preview: String = secret_key
+        .iter()
+        .take(8)
+        .map(|b| format!("{:02x}", b))
+        .collect();
+    info!("Decoding token with key starting with: {}...", key_preview);
+
+    match decode::<T>(token, &DecodingKey::from_secret(&secret_key), validation) {
+        Ok(token_data) => {
+            info!("Token decoded successfully");
+            Ok(token_data.claims)
+        }
         Err(err) => {
+            info!("Token decode failed: {:?}", err);
             return Err(Error::from(err).context("Failed to decode JWT token"));
         }
     }
@@ -66,15 +79,19 @@ pub fn my_decode_token<T: DeserializeOwned>(token: &str, validation: &Validation
 
 /// Try to authenticate via JWT cookie and check if user is admin
 pub fn try_jwt_cookie_auth(req: &Request<'_>, validation: &Validation) -> Result<Claims> {
+    info!("try_jwt_cookie_auth called");
     if let Some(jwt_cookie) = req.cookies().get("jwt") {
+        info!("Found JWT cookie, attempting to decode...");
         let token = jwt_cookie.value();
         let claims = my_decode_token::<Claims>(token, validation)?;
         if claims.is_admin() {
+            info!("JWT cookie auth successful - user is admin");
             return Ok(claims);
         } else {
             return Err(anyhow!("User is not an admin"));
         }
     }
+    info!("No JWT cookie found");
     Err(anyhow!("JWT not found in cookies"))
 }
 
