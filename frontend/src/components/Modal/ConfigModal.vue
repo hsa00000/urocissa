@@ -202,7 +202,14 @@ const settings = reactive<AppConfig>({
   authKey: '',
   discordHookUrl: '',
   syncPaths: [],
-  uploadLimitMb: 2048
+  uploadLimitMb: 2048,
+  address: '0.0.0.0',
+  port: 5673,
+  limits: {
+    json: '10MiB',
+    file: '10GiB',
+    'data-form': '10GiB'
+  }
 })
 
 const rules = {
