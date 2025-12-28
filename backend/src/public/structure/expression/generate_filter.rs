@@ -76,32 +76,40 @@ impl Expression {
             Expression::Model(model) => {
                 let model_lower = model.to_ascii_lowercase();
                 Box::new(move |abstract_data: &AbstractData| match abstract_data {
-                    AbstractData::Image(img) => {
-                        img.metadata.exif_vec.get("Model").map_or(false, |model_of_exif| {
+                    AbstractData::Image(img) => img
+                        .metadata
+                        .exif_vec
+                        .get("Model")
+                        .map_or(false, |model_of_exif| {
                             model_of_exif.to_ascii_lowercase().contains(&model_lower)
-                        })
-                    }
-                    AbstractData::Video(vid) => {
-                        vid.metadata.exif_vec.get("Model").map_or(false, |model_of_exif| {
+                        }),
+                    AbstractData::Video(vid) => vid
+                        .metadata
+                        .exif_vec
+                        .get("Model")
+                        .map_or(false, |model_of_exif| {
                             model_of_exif.to_ascii_lowercase().contains(&model_lower)
-                        })
-                    }
+                        }),
                     AbstractData::Album(_) => false,
                 })
             }
             Expression::Make(make) => {
                 let make_lower = make.to_ascii_lowercase();
                 Box::new(move |abstract_data: &AbstractData| match abstract_data {
-                    AbstractData::Image(img) => {
-                        img.metadata.exif_vec.get("Make").map_or(false, |make_of_exif| {
+                    AbstractData::Image(img) => img
+                        .metadata
+                        .exif_vec
+                        .get("Make")
+                        .map_or(false, |make_of_exif| {
                             make_of_exif.to_ascii_lowercase().contains(&make_lower)
-                        })
-                    }
-                    AbstractData::Video(vid) => {
-                        vid.metadata.exif_vec.get("Make").map_or(false, |make_of_exif| {
+                        }),
+                    AbstractData::Video(vid) => vid
+                        .metadata
+                        .exif_vec
+                        .get("Make")
+                        .map_or(false, |make_of_exif| {
                             make_of_exif.to_ascii_lowercase().contains(&make_lower)
-                        })
-                    }
+                        }),
                     AbstractData::Album(_) => false,
                 })
             }
@@ -130,14 +138,27 @@ impl Expression {
                     AbstractData::Image(img) => {
                         img.object.tags.contains(&any_identifier)
                             || "image".contains(&any_identifier)
-                            || img.object.id.as_str().to_ascii_lowercase().contains(&any_lower)
+                            || img
+                                .object
+                                .id
+                                .as_str()
+                                .to_ascii_lowercase()
+                                .contains(&any_lower)
                             || img.metadata.ext.to_ascii_lowercase().contains(&any_lower)
-                            || img.metadata.exif_vec.get("Make").map_or(false, |make_of_exif| {
-                                make_of_exif.to_ascii_lowercase().contains(&any_lower)
-                            })
-                            || img.metadata.exif_vec.get("Model").map_or(false, |model_of_exif| {
-                                model_of_exif.to_ascii_lowercase().contains(&any_lower)
-                            })
+                            || img
+                                .metadata
+                                .exif_vec
+                                .get("Make")
+                                .map_or(false, |make_of_exif| {
+                                    make_of_exif.to_ascii_lowercase().contains(&any_lower)
+                                })
+                            || img
+                                .metadata
+                                .exif_vec
+                                .get("Model")
+                                .map_or(false, |model_of_exif| {
+                                    model_of_exif.to_ascii_lowercase().contains(&any_lower)
+                                })
                             || img.metadata.alias.iter().any(|file_modify| {
                                 file_modify.file.to_ascii_lowercase().contains(&any_lower)
                             })
@@ -145,14 +166,27 @@ impl Expression {
                     AbstractData::Video(vid) => {
                         vid.object.tags.contains(&any_identifier)
                             || "video".contains(&any_identifier)
-                            || vid.object.id.as_str().to_ascii_lowercase().contains(&any_lower)
+                            || vid
+                                .object
+                                .id
+                                .as_str()
+                                .to_ascii_lowercase()
+                                .contains(&any_lower)
                             || vid.metadata.ext.to_ascii_lowercase().contains(&any_lower)
-                            || vid.metadata.exif_vec.get("Make").map_or(false, |make_of_exif| {
-                                make_of_exif.to_ascii_lowercase().contains(&any_lower)
-                            })
-                            || vid.metadata.exif_vec.get("Model").map_or(false, |model_of_exif| {
-                                model_of_exif.to_ascii_lowercase().contains(&any_lower)
-                            })
+                            || vid
+                                .metadata
+                                .exif_vec
+                                .get("Make")
+                                .map_or(false, |make_of_exif| {
+                                    make_of_exif.to_ascii_lowercase().contains(&any_lower)
+                                })
+                            || vid
+                                .metadata
+                                .exif_vec
+                                .get("Model")
+                                .map_or(false, |model_of_exif| {
+                                    model_of_exif.to_ascii_lowercase().contains(&any_lower)
+                                })
                             || vid.metadata.alias.iter().any(|file_modify| {
                                 file_modify.file.to_ascii_lowercase().contains(&any_lower)
                             })
@@ -160,7 +194,12 @@ impl Expression {
                     AbstractData::Album(alb) => {
                         alb.object.tags.contains(&any_identifier)
                             || "album".to_ascii_lowercase().contains(&any_lower)
-                            || alb.object.id.as_str().to_ascii_lowercase().contains(&any_lower)
+                            || alb
+                                .object
+                                .id
+                                .as_str()
+                                .to_ascii_lowercase()
+                                .contains(&any_lower)
                     }
                 })
             }
