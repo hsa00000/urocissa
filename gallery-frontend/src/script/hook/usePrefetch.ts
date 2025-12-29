@@ -1,11 +1,8 @@
-import { RouteLocationNormalizedLoadedGeneric } from 'vue-router'
 import { watchDebounced } from '@vueuse/core'
 import { Ref } from 'vue'
 import { IsolationId, PrefetchReturn } from '@type/types'
 import { prefetch } from '@/api/fetchPrefetch'
-import axios from 'axios'
-import { PublicConfigSchema } from '@type/schemas'
-import { useSettingsStore } from '@/store/settingsStore'
+import { useConfigStore } from '@/store/configStore'
 import { usePrefetchStore } from '@/store/prefetchStore'
 import { useInitializedStore } from '@/store/initializedStore'
 import { useTagStore } from '@/store/tagStore'
@@ -13,7 +10,7 @@ import { useAlbumStore } from '@/store/albumStore'
 import { fetchScrollbar } from '@/api/fetchScrollbar'
 import { useShareStore } from '@/store/shareStore'
 import { useTokenStore } from '@/store/tokenStore'
-import { tryWithMessageStore } from '@/script/utils/try_catch'
+import { RouteLocationNormalizedLoadedGeneric } from 'vue-router'
 
 export function usePrefetch(
   filterJsonString: string | null,
@@ -25,8 +22,10 @@ export function usePrefetch(
     windowWidth,
     async () => {
       if (windowWidth.value > 0) {
-        const priorityId = route.query.priorityId as string
-        const reverse = route.query.reverse as string
+        // Note: Check if 'priorityId' vs 'priority_id' matches your route definition in App.vue
+        const priorityId =
+          typeof route.query.priority_id === 'string' ? route.query.priority_id : ''
+        const reverse = typeof route.query.reverse === 'string' ? route.query.reverse : ''
         let locate: string | null = null
 
         // add locate to query string if user enter view page directly
@@ -57,7 +56,7 @@ async function handlePrefetchReturn(
   isolationId: IsolationId,
   route: RouteLocationNormalizedLoadedGeneric
 ) {
-  const settingsStore = useSettingsStore(isolationId)
+  const configStore = useConfigStore(isolationId)
   const prefetchStore = usePrefetchStore(isolationId)
   const initializedStore = useInitializedStore(isolationId)
   const tokenStore = useTokenStore(isolationId)
@@ -65,11 +64,9 @@ async function handlePrefetchReturn(
   const albumStore = useAlbumStore('mainId')
   const tagStore = useTagStore('mainId')
 
-  await tryWithMessageStore(isolationId, async () => {
-    const response = await axios.get('/get/config')
-    const publicConfig = PublicConfigSchema.parse(response.data)
-    settingsStore.disableImg = publicConfig.disableImg
-  })
+  // Refactor: Restore config fetch using the store action
+  // This ensures config is loaded (if not already) before we proceed
+  await configStore.fetchConfig()
 
   const prefetch = prefetchReturn.prefetch
   const token = prefetchReturn.token

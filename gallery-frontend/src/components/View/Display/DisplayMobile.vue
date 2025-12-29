@@ -26,7 +26,7 @@
               v-if="
                 previousAbstractData &&
                 (previousAbstractData.type === 'image' || previousAbstractData.type === 'video') &&
-                !settingsStore.disableImg
+                !configStore.disableImg
               "
               :index="index - 1"
               :hash="previousAbstractData.id"
@@ -38,7 +38,7 @@
               v-if="
                 previousAbstractData &&
                 previousAbstractData.type === 'album' &&
-                !settingsStore.disableImg
+                !configStore.disableImg
               "
               :index="index - 1"
               :album="previousAbstractData"
@@ -54,7 +54,7 @@
               v-if="
                 abstractData &&
                 ['image', 'video'].includes(abstractData.type) &&
-                !settingsStore.disableImg
+                !configStore.disableImg
               "
               :index="index"
               :hash="hash"
@@ -64,7 +64,7 @@
             />
             <ViewPageDisplayAlbum
               v-if="
-                abstractData && ['album'].includes(abstractData.type) && !settingsStore.disableImg
+                abstractData && ['album'].includes(abstractData.type) && !configStore.disableImg
               "
               :index="index"
               :album="abstractData as unknown as GalleryAlbum"
@@ -80,7 +80,7 @@
               v-if="
                 nextAbstractData &&
                 (nextAbstractData.type === 'image' || nextAbstractData.type === 'video') &&
-                !settingsStore.disableImg
+                !configStore.disableImg
               "
               :index="index + 1"
               :hash="nextAbstractData.id"
@@ -90,7 +90,7 @@
             />
             <ViewPageDisplayAlbum
               v-if="
-                nextAbstractData && nextAbstractData.type === 'album' && !settingsStore.disableImg
+                nextAbstractData && nextAbstractData.type === 'album' && !configStore.disableImg
               "
               :index="index + 1"
               :album="nextAbstractData"
@@ -120,7 +120,7 @@
             v-if="
               previousAbstractData &&
               (previousAbstractData.type === 'image' || previousAbstractData.type === 'video') &&
-              !settingsStore.disableImg
+              !configStore.disableImg
             "
             :index="index - 1"
             :hash="previousAbstractData.id"
@@ -132,7 +132,7 @@
             v-if="
               previousAbstractData &&
               previousAbstractData.type === 'album' &&
-              !settingsStore.disableImg
+              !configStore.disableImg
             "
             :index="index - 1"
             :album="previousAbstractData"
@@ -147,7 +147,7 @@
             v-if="
               abstractData &&
               ['image', 'video'].includes(abstractData.type) &&
-              !settingsStore.disableImg
+              !configStore.disableImg
             "
             :index="index"
             :hash="hash"
@@ -156,9 +156,7 @@
             :enable-watch="true"
           />
           <ViewPageDisplayAlbum
-            v-if="
-              abstractData && ['album'].includes(abstractData.type) && !settingsStore.disableImg
-            "
+            v-if="abstractData && ['album'].includes(abstractData.type) && !configStore.disableImg"
             :index="index"
             :album="abstractData as GalleryAlbum"
           />
@@ -172,7 +170,7 @@
             v-if="
               nextAbstractData &&
               (nextAbstractData.type === 'image' || nextAbstractData.type === 'video') &&
-              !settingsStore.disableImg
+              !configStore.disableImg
             "
             :index="index + 1"
             :hash="nextAbstractData.id"
@@ -181,9 +179,7 @@
             :enable-watch="false"
           />
           <ViewPageDisplayAlbum
-            v-if="
-              nextAbstractData && nextAbstractData.type === 'album' && !settingsStore.disableImg
-            "
+            v-if="nextAbstractData && nextAbstractData.type === 'album' && !configStore.disableImg"
             :index="index + 1"
             :album="nextAbstractData"
           />
@@ -199,7 +195,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useDataStore } from '@/store/dataStore'
 import ViewPageDisplayDatabase from './DisplayDatabase.vue'
 import ViewPageDisplayAlbum from './DisplayAlbum.vue'
-import { useSettingsStore } from '@/store/settingsStore'
+import { useConfigStore } from '@/store/configStore'
 import { useModalStore } from '@/store/modalStore'
 import { Manipulation, Zoom } from 'swiper/modules'
 import 'swiper/css'
@@ -220,7 +216,7 @@ const props = defineProps<{
   nextPage: Record<string, unknown> | undefined
 }>()
 
-const settingsStore = useSettingsStore(props.isolationId)
+const configStore = useConfigStore(props.isolationId)
 const dataStore = useDataStore(props.isolationId)
 const route = useRoute()
 const router = useRouter()
@@ -236,7 +232,7 @@ const currentSlideIndex = computed(() => (props.previousHash !== undefined ? 1 :
 function canHandleNav(): boolean {
   const modalStore = useModalStore('mainId')
   return (
-    settingsStore.isMobile &&
+    configStore.isMobile &&
     ((route.meta.level === 2 && props.isolationId === 'mainId') ||
       (route.meta.level === 4 && props.isolationId === 'subId')) &&
     !modalStore.showEditTagsModal
@@ -295,7 +291,7 @@ function onSlideChange(swiper: SwiperType) {
 watch(
   () => props.index,
   () => {
-    if (swiperInstance.value && settingsStore.isMobile) {
+    if (swiperInstance.value && configStore.isMobile) {
       swiperInstance.value.slideTo(currentSlideIndex.value, 0)
     }
   }

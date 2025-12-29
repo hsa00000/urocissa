@@ -7,8 +7,12 @@
         <v-btn icon="mdi-close" variant="text" @click="close"></v-btn>
       </v-toolbar>
 
-      <v-card-text class="pa-0">
-        <v-form ref="form" v-model="valid" @submit.prevent="save">
+      <v-card-text class="pa-0 position-relative">
+        <v-overlay :model-value="loading" contained class="align-center justify-center" persistent>
+          <v-progress-circular indeterminate color="primary"></v-progress-circular>
+        </v-overlay>
+
+        <v-form ref="form" v-model="valid" @submit.prevent="save" :disabled="loading">
           <v-tabs v-model="tab" color="primary" align-tabs="start">
             <v-tab value="general">General</v-tab>
             <v-tab value="security">Security</v-tab>
@@ -21,7 +25,7 @@
                 <v-list-subheader>Behavior</v-list-subheader>
                 <v-list-item>
                   <template v-slot:prepend>
-                    <v-icon :icon="settings.readOnlyMode ? 'mdi-lock' : 'mdi-pencil'"></v-icon>
+                    <v-icon :icon="localSettings.readOnlyMode ? 'mdi-lock' : 'mdi-pencil'"></v-icon>
                   </template>
                   <v-list-item-title>Read Only Mode</v-list-item-title>
                   <v-list-item-subtitle
@@ -29,7 +33,7 @@
                   >
                   <template v-slot:append>
                     <v-switch
-                      v-model="settings.readOnlyMode"
+                      v-model="localSettings.readOnlyMode"
                       color="primary"
                       hide-details
                       inset
@@ -41,7 +45,9 @@
 
                 <v-list-item>
                   <template v-slot:prepend>
-                    <v-icon :icon="settings.disableImg ? 'mdi-image-off' : 'mdi-image'"></v-icon>
+                    <v-icon
+                      :icon="localSettings.disableImg ? 'mdi-image-off' : 'mdi-image'"
+                    ></v-icon>
                   </template>
                   <v-list-item-title>Disable Image Processing</v-list-item-title>
                   <v-list-item-subtitle
@@ -49,7 +55,7 @@
                   >
                   <template v-slot:append>
                     <v-switch
-                      v-model="settings.disableImg"
+                      v-model="localSettings.disableImg"
                       color="warning"
                       hide-details
                       inset
@@ -61,7 +67,7 @@
 
                 <v-list-subheader>Integrations</v-list-subheader>
                 <v-text-field
-                  v-model="settings.discordHookUrl"
+                  v-model="localSettings.discordHookUrl"
                   label="Discord Webhook URL"
                   prepend-inner-icon="mdi-discord"
                   variant="outlined"
@@ -83,7 +89,7 @@
               ></v-alert>
 
               <v-text-field
-                v-model="settings.password"
+                v-model="localSettings.password"
                 label="Application Password"
                 :type="showPassword ? 'text' : 'password'"
                 :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
@@ -95,7 +101,7 @@
               ></v-text-field>
 
               <v-text-field
-                v-model="settings.authKey"
+                v-model="localSettings.authKey"
                 label="JWT Authentication Key"
                 prepend-inner-icon="mdi-shield-key"
                 variant="outlined"
@@ -116,7 +122,7 @@
               </v-alert>
 
               <v-combobox
-                v-model="settings.syncPaths"
+                v-model="localSettings.syncPaths"
                 label="Synchronization Paths"
                 placeholder="Type a path and press Enter"
                 chips
@@ -137,7 +143,7 @@
                     {{ item.title }}
                   </v-chip>
                   <span v-if="index === 5" class="text-grey text-caption align-self-center ml-2">
-                    (+{{ settings.syncPaths.length - 5 }} others)
+                    (+{{ localSettings.syncPaths.length - 5 }} others)
                   </span>
                 </template>
                 <template v-slot:no-data>
@@ -150,7 +156,7 @@
               </v-combobox>
 
               <v-text-field
-                v-model.number="settings.uploadLimitMb"
+                v-model.number="localSettings.uploadLimitMb"
                 label="Upload Size Limit (MB)"
                 prepend-inner-icon="mdi-upload"
                 variant="outlined"
@@ -167,7 +173,7 @@
       <v-divider></v-divider>
 
       <v-card-actions>
-        <v-btn variant="text" @click="fetchData">Reset</v-btn>
+        <v-btn variant="text" @click="resetToStore" :disabled="loading">Reset</v-btn>
         <v-spacer></v-spacer>
         <v-btn variant="text" @click="close">Cancel</v-btn>
         <v-btn
@@ -175,7 +181,7 @@
           variant="elevated"
           @click="save"
           :loading="loading"
-          :disabled="!valid"
+          :disabled="!valid || loading"
         >
           Save Changes
         </v-btn>
@@ -187,71 +193,75 @@
 <script setup lang="ts">
 import { ref, reactive, watch } from 'vue'
 import { useModalStore } from '@/store/modalStore'
-import { getConfig, updateConfig, type AppConfig } from '@/api/config'
+import { useConfigStore } from '@/store/configStore'
+import type { AppConfig } from '@/api/config'
 
 const modalStore = useModalStore('mainId')
+const configStore = useConfigStore('mainId')
 const tab = ref('general')
 const loading = ref(false)
 const valid = ref(false)
 const showPassword = ref(false)
 
-const settings = reactive<AppConfig>({
+// 用於表單操作的本地副本
+// 雖然給了初始值，但在 loading 結束前因為有 v-overlay 擋住，使用者看不到錯誤的預設值
+const localSettings = reactive<AppConfig>({
   readOnlyMode: false,
   disableImg: false,
   password: '',
   authKey: '',
   discordHookUrl: '',
   syncPaths: [],
-  uploadLimitMb: 2048,
-  address: '0.0.0.0',
-  port: 5673,
-  limits: {
-    json: '10MiB',
-    file: '10GiB',
-    'data-form': '10GiB'
-  }
+  uploadLimitMb: 0,
+  address: '',
+  port: 0,
+  limits: {}
 })
 
 const rules = {
   required: (v: string) => !!v || 'This field is required'
 }
 
-// Initialization
-const fetchData = async () => {
-  loading.value = true
-  try {
-    console.log('try here')
-
-    const data = await getConfig()
-    Object.assign(settings, data)
-  } catch (e) {
-    console.error('Failed to load settings', e)
-  } finally {
-    loading.value = false
+const syncLocalWithStore = () => {
+  if (configStore.config) {
+    // Deep copy 以切斷與 Store 的 reference 連結
+    Object.assign(localSettings, JSON.parse(JSON.stringify(configStore.config)))
   }
 }
 
-// Watch modal open to fetch data
+// 初始化資料
+const initData = async () => {
+  loading.value = true
+  // 確保 store 有資料
+  await configStore.fetchConfig()
+  // 同步到本地變數
+  syncLocalWithStore()
+  loading.value = false
+}
+
+const resetToStore = () => {
+  syncLocalWithStore()
+}
+
+// Watch modal open to fetch/sync data
 watch(
   () => modalStore.showConfigModal,
   (val) => {
-    if (val) fetchData()
+    if (val) initData()
   },
   { immediate: true }
 )
 
 const removePath = (path: string) => {
-  const index = settings.syncPaths.indexOf(path)
-  if (index >= 0) settings.syncPaths.splice(index, 1)
+  const index = localSettings.syncPaths.indexOf(path)
+  if (index >= 0) localSettings.syncPaths.splice(index, 1)
 }
 
 const save = async () => {
   loading.value = true
   try {
-    await updateConfig(settings)
+    await configStore.updateConfig(localSettings)
     modalStore.showConfigModal = false
-  } catch (e) {
-    console.error('Failed to save settings', e)
   } finally {
     loading.value = false
   }

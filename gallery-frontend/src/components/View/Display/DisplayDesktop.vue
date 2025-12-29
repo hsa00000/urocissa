@@ -5,14 +5,14 @@
       :next-hash="nextHash"
       :previous-page="previousPage"
       :next-page="nextPage"
-      :show="!settingsStore.isMobile"
+      :show="!configStore.isMobile"
     />
     <div class="h-100 w-100">
       <ViewPageDisplayDatabase
         v-if="
           abstractData &&
           (abstractData.type === 'image' || abstractData.type === 'video') &&
-          !settingsStore.disableImg
+          !configStore.disableImg
         "
         :index="index"
         :hash="hash"
@@ -21,7 +21,7 @@
         :enable-watch="true"
       />
       <ViewPageDisplayAlbum
-        v-if="abstractData && abstractData.type === 'album' && !settingsStore.disableImg"
+        v-if="abstractData && abstractData.type === 'album' && !configStore.disableImg"
         :index="index"
         :album="abstractData"
       />
@@ -30,7 +30,7 @@
 </template>
 
 <script setup lang="ts">
-import { useSettingsStore } from '@/store/settingsStore'
+import { useConfigStore } from '@/store/configStore'
 import ViewPageDisplayDatabase from './DisplayDatabase.vue'
 import ViewPageDisplayAlbum from './DisplayAlbum.vue'
 import NavigationOverlays from './NavigationOverlays.vue'
@@ -47,7 +47,7 @@ const props = defineProps<{
   nextPage: Record<string, unknown> | undefined
 }>()
 
-const settingsStore = useSettingsStore(props.isolationId)
+const configStore = useConfigStore(props.isolationId)
 </script>
 
 <style scoped>

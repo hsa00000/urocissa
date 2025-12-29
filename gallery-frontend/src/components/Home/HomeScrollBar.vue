@@ -74,7 +74,7 @@
             v-if="
               hoverLabelDate !== undefined &&
               scrollbarRef &&
-              (settingsStore.isMobile
+              (configStore.isMobile
                 ? scrollbarStore.isDragging
                 : scrollbarStore.isHovering || scrollbarStore.isDragging)
             "
@@ -111,7 +111,7 @@ import { IsolationId, ScrollbarData } from '@type/types'
 import { fixedBigRowHeight, layoutBatchNumber, scrollBarWidth } from '@/type/constants'
 import { useScrollTopStore } from '@/store/scrollTopStore'
 import { getInjectValue, getScrollUpperBound } from '@utils/getter'
-import { useSettingsStore } from '@/store/settingsStore'
+import { useConfigStore } from '@/store/configStore'
 const isScrolling = ref(false)
 const hoverLabelRowIndex: Ref<number | undefined> = ref(undefined)
 const currentDateChipIndex = ref(0)
@@ -129,7 +129,7 @@ const rowStore = useRowStore(props.isolationId)
 const offsetStore = useOffsetStore(props.isolationId)
 const queueStore = useQueueStore(props.isolationId)
 const windowHeight = getInjectValue<Ref<number>>('windowHeight')
-const settingsStore = useSettingsStore('mainId')
+const configStore = useConfigStore('mainId')
 
 const reachBottom = computed(() => {
   return (
