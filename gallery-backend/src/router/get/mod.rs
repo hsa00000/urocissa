@@ -1,5 +1,7 @@
+// src/router/get/mod.rs
 use rocket::Route;
 
+pub mod get_config;
 pub mod get_data;
 pub mod get_export;
 pub mod get_img;
@@ -44,6 +46,8 @@ pub fn generate_get_routes() -> Vec<Route> {
         get_page::service_worker,
         get_page::sregister_sw,
         get_prefetch::prefetch,
-        get_export::get_export
+        get_export::get_export,
+        get_config::get_config_handler,
+        get_config::export_config_handler
     ]
 }

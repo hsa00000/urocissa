@@ -1,6 +1,8 @@
+// src/router/put/mod.rs
 use rocket::Route;
 
 pub mod edit_album;
+pub mod edit_config;
 pub mod edit_description;
 pub mod edit_flags;
 pub mod edit_share;
@@ -21,5 +23,6 @@ pub fn generate_put_routes() -> Vec<Route> {
         random::generate_random_data,
         regenerate_thumbnail::regenerate_thumbnail_with_frame,
         reindex::reindex,
+        edit_config::update_config_handler
     ]
 }

@@ -1,5 +1,5 @@
+// src/router/mod.rs
 pub mod claims;
-pub mod config;
 pub mod delete;
 pub mod fairing;
 pub mod get;
@@ -15,10 +15,10 @@ use std::io::Cursor;
 // Refactor: Function name changed
 pub fn generate_config_routes() -> Vec<Route> {
     routes![
-        config::get_config_handler,
-        config::update_config_handler,
-        config::export_config_handler,
-        config::import_config_handler,
+        get::get_config::get_config_handler,
+        get::get_config::export_config_handler,
+        put::edit_config::update_config_handler,
+        post::import_config::import_config_handler,
     ]
 }
 
