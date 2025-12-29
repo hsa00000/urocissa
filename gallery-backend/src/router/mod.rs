@@ -5,22 +5,11 @@ pub mod fairing;
 pub mod get;
 pub mod post;
 pub mod put;
-use rocket::Route;
 use rocket::http::{ContentType, Status};
 use rocket::request::Request;
 use rocket::response::{self, Responder, Response};
 use serde_json::json;
 use std::io::Cursor;
-
-// Refactor: Function name changed
-pub fn generate_config_routes() -> Vec<Route> {
-    routes![
-        get::get_config::get_config_handler,
-        get::get_config::export_config_handler,
-        put::edit_config::update_config_handler,
-        post::import_config::import_config_handler,
-    ]
-}
 
 #[derive(Debug)]
 pub struct AppError {

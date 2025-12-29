@@ -1,3 +1,4 @@
+// src/router/fairing/guard_auth.rs
 use rocket::Request;
 use rocket::http::Status;
 use rocket::request::{FromRequest, Outcome};

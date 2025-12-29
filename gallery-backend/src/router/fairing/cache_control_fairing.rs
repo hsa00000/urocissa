@@ -1,3 +1,4 @@
+// src/router/fairing/cache_control_fairing.rs
 use rocket::fairing::AdHoc;
 pub fn cache_control_fairing() -> AdHoc {
     AdHoc::on_response("Add Cache-Control header", |req, res| {

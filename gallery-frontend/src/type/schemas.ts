@@ -1,3 +1,4 @@
+// frontend/src/type/schemas.ts
 import { z } from 'zod'
 import { fixedBigRowHeight } from '@/type/constants'
 
@@ -203,8 +204,14 @@ export const SubRowSchema = z.object({
 })
 
 export const PublicConfigSchema = z.object({
+  address: z.string(),
+  port: z.number(),
+  limits: z.record(z.string(), z.string()), // HashMap<String, String>
+  syncPaths: z.array(z.string()), // HashSet<PathBuf> deserializes to array
+  discordHookUrl: z.string().nullable().optional(),
   readOnlyMode: z.boolean(),
-  disableImg: z.boolean()
+  disableImg: z.boolean(),
+  uploadLimitMb: z.number()
 })
 
 export const TokenResponseSchema = z.object({

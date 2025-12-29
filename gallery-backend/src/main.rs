@@ -1,6 +1,15 @@
 #[macro_use]
 extern crate rocket;
 use anyhow::Result;
+use figment::{
+    Figment,
+    providers::{Format, Json},
+};
+use redb::{ReadableTable, ReadableTableMetadata};
+use rocket::data::{ByteUnit, Limits}; // Add ByteUnit import
+use rocket::fs::FileServer;
+use std::thread;
+use std::time::Instant;
 
 mod migration;
 mod operations;
@@ -13,36 +22,57 @@ mod workflow;
 use crate::process::initialization::initialize;
 use crate::public::constant::runtime::{INDEX_RUNTIME, ROCKET_RUNTIME};
 use crate::public::error_data::handle_error;
+use crate::public::structure::config::AppConfig;
 use crate::public::tui::{DASHBOARD, tui_task};
 use crate::tasks::BATCH_COORDINATOR;
 use crate::tasks::batcher::start_watcher::StartWatcherTask;
 use crate::tasks::batcher::update_tree::UpdateTreeTask;
 use crate::tasks::looper::start_expire_check_loop;
-
-use figment::{
-    Figment,
-    providers::{Format, Json},
-};
 use public::constant::redb::DATA_TABLE;
 use public::db::tree::TREE;
 use public::structure::abstract_data::AbstractData;
-use redb::{ReadableTable, ReadableTableMetadata};
-use rocket::fs::FileServer;
 use router::fairing::cache_control_fairing::cache_control_fairing;
 use router::fairing::generate_fairing_routes;
-use router::generate_config_routes;
 use router::{
     delete::generate_delete_routes, get::generate_get_routes, post::generate_post_routes,
     put::generate_put_routes,
-};
-use std::thread;
-use std::time::Instant;
+}; // Add import for existing AppConfig
 
 /// Configures the Rocket instance with routes, fairings, and file servers.
 async fn build_rocket() -> rocket::Rocket<rocket::Build> {
-    let config = Figment::from(rocket::Config::default()).merge(Json::file("config.json"));
+    // Modified: Load config.json into Figment for extraction
+    let figment = Figment::new().merge(Json::file("config.json"));
 
-    rocket::custom(config)
+    // New: Extract and validate config with type checking
+    let app_config: AppConfig = figment
+        .extract()
+        .expect("config.json format error or type mismatch");
+
+    // New: Convert human-readable limits to Rocket's Limits (using HashMap from config.rs)
+    let get_limit = |key: &str, default: &str| -> ByteUnit {
+        let val = app_config
+            .public
+            .limits
+            .get(key)
+            .map(|s| s.as_str())
+            .unwrap_or(default);
+        parse_limit(val)
+    };
+
+    let limits = Limits::default()
+        .limit("form", get_limit("data-form", "10GiB"))
+        .limit("file", get_limit("file", "10GiB"))
+        .limit("json", get_limit("json", "10MiB"));
+
+    // New: Build Rocket config manually with extracted values
+    let rocket_config = rocket::Config::figment()
+        .merge(("address", &app_config.public.address))
+        .merge(("port", app_config.public.port))
+        .merge(("limits", limits));
+
+    // Modified: Use custom config and manage AppConfig as state
+    rocket::custom(rocket_config)
+        .manage(app_config)
         .attach(cache_control_fairing())
         .mount(
             "/assets",
@@ -53,7 +83,18 @@ async fn build_rocket() -> rocket::Rocket<rocket::Build> {
         .mount("/", generate_put_routes())
         .mount("/", generate_delete_routes())
         .mount("/", generate_fairing_routes())
-        .mount("/", generate_config_routes())
+}
+
+// New: Helper function to parse limit strings (e.g., "10GiB") to bytes
+fn parse_limit(s: &str) -> ByteUnit {
+    let bytes = if let Some(gib) = s.strip_suffix("GiB") {
+        gib.parse::<u64>().unwrap_or(10) * 1024 * 1024 * 1024
+    } else if let Some(mib) = s.strip_suffix("MiB") {
+        mib.parse::<u64>().unwrap_or(10) * 1024 * 1024
+    } else {
+        s.parse::<u64>().unwrap_or(10 * 1024 * 1024 * 1024) // Default to 10GiB
+    };
+    ByteUnit::from(bytes)
 }
 
 fn main() -> Result<()> {

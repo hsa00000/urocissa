@@ -65,7 +65,7 @@ fn start_watcher_task_internal() -> Result<()> {
     }
 
     // Get paths from config system
-    let sync_paths = APP_CONFIG.get().unwrap().read().unwrap().sync_paths.clone();
+    let sync_paths = APP_CONFIG.get().unwrap().read().unwrap().public.sync_paths.clone();
 
     // Build the watcher.
     let mut watcher = new_watcher()?;

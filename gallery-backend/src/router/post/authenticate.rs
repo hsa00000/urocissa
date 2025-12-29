@@ -9,7 +9,7 @@ use crate::router::claims::claims::Claims;
 pub async fn authenticate(password: Json<String>) -> AppResult<Json<String>> {
     let input_password = password.into_inner();
 
-    let current_password = APP_CONFIG.get().unwrap().read().unwrap().password.clone();
+    let current_password = APP_CONFIG.get().unwrap().read().unwrap().private.password.clone();
 
     if input_password == current_password {
         let token = Claims::new_admin().encode();

@@ -1,3 +1,5 @@
+
+// frontend/src/type/schemas.ts
 //! Database Migration Module
 //!
 //! Handles the migration from redb 2.6.x (Old Schema) to redb 3.1.x (New AbstractData Schema).
@@ -486,10 +488,13 @@ pub fn migrate() -> Result<()> {
 // Config Migration Logic
 // ==================================================================================
 
-/// Reads legacy configuration sources (config.json, .env) and constructs a modern `AppConfig`.
+/// Reads legacy configuration sources (config.json, .env, env vars) and constructs 
+/// the new nested `AppConfig` (PublicConfig + PrivateConfig).
 pub fn construct_migrated_config() -> AppConfig {
     let mut config = AppConfig::default();
 
+    // 1. Migrate from old `config.json`
+    // Legacy files were flat. We map recognized fields to `config.public`.
     if let Ok(file) = File::open("config.json") {
         #[derive(serde::Deserialize)]
         struct LegacyConfigJson {
@@ -497,57 +502,61 @@ pub fn construct_migrated_config() -> AppConfig {
             read_only_mode: bool,
             #[serde(default)]
             disable_img: bool,
+            // Add other legacy fields here if they existed in the old json
         }
 
-        // We only care about specific fields; ignore unknown fields from other frameworks (e.g., Rocket)
         if let Ok(old) = serde_json::from_reader::<_, LegacyConfigJson>(file) {
-            config.read_only_mode = old.read_only_mode;
-            config.disable_img = old.disable_img;
-            println!("Migrated settings from legacy config.json");
+            config.public.read_only_mode = old.read_only_mode;
+            config.public.disable_img = old.disable_img;
+            println!("Migrated settings from legacy config.json into PublicConfig");
         }
     }
 
+    // 2. Migrate from Environment Variables (.env)
     dotenv().ok();
 
     if let Ok(pwd) = std::env::var("PASSWORD") {
         if !pwd.trim().is_empty() {
-            config.password = pwd;
-            println!("Migrated PASSWORD from environment");
+            // Sensitive -> PrivateConfig
+            config.private.password = pwd;
+            println!("Migrated PASSWORD from environment into PrivateConfig");
         }
     }
 
     if let Ok(key) = std::env::var("AUTH_KEY") {
         if !key.trim().is_empty() {
-            config.auth_key = Some(key);
-            println!("Migrated AUTH_KEY from environment");
+            // Sensitive -> PrivateConfig
+            config.private.auth_key = Some(key);
+            println!("Migrated AUTH_KEY from environment into PrivateConfig");
         }
     }
 
     if let Ok(hook) = std::env::var("DISCORD_HOOK_URL") {
         if !hook.trim().is_empty() {
-            config.discord_hook_url = Some(hook);
-            println!("Migrated DISCORD_HOOK_URL from environment");
+            // Non-sensitive -> PublicConfig
+            config.public.discord_hook_url = Some(hook);
+            println!("Migrated DISCORD_HOOK_URL from environment into PublicConfig");
         }
     }
 
+    // 3. Migrate Sync Paths
     if let Ok(sync_paths_str) = std::env::var("SYNC_PATH") {
         let mut count = 0;
         for path_str in sync_paths_str.split(',') {
             let path_str = path_str.trim();
             if !path_str.is_empty() {
-                config.sync_paths.insert(PathBuf::from(path_str));
+                config.public.sync_paths.insert(PathBuf::from(path_str));
                 count += 1;
             }
         }
         if count > 0 {
-            println!("Migrated {} sync paths from SYNC_PATH", count);
+            println!("Migrated {} sync paths from SYNC_PATH into PublicConfig", count);
         }
     }
 
     // Constraint: Prevent recursive syncing.
-    // Ensure the application's own upload directory is not included in the sync paths.
     if let Ok(upload_path) = fs::canonicalize(PathBuf::from("./upload")) {
-        config.sync_paths.retain(|p| match fs::canonicalize(p) {
+        config.public.sync_paths.retain(|p| match fs::canonicalize(p) {
             Ok(c) => c != upload_path,
             Err(_) => p != &upload_path,
         });

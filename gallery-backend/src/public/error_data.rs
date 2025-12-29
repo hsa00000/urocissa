@@ -7,7 +7,7 @@ use crate::public::structure::config::APP_CONFIG;
 
 pub fn handle_error(error: Error) -> Error {
     error!("{:?}", error);
-    if let Some(url) = &APP_CONFIG.get().unwrap().read().unwrap().discord_hook_url {
+    if let Some(url) = &APP_CONFIG.get().unwrap().read().unwrap().public.discord_hook_url {
         send_discord_webhook(url, &error);
     }
     error

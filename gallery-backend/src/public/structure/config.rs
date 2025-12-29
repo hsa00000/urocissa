@@ -1,3 +1,5 @@
+// src/public/structure/config.rs
+
 use anyhow::Context;
 use base64::{Engine as _, engine::general_purpose};
 use rand::{TryRngCore, rngs::OsRng};
@@ -10,8 +12,6 @@ use std::sync::{OnceLock, RwLock};
 
 const CONFIG_FILE: &str = "config.json";
 
-/// Global fallback secret used when no `auth_key` is provided in the configuration.
-/// This value is ephemeral and regenerates on every application restart.
 pub static FALLBACK_SECRET_KEY: OnceLock<String> = OnceLock::new();
 
 fn generate_secret_key() -> String {
@@ -22,37 +22,36 @@ fn generate_secret_key() -> String {
     general_purpose::STANDARD.encode(secret)
 }
 
-/// Core application configuration.
+// --- New Split Structures ---
+
+/// Configuration safe to send to the frontend.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
-pub struct AppConfig {
-    // --- Rocket Settings ---
+pub struct PublicConfig {
     pub address: String,
     pub port: u16,
     pub limits: HashMap<String, String>,
-
-    // --- App Settings ---
-    /// Plain text administrator password.
-    pub password: String,
-
-    /// Directories to watch and sync.
     pub sync_paths: HashSet<PathBuf>,
-
-    /// JWT Secret for authentication.
-    /// If `None`, the application uses an ephemeral `FALLBACK_SECRET_KEY`.
-    pub auth_key: Option<String>,
-
-    /// Optional Discord Webhook URL for notifications.
     pub discord_hook_url: Option<String>,
-
-    /// If true, prevents file uploads and deletions.
     pub read_only_mode: bool,
-
-    /// If true, disables image processing features (files displayed as raw).
     pub disable_img: bool,
-
-    /// Upload size limit in Megabytes.
     pub upload_limit_mb: u64,
+}
+
+/// Sensitive configuration kept only on the backend.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct PrivateConfig {
+    pub password: String,
+    pub auth_key: Option<String>,
+}
+
+/// Root configuration struct.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct AppConfig {
+    pub public: PublicConfig,
+    pub private: PrivateConfig,
 }
 
 impl Default for AppConfig {
@@ -63,16 +62,20 @@ impl Default for AppConfig {
         limits.insert("data-form".to_string(), "10GiB".to_string());
 
         Self {
-            address: "0.0.0.0".to_string(),
-            port: 5673,
-            limits,
-            password: "password".to_string(),
-            sync_paths: HashSet::new(),
-            auth_key: None,
-            discord_hook_url: None,
-            read_only_mode: false,
-            disable_img: false,
-            upload_limit_mb: 2048,
+            public: PublicConfig {
+                address: "0.0.0.0".to_string(),
+                port: 5673,
+                limits,
+                sync_paths: HashSet::new(),
+                discord_hook_url: None,
+                read_only_mode: false,
+                disable_img: false,
+                upload_limit_mb: 2048,
+            },
+            private: PrivateConfig {
+                password: "password".to_string(),
+                auth_key: None,
+            },
         }
     }
 }
@@ -80,24 +83,17 @@ impl Default for AppConfig {
 pub static APP_CONFIG: OnceLock<RwLock<AppConfig>> = OnceLock::new();
 
 impl AppConfig {
-    /// Retrieves the active JWT secret.
-    /// Returns the configured `auth_key` or falls back to the ephemeral global secret.
     pub fn get_jwt_secret_key(&self) -> Vec<u8> {
-        match self.auth_key.as_ref() {
+        // Access via self.private
+        match self.private.auth_key.as_ref() {
             Some(auth_key) => auth_key.as_bytes().to_vec(),
-            None => {
-                // Determine logic: If the config doesn't have a key, we rely on the
-                // in-memory fallback. We use `get_or_init` here as a safety net
-                // to ensure a key always exists, even if `init()` wasn't called strictly sequentially.
-                FALLBACK_SECRET_KEY
-                    .get_or_init(generate_secret_key)
-                    .as_bytes()
-                    .to_vec()
-            }
+            None => FALLBACK_SECRET_KEY
+                .get_or_init(generate_secret_key)
+                .as_bytes()
+                .to_vec(),
         }
     }
 
-    /// Initializes the configuration system, handling migrations and global state setup.
     pub fn init() {
         let should_migrate = if Path::new(CONFIG_FILE).exists() {
             match fs::read_to_string(CONFIG_FILE) {
@@ -110,6 +106,7 @@ impl AppConfig {
 
         let config = if should_migrate {
             println!("Legacy configuration or missing file detected. Starting migration...");
+            // NOTE: Ensure construct_migrated_config returns the NEW AppConfig structure!
             let cfg = crate::migration::construct_migrated_config();
 
             if let Err(e) = Self::save_update(&cfg) {
@@ -117,7 +114,6 @@ impl AppConfig {
             } else {
                 crate::migration::cleanup_legacy_config_files();
             }
-
             println!(
                 "Migration completed. New configuration saved to {}",
                 CONFIG_FILE
@@ -128,14 +124,12 @@ impl AppConfig {
             Self::load_from_file()
         };
 
-        // If no auth_key is persisted, we must ensure an ephemeral key exists
-        // immediately so the app is usable without manual configuration.
-        if config.auth_key.is_none() {
+        if config.private.auth_key.is_none() {
             println!("No authKey found in config. Initializing ephemeral fallback key.");
             FALLBACK_SECRET_KEY.get_or_init(generate_secret_key);
         }
 
-        println!("Configuration: {:?}", config);
+        println!("Configuration loaded."); // Avoid printing secrets to log
 
         APP_CONFIG
             .set(RwLock::new(config))
@@ -166,7 +160,6 @@ impl AppConfig {
         }
     }
 
-    /// Persists new configuration to disk, updates memory, and triggers side effects (Watcher reload).
     pub fn update(new_config: AppConfig) -> anyhow::Result<()> {
         use crate::tasks::batcher::start_watcher::reload_watcher;
 
@@ -176,20 +169,13 @@ impl AppConfig {
 
         {
             let mut w = APP_CONFIG.get().unwrap().write().unwrap();
-
-            // Edge Case: If the user explicitly sets auth_key to null during runtime,
-            // we must ensure the fallback key is ready to take over immediately.
-            if new_config.auth_key.is_none() {
+            if new_config.private.auth_key.is_none() {
                 FALLBACK_SECRET_KEY.get_or_init(generate_secret_key);
             }
-
             *w = new_config.clone();
         }
 
-        // Side Effect: The file watcher must be restarted to reflect potential
-        // changes in `sync_paths`.
         reload_watcher();
-
         println!("Configuration updated successfully");
         Ok(())
     }
