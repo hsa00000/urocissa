@@ -22,10 +22,11 @@ pub struct DeleteList {
 #[delete("/delete/delete-data", format = "json", data = "<json_data>")]
 pub async fn delete_data(
     auth: GuardResult<GuardAuth>,
-    _read_only_mode: GuardReadOnlyMode,
+    read_only_mode: Result<GuardReadOnlyMode>,
     json_data: Json<DeleteList>,
 ) -> AppResult<()> {
     let _ = auth?;
+    let _ = read_only_mode?;
     let (abstract_data_to_remove, all_affected_album_ids) = tokio::task::spawn_blocking({
         let delete_list = json_data.delete_list.clone();
         let timestamp = json_data.timestamp;

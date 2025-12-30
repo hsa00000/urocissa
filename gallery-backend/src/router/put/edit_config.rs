@@ -10,6 +10,8 @@ use serde::Deserialize;
 use crate::public::structure::config::{APP_CONFIG, AppConfig, PublicConfig};
 use crate::router::fairing::guard_auth::GuardAuth;
 use crate::router::fairing::guard_read_only_mode::GuardReadOnlyMode;
+use crate::router::AppResult;
+use anyhow::Result;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -24,9 +26,10 @@ pub struct UpdateConfigRequest {
 #[put("/put/config", data = "<req>")]
 pub fn update_config_handler(
     _auth: GuardAuth,
-    _read_only: GuardReadOnlyMode,
+    read_only: Result<GuardReadOnlyMode>,
     req: Json<UpdateConfigRequest>,
-) -> Result<Status, Status> {
+) -> AppResult<Status> {
+    let _ = read_only?;
     let req_data = req.into_inner();
 
     // 1. Get the current private config to preserve fields not being updated
@@ -50,11 +53,10 @@ pub fn update_config_handler(
     };
 
     // 4. Update using the full config
-    match AppConfig::update(new_full_config) {
-        Ok(_) => Ok(Status::Ok),
-        Err(e) => {
-            error!("Failed to update config: {}", e);
-            Err(Status::InternalServerError)
-        }
-    }
+    AppConfig::update(new_full_config).map_err(|e| {
+        error!("Failed to update config: {}", e);
+        e
+    })?;
+
+    Ok(Status::Ok)
 }
