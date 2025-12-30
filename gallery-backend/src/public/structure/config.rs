@@ -164,6 +164,22 @@ impl AppConfig {
 
         println!("Updating configuration...");
 
+        // Sanitize sync_paths: Remove surrounding quotes if present (common user error)
+        let sanitized_paths: HashSet<PathBuf> = new_config
+            .public
+            .sync_paths
+            .iter()
+            .map(|p| {
+                let s = p.to_string_lossy();
+                if s.starts_with('"') && s.ends_with('"') && s.len() >= 2 {
+                    PathBuf::from(&s[1..s.len() - 1])
+                } else {
+                    p.clone()
+                }
+            })
+            .collect();
+        new_config.public.sync_paths = sanitized_paths;
+
         // Normalize empty authKey to None BEFORE saving or applying
         if new_config.private.auth_key.as_ref().filter(|k| !k.is_empty()).is_none() {
              new_config.private.auth_key = None;

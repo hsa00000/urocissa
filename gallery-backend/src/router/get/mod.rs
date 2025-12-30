@@ -4,6 +4,7 @@ use rocket::Route;
 pub mod get_config;
 pub mod get_data;
 pub mod get_export;
+pub mod get_fs_completion;
 pub mod get_img;
 pub mod get_list;
 pub mod get_page;
@@ -48,6 +49,7 @@ pub fn generate_get_routes() -> Vec<Route> {
         get_prefetch::prefetch,
         get_export::get_export,
         get_config::get_config_handler,
-        get_config::export_config_handler
+        get_config::export_config_handler,
+        get_fs_completion::get_fs_completion
     ]
 }

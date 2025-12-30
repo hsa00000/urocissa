@@ -65,6 +65,11 @@
 
                     <v-combobox
                       v-model="localSettings.syncPaths"
+                      v-model:search="pathSearch"
+                      :items="pathItems"
+                      :hide-no-data="false"
+                      :custom-filter="() => true"
+                      @update:menu="(val: boolean) => val && onPathSearch(pathSearch)"
                       label="Synchronization Paths"
                       placeholder="e.g. /mnt/data/images"
                       prepend-inner-icon="mdi-folder-network-outline"
@@ -202,12 +207,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
+import { ref, reactive, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useConfigStore } from '@/store/configStore'
 import { useInitializedStore } from '@/store/initializedStore'
 import type { AppConfig } from '@/api/config'
+import { fetchFsCompletion } from '@/api/fs'
 import PageTemplate from './PageLayout/PageTemplate.vue'
 import { tryWithMessageStore } from '@/script/utils/try_catch'
+import { debounce } from 'lodash'
 
 const configStore = useConfigStore('mainId')
 const initializedStore = useInitializedStore('mainId')
@@ -217,6 +224,8 @@ const loading = ref(false)
 const valid = ref(false)
 const showPassword = ref(false)
 const form = ref<any>(null)
+const pathSearch = ref('')
+const pathItems = ref<string[]>([])
 
 // Local State
 const localSettings = reactive<AppConfig>({
@@ -235,6 +244,20 @@ const localSettings = reactive<AppConfig>({
 const rules = {
   required: (v: string) => !!v || 'Required'
 }
+
+const onPathSearch = debounce(async (val: string) => {
+  // Always fetch, even if empty (returns roots)
+  try {
+    const suggestions = await fetchFsCompletion(val || '')
+    pathItems.value = suggestions
+  } catch (e) {
+    console.error('Failed to fetch path suggestions', e)
+  }
+}, 300)
+
+watch(pathSearch, (val) => {
+  onPathSearch(val)
+})
 
 const syncLocalWithStore = () => {
   if (configStore.config) {
