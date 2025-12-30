@@ -34,11 +34,7 @@
                   persistent
                   scrim="white"
                 >
-                  <v-progress-circular
-                    indeterminate
-                    color="primary"
-                    size="64"
-                  />
+                  <v-progress-circular indeterminate color="primary" size="64" />
                 </v-overlay>
 
                 <v-card-item class="pb-4">
@@ -53,20 +49,13 @@
 
                 <v-divider />
 
-                <v-form
-                  ref="form"
-                  v-model="valid"
-                  @submit.prevent="save"
-                  :disabled="loading"
-                >
+                <v-form ref="form" v-model="valid" @submit.prevent="save" :disabled="loading">
                   <v-card-text class="d-flex flex-column gap-y-4 py-6">
                     <v-text-field
                       v-model="localSettings.password"
                       label="Application Password"
                       :type="showPassword ? 'text' : 'password'"
-                      :append-inner-icon="
-                        showPassword ? 'mdi-eye' : 'mdi-eye-off'
-                      "
+                      :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
                       @click:append-inner="showPassword = !showPassword"
                       prepend-inner-icon="mdi-lock-outline"
                       :rules="[rules.required]"
@@ -86,6 +75,7 @@
                       hint="Directories to scan for content"
                       persistent-hint
                       class="mt-4"
+                      autocomplete="off"
                     >
                       <template #selection="{ item, index }">
                         <v-chip
@@ -111,31 +101,23 @@
                   <v-divider />
 
                   <v-card-text class="py-6">
-                    <div class="text-subtitle-2 font-weight-bold mb-4 d-flex align-center text-medium-emphasis">
+                    <div
+                      class="text-subtitle-2 font-weight-bold mb-4 d-flex align-center text-medium-emphasis"
+                    >
                       <v-icon icon="mdi-cog-outline" size="small" class="me-2" />
                       Advanced Settings
                     </div>
 
                     <v-row dense>
                       <v-col cols="12">
-                        <v-list
-                          density="compact"
-                          bg-color="transparent"
-                          class="py-0"
-                        >
+                        <v-list density="compact" bg-color="transparent" class="py-0">
                           <v-list-item class="px-0">
                             <template #prepend>
-                              <v-icon
-                                icon="mdi-pencil-off"
-                                color="medium-emphasis"
-                                class="me-2"
-                              />
+                              <v-icon icon="mdi-pencil-off" color="medium-emphasis" class="me-2" />
                             </template>
                             <v-list-item-title>Read Only Mode</v-list-item-title>
                             <template #append>
-                              <v-switch
-                                v-model="localSettings.readOnlyMode"
-                              />
+                              <v-switch v-model="localSettings.readOnlyMode" />
                             </template>
                           </v-list-item>
 
@@ -149,10 +131,7 @@
                             </template>
                             <v-list-item-title>Disable Image Processing</v-list-item-title>
                             <template #append>
-                              <v-switch
-                                v-model="localSettings.disableImg"
-                                color="warning"
-                              />
+                              <v-switch v-model="localSettings.disableImg" color="warning" />
                             </template>
                           </v-list-item>
                         </v-list>
@@ -259,10 +238,7 @@ const rules = {
 
 const syncLocalWithStore = () => {
   if (configStore.config) {
-    Object.assign(
-      localSettings,
-      JSON.parse(JSON.stringify(configStore.config))
-    )
+    Object.assign(localSettings, JSON.parse(JSON.stringify(configStore.config)))
   }
 }
 

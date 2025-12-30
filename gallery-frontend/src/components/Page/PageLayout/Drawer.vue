@@ -28,10 +28,15 @@
         slim
         @click="modalStore.showSettingModal = true"
         prepend-icon="mdi-cog-outline"
-        title="UI Settings"
+        title="Settings"
       ></v-list-item>
-      <v-list-item slim to="/config" prepend-icon="mdi-tune" title="System Config"></v-list-item>
     </v-list>
+
+    <template v-slot:append>
+      <v-list nav :key="route.fullPath" :disabled="!initializedStore.initialized">
+        <v-list-item slim to="/config" prepend-icon="mdi-tune" title="Config"></v-list-item>
+      </v-list>
+    </template>
   </v-navigation-drawer>
 </template>
 
