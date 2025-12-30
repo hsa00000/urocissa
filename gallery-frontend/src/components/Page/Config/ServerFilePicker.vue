@@ -14,14 +14,28 @@
       :min-height="isMobile ? undefined : 600"
     >
       <!-- Toolbar -->
-      <v-toolbar color="surface" density="compact" class="border-b">
+      <v-toolbar color="surface" density="compact" class="border-b pl-2 pr-2">
         <v-btn icon="mdi-arrow-left" @click="navigateUp" :disabled="!currentPath" variant="text" />
 
-        <v-toolbar-title class="text-subtitle-1 font-weight-bold ml-2">
-          {{ currentPath || 'Select Folder' }}
-        </v-toolbar-title>
-
-        <v-spacer />
+        <v-text-field
+          v-model="currentPath"
+          variant="outlined"
+          density="compact"
+          hide-details
+          class="flex-grow-1 mx-2"
+          placeholder="Path..."
+          @keyup.enter="loadItems(currentPath)"
+        >
+          <template #append-inner>
+             <v-icon
+               icon="mdi-arrow-right"
+               size="small"
+               class="cursor-pointer"
+               @click="loadItems(currentPath)"
+               title="Go to path"
+             />
+          </template>
+        </v-text-field>
 
         <v-btn icon="mdi-close" @click="$emit('update:modelValue', false)" variant="text" />
       </v-toolbar>
