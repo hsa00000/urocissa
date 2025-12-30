@@ -82,6 +82,16 @@
                       class="mt-4"
                       autocomplete="off"
                     >
+                      <template #append>
+                        <v-btn
+                          icon="mdi-folder-search-outline"
+                          variant="tonal"
+                          color="primary"
+                          rounded="lg"
+                          @click="showFilePicker = true"
+                          title="Browse Server Folders"
+                        />
+                      </template>
                       <template #selection="{ item, index }">
                         <v-chip
                           v-if="index < 2"
@@ -204,6 +214,11 @@
       </v-container>
     </template>
   </PageTemplate>
+
+  <ServerFilePicker
+    v-model="showFilePicker"
+    @select="onFilePickerSelect"
+  />
 </template>
 
 <script setup lang="ts">
@@ -213,6 +228,7 @@ import { useInitializedStore } from '@/store/initializedStore'
 import type { AppConfig } from '@/api/config'
 import { fetchFsCompletion } from '@/api/fs'
 import PageTemplate from './PageLayout/PageTemplate.vue'
+import ServerFilePicker from './Config/ServerFilePicker.vue'
 import { tryWithMessageStore } from '@/script/utils/try_catch'
 import { debounce } from 'lodash'
 
@@ -226,6 +242,7 @@ const showPassword = ref(false)
 const form = ref<any>(null)
 const pathSearch = ref('')
 const pathItems = ref<string[]>([])
+const showFilePicker = ref(false)
 
 // Local State
 const localSettings = reactive<AppConfig>({
@@ -258,6 +275,12 @@ const onPathSearch = debounce(async (val: string) => {
 watch(pathSearch, (val) => {
   onPathSearch(val)
 })
+
+const onFilePickerSelect = (path: string) => {
+  if (path && !localSettings.syncPaths.includes(path)) {
+    localSettings.syncPaths.push(path)
+  }
+}
 
 const syncLocalWithStore = () => {
   if (configStore.config) {
