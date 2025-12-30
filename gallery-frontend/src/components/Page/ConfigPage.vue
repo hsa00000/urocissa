@@ -13,6 +13,7 @@
                   class: 'mb-1'
                 },
                 VSwitch: {
+                  color: 'primary',
                   density: 'comfortable',
                   hideDetails: true,
                   inset: true
@@ -116,7 +117,7 @@
                       <div class="text-subtitle-2 font-weight-bold text-medium-emphasis text-uppercase mb-3">ADVANCED SETTINGS</div>
                       
                       <v-row dense>
-                        <v-col cols="12">
+                        <v-col cols="12" md="4">
                           <v-text-field
                             v-model="localSettings.authKey"
                             label="JWT Authentication Key"
@@ -124,7 +125,7 @@
                           />
                         </v-col>
 
-                        <v-col cols="12" md="8">
+                        <v-col cols="12" md="4">
                           <v-text-field
                             v-model="localSettings.discordHookUrl"
                             label="Discord Webhook URL"
