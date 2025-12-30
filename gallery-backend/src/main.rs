@@ -103,11 +103,13 @@ fn main() -> Result<()> {
         std::process::exit(1);
     }
 
+    // Initialize before spawning threads to avoid race condition with Rocket config loading
+    let tui_events_rx = initialize();
+
     // Architecture: Isolate the Indexing/TUI runtime from the Rocket server runtime.
     // This prevents heavy blocking operations in the indexer from stalling web requests.
-    let worker_handle = thread::spawn(|| {
+    let worker_handle = thread::spawn(move || {
         INDEX_RUNTIME.block_on(async {
-            let tui_events_rx = initialize();
             let start_time = Instant::now();
             let txn = TREE.in_disk.begin_write().unwrap();
 
