@@ -5,7 +5,12 @@
         <v-row justify="center">
           <v-col cols="12" md="8" lg="6">
             <v-card class="mt-4">
-              <v-overlay :model-value="loading" contained class="align-center justify-center" persistent>
+              <v-overlay
+                :model-value="loading"
+                contained
+                class="align-center justify-center"
+                persistent
+              >
                 <v-progress-circular indeterminate color="primary"></v-progress-circular>
               </v-overlay>
 
@@ -22,7 +27,9 @@
                       <v-list-subheader>Behavior</v-list-subheader>
                       <v-list-item>
                         <template v-slot:prepend>
-                          <v-icon :icon="localSettings.readOnlyMode ? 'mdi-lock' : 'mdi-pencil'"></v-icon>
+                          <v-icon
+                            :icon="localSettings.readOnlyMode ? 'mdi-lock' : 'mdi-pencil'"
+                          ></v-icon>
                         </template>
                         <v-list-item-title>Read Only Mode</v-list-item-title>
                         <v-list-item-subtitle
@@ -139,7 +146,10 @@
                         >
                           {{ item.title }}
                         </v-chip>
-                        <span v-if="index === 5" class="text-grey text-caption align-self-center ml-2">
+                        <span
+                          v-if="index === 5"
+                          class="text-grey text-caption align-self-center ml-2"
+                        >
                           (+{{ localSettings.syncPaths.length - 5 }} others)
                         </span>
                       </template>
@@ -223,7 +233,7 @@ const rules = {
 
 const syncLocalWithStore = () => {
   if (configStore.config) {
-    Object.assign(localSettings, structuredClone(configStore.config))
+    Object.assign(localSettings, JSON.parse(JSON.stringify(configStore.config)))
   }
 }
 
@@ -240,7 +250,7 @@ const initData = async () => {
   if (result) {
     initializedStore.initialized = true
   }
-  
+
   loading.value = false
 }
 
