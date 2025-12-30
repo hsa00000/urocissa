@@ -1,7 +1,5 @@
 <template>
-  <slot name="custom-bar">
-    <HomeMainBar />
-  </slot>
+  <HomeMainBar />
   <Drawer />
   <div :style="{ height: `calc(100% - ${navBarHeight}px)` }">
     <slot name="content"></slot>

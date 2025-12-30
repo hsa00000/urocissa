@@ -41,3 +41,5 @@ type BaseName =
   | 'login'
   | 'share'
   | 'links'
+  | 'config'
+

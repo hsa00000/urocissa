@@ -16,6 +16,7 @@ import { tagsRoute } from './tagsRoute'
 import { linksRoute } from './linksRoute'
 import { loginRoute } from './loginRoute'
 import { shareRoute } from './shareRoute'
+import { configRoute } from './configRoute'
 
 // ======================================
 // Define Simple Static Routes
@@ -26,7 +27,8 @@ const simpleRoutes: RouteRecordRaw[] = [
   tagsRoute,
   linksRoute,
   loginRoute,
-  shareRoute
+  shareRoute,
+  configRoute
 ]
 
 // ======================================
@@ -92,7 +94,8 @@ router.afterEach((to) => {
     tags: 'Tags',
     links: 'Links',
     login: 'Login',
-    share: 'Share'
+    share: 'Share',
+    config: 'Configuration'
   }
 
   let baseTitle: string

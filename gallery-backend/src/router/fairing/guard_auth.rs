@@ -18,7 +18,7 @@ impl<'r> FromRequest<'r> for GuardAuth {
         match try_jwt_cookie_auth(req, &VALIDATION) {
             Ok(_) => Outcome::Success(GuardAuth),
             Err(err) => Outcome::Error((
-                Status::InternalServerError,
+                Status::Unauthorized,
                 err.context("Authentication error").into(),
             )),
         }

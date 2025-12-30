@@ -161,6 +161,13 @@ pub async fn links() -> Option<NamedFile> {
         .ok()
 }
 
+#[get("/config")]
+pub async fn config() -> Option<NamedFile> {
+    NamedFile::open(Path::new("../gallery-frontend/dist/index.html"))
+        .await
+        .ok()
+}
+
 #[get("/setting")]
 pub async fn setting() -> Option<NamedFile> {
     NamedFile::open(Path::new("../gallery-frontend/dist/index.html"))

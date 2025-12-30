@@ -30,12 +30,7 @@
         prepend-icon="mdi-cog-outline"
         title="UI Settings"
       ></v-list-item>
-      <v-list-item
-        slim
-        @click="modalStore.showConfigModal = true"
-        prepend-icon="mdi-tune"
-        title="System Config"
-      ></v-list-item>
+      <v-list-item slim to="/config" prepend-icon="mdi-tune" title="System Config"></v-list-item>
     </v-list>
   </v-navigation-drawer>
 </template>
