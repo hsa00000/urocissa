@@ -5,7 +5,7 @@ use crate::router::AppResult;
 use crate::router::fairing::guard_auth::GuardAuth;
 use crate::router::fairing::guard_read_only_mode::GuardReadOnlyMode;
 use crate::{public::constant::redb::DATA_TABLE, router::GuardResult};
-use anyhow::Result;
+
 use arrayvec::ArrayString;
 use rand::Rng;
 use rand::distr::Alphanumeric;

@@ -6,7 +6,7 @@ use crate::tasks::batcher::update_tree::UpdateTreeTask;
 use crate::{
     public::structure::abstract_data::AbstractData, tasks::batcher::flush_tree::FlushTreeTask,
 };
-use anyhow::Result;
+
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 #[get("/put/generate_random_data?<number>")]
 pub async fn generate_random_data(

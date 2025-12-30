@@ -223,7 +223,7 @@ const rules = {
 
 const syncLocalWithStore = () => {
   if (configStore.config) {
-    Object.assign(localSettings, JSON.parse(JSON.stringify(configStore.config)))
+    Object.assign(localSettings, structuredClone(configStore.config))
   }
 }
 

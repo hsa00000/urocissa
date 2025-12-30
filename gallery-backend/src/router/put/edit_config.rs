@@ -11,7 +11,6 @@ use crate::public::structure::config::{APP_CONFIG, AppConfig, PublicConfig};
 use crate::router::fairing::guard_auth::GuardAuth;
 use crate::router::fairing::guard_read_only_mode::GuardReadOnlyMode;
 use crate::router::{AppResult, GuardResult};
-use anyhow::Result;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]

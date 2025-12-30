@@ -132,6 +132,56 @@ fn validate_share_access(share: &Share, req: &Request<'_>) -> Result<(), ShareEr
     Ok(())
 }
 
+fn resolve_share_internal(
+    album_id: &str,
+    share_id: &str,
+    req: &Request<'_>,
+) -> Result<Option<Claims>, ShareError> {
+    let read_txn = TREE.in_disk.begin_read().map_err(|e| {
+        ShareError::Internal(anyhow!("Failed to begin read transaction: {}", e))
+    })?;
+
+    let table = read_txn
+        .open_table(DATA_TABLE)
+        .map_err(|e| ShareError::Internal(anyhow!("Failed to open data table: {}", e)))?;
+
+    let data_guard = table
+        .get(album_id)
+        .map_err(|e| ShareError::Internal(anyhow!("Failed to get data from table: {}", e)))?
+        .ok_or_else(|| ShareError::Internal(anyhow!("Album not found for id '{}'", album_id)))?;
+
+    let abstract_data = data_guard.value();
+    let mut album = match abstract_data {
+        AbstractData::Album(album) => album,
+        _ => {
+            return Err(ShareError::Internal(anyhow!(
+                "Data with id '{}' is not an album",
+                album_id
+            )));
+        }
+    };
+
+    let share = album.metadata.share_list.remove(share_id).ok_or_else(|| {
+        ShareError::Internal(anyhow!(
+            "Share '{}' not found in album '{}'",
+            share_id,
+            album_id
+        ))
+    })?;
+
+    // Validate share access (password and expiration)
+    validate_share_access(&share, req)?;
+
+    let resolved_share = ResolvedShare::new(
+        ArrayString::<64>::from(album_id)
+            .map_err(|_| ShareError::Internal(anyhow!("Failed to parse album_id")))?,
+        album.metadata.title,
+        share,
+    );
+    let claims = Claims::new_share(resolved_share);
+    Ok(Some(claims))
+}
+
 /// Try to resolve album and share from headers
 pub fn try_resolve_share_from_headers(req: &Request<'_>) -> Result<Option<Claims>, ShareError> {
     let album_id = req.headers().get_one("x-album-id");
@@ -144,53 +194,7 @@ pub fn try_resolve_share_from_headers(req: &Request<'_>) -> Result<Option<Claims
             "Both x-album-id and x-share-id must be provided together"
         ))),
 
-        (Some(album_id), Some(share_id)) => {
-            let read_txn = TREE.in_disk.begin_read().map_err(|e| {
-                ShareError::Internal(anyhow!("Failed to begin read transaction: {}", e))
-            })?;
-
-            let table = read_txn
-                .open_table(DATA_TABLE)
-                .map_err(|e| ShareError::Internal(anyhow!("Failed to open data table: {}", e)))?;
-
-            let data_guard = table
-                .get(album_id)
-                .map_err(|e| ShareError::Internal(anyhow!("Failed to get data from table: {}", e)))?
-                .ok_or_else(|| {
-                    ShareError::Internal(anyhow!("Album not found for id '{}'", album_id))
-                })?;
-
-            let abstract_data = data_guard.value();
-            let mut album = match abstract_data {
-                AbstractData::Album(album) => album,
-                _ => {
-                    return Err(ShareError::Internal(anyhow!(
-                        "Data with id '{}' is not an album",
-                        album_id
-                    )));
-                }
-            };
-
-            let share = album.metadata.share_list.remove(share_id).ok_or_else(|| {
-                ShareError::Internal(anyhow!(
-                    "Share '{}' not found in album '{}'",
-                    share_id,
-                    album_id
-                ))
-            })?;
-
-            // Validate share access (password and expiration)
-            validate_share_access(&share, req)?;
-
-            let resolved_share = ResolvedShare::new(
-                ArrayString::<64>::from(album_id)
-                    .map_err(|_| ShareError::Internal(anyhow!("Failed to parse album_id")))?,
-                album.metadata.title,
-                share,
-            );
-            let claims = Claims::new_share(resolved_share);
-            Ok(Some(claims))
-        }
+        (Some(album_id), Some(share_id)) => resolve_share_internal(album_id, share_id, req),
     }
 }
 
@@ -206,53 +210,7 @@ pub fn try_resolve_share_from_query(req: &Request<'_>) -> Result<Option<Claims>,
             "Both albumId and shareId must be provided together"
         ))),
 
-        (Some(album_id), Some(share_id)) => {
-            let read_txn = TREE.in_disk.begin_read().map_err(|e| {
-                ShareError::Internal(anyhow!("Failed to begin read transaction: {}", e))
-            })?;
-
-            let table = read_txn
-                .open_table(DATA_TABLE)
-                .map_err(|e| ShareError::Internal(anyhow!("Failed to open data table: {}", e)))?;
-
-            let data_guard = table
-                .get(album_id)
-                .map_err(|e| ShareError::Internal(anyhow!("Failed to get data from table: {}", e)))?
-                .ok_or_else(|| {
-                    ShareError::Internal(anyhow!("Album not found for id '{}'", album_id))
-                })?;
-
-            let abstract_data = data_guard.value();
-            let mut album = match abstract_data {
-                AbstractData::Album(album) => album,
-                _ => {
-                    return Err(ShareError::Internal(anyhow!(
-                        "Data with id '{}' is not an album",
-                        album_id
-                    )));
-                }
-            };
-
-            let share = album.metadata.share_list.remove(share_id).ok_or_else(|| {
-                ShareError::Internal(anyhow!(
-                    "Share '{}' not found in album '{}'",
-                    share_id,
-                    album_id
-                ))
-            })?;
-
-            // Validate share access (password and expiration)
-            validate_share_access(&share, req)?;
-
-            let resolved_share = ResolvedShare::new(
-                ArrayString::<64>::from(album_id)
-                    .map_err(|_| ShareError::Internal(anyhow!("Failed to parse album_id")))?,
-                album.metadata.title,
-                share,
-            );
-            let claims = Claims::new_share(resolved_share);
-            Ok(Some(claims))
-        }
+        (Some(album_id), Some(share_id)) => resolve_share_internal(album_id, share_id, req),
     }
 }
 

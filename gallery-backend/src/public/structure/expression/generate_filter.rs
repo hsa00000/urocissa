@@ -5,25 +5,25 @@ impl Expression {
     pub fn generate_filter(self) -> Box<dyn Fn(&AbstractData) -> bool + Sync + Send> {
         match self {
             Expression::Or(expressions) => {
-                let filters: Vec<Expression> = expressions;
+                let filters: Vec<_> = expressions
+                    .into_iter()
+                    .map(|expr| expr.generate_filter())
+                    .collect();
                 Box::new(move |abstract_data: &AbstractData| {
-                    filters.iter().any(|expr| {
-                        let filter = expr.clone().generate_filter();
-                        filter(abstract_data)
-                    })
+                    filters.iter().any(|filter| filter(abstract_data))
                 })
             }
             Expression::And(expressions) => {
-                let filters: Vec<Expression> = expressions;
+                let filters: Vec<_> = expressions
+                    .into_iter()
+                    .map(|expr| expr.generate_filter())
+                    .collect();
                 Box::new(move |abstract_data: &AbstractData| {
-                    filters.iter().all(|expr| {
-                        let filter = expr.clone().generate_filter();
-                        filter(abstract_data)
-                    })
+                    filters.iter().all(|filter| filter(abstract_data))
                 })
             }
             Expression::Not(expression) => {
-                let inner_filter = expression.clone().generate_filter();
+                let inner_filter = expression.generate_filter();
                 Box::new(move |abstract_data: &AbstractData| !inner_filter(abstract_data))
             }
             Expression::Tag(tag) => {
