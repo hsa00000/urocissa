@@ -1,211 +1,179 @@
 <template>
   <PageTemplate>
     <template #content>
-      <v-container fluid class="fill-height pa-0">
-        <v-row justify="center" class="ma-0 h-100 overflow-y-auto">
-          <v-col cols="12" sm="11" md="9" lg="7" xl="5" class="py-6 py-md-10">
-            <v-defaults-provider
-              :defaults="{
-                VTextField: {
-                  variant: 'outlined',
-                  hideDetails: 'auto',
-                  density: 'compact',
-                  class: 'mb-1'
-                },
-                VSwitch: {
-                  color: 'primary',
-                  density: 'comfortable',
-                  hideDetails: true,
-                  inset: true
-                },
-                VBtn: {
-                  height: 44
-                },
-                VCard: {
-                  elevation: 0,
-                  border: true
-                }
-              }"
-            >
-              <v-card class="rounded-xl overflow-hidden" :loading="loading">
-                <v-overlay
-                  :model-value="loading"
-                  contained
-                  class="align-center justify-center"
-                  persistent
-                  scrim="surface"
-                >
-                  <v-progress-circular indeterminate size="64" />
-                </v-overlay>
+      <v-container class="fill-height align-start justify-center py-8 overflow-y-auto" fluid>
+        <v-row justify="center" no-gutters>
+          <v-col cols="12" sm="10" md="8" lg="6" xl="5">
+            <div class="mb-6">
+              <h1 class="text-h4 font-weight-bold">Settings</h1>
+            </div>
 
-                <v-card-item class="px-6 pt-6 pb-2">
-                  <template #prepend>
-                    <v-avatar variant="tonal" rounded="lg" size="52">
-                      <v-icon icon="mdi-tune" size="28" />
-                    </v-avatar>
-                  </template>
-                  <v-card-title class="text-h5 font-weight-bold">Configuration</v-card-title>
-                  <v-card-subtitle class="text-body-2">Manage storage, security, and global settings</v-card-subtitle>
-                </v-card-item>
-
-                <v-divider class="my-2" />
-
-                <v-form ref="form" v-model="valid" @submit.prevent="save" :disabled="loading">
-                  <v-card-text class="px-6 py-4 d-flex flex-column ga-6">
-                    
-                    <!-- Section: Security -->
-                    <div>
-                      <div class="text-subtitle-2 font-weight-bold text-medium-emphasis text-uppercase mb-3">SECURITY</div>
-                      <v-row dense>
-                        <v-col cols="12">
-                          <v-text-field
-                            v-model="localSettings.password"
-                            label="Application Password"
-                            :type="showPassword ? 'text' : 'password'"
-                            :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
-                            @click:append-inner="showPassword = !showPassword"
-                            prepend-inner-icon="mdi-lock-outline"
-                            :rules="[rules.required]"
-                            hint="Required for accessing the web interface"
-                            persistent-hint
-                            persistent-placeholder
-                          />
-                        </v-col>
-                      </v-row>
-                    </div>
-
-                    <!-- Section: Storage -->
-                    <div>
-                      <div class="d-flex justify-space-between align-center mb-3">
-                        <div class="text-subtitle-2 font-weight-bold text-medium-emphasis text-uppercase">STORAGE & SYNC</div>
-                        <v-btn
-                          size="small"
-                          variant="text"
-                          prepend-icon="mdi-plus"
-                          @click="showFilePicker = true"
-                          class="px-2 font-weight-medium"
-                        >
-                          Add Path
-                        </v-btn>
-                      </div>
-                      
-                      <v-sheet border rounded="lg" class="pa-4">
-                        <div v-if="localSettings.syncPaths.length > 0" class="d-flex flex-wrap ga-2">
-                          <v-chip
-                            v-for="(path, index) in localSettings.syncPaths"
-                            :key="index"
-                            closable
-                            label
-                            variant="outlined"
-                            class="border-opacity-100"
-                            @click:close="removePath(path)"
-                          >
-                            <v-icon start icon="mdi-folder-network-outline" size="small" />
-                            {{ path }}
-                          </v-chip>
-                        </div>
-                        <div v-else class="text-center py-6 text-medium-emphasis text-body-2">
-                          <v-icon icon="mdi-folder-open-outline" size="large" class="mb-2 opacity-50" />
-                          <div>No sync paths configured</div>
-                          <div class="text-caption">Click "Add Path" to start monitoring folders</div>
-                        </div>
-                      </v-sheet>
-                    </div>
-
-                    <!-- Section: Advanced -->
-                    <div>
-                      <div class="text-subtitle-2 font-weight-bold text-medium-emphasis text-uppercase mb-3">ADVANCED SETTINGS</div>
-                      
-                      <v-row dense>
-                        <v-col cols="12" md="4">
-                          <v-text-field
-                            v-model="localSettings.authKey"
-                            label="JWT Authentication Key"
-                            prepend-inner-icon="mdi-shield-key-outline"
-                          />
-                        </v-col>
-
-                        <v-col cols="12" md="4">
-                          <v-text-field
-                            v-model="localSettings.discordHookUrl"
-                            label="Discord Webhook URL"
-                            prepend-inner-icon="mdi-webhook"
-                            placeholder="https://discord.com/api/..."
-                          />
-                        </v-col>
-
-                        <v-col cols="12" md="4">
-                          <v-text-field
-                            v-model.number="localSettings.uploadLimitMb"
-                            label="Upload Limit"
-                            type="number"
-                            suffix="MB"
-                            prepend-inner-icon="mdi-upload-network-outline"
-                          />
-                        </v-col>
-                        
-                        <v-col cols="12" sm="6">
-                          <v-card variant="outlined" class="pa-3">
-                            <div class="d-flex align-center justify-space-between">
-                              <div class="d-flex align-center">
-                                <v-icon icon="mdi-pencil-off" class="me-3 text-medium-emphasis" />
-                                <div>
-                                  <div class="text-body-2 font-weight-medium">Read Only Mode</div>
-                                  <div class="text-caption text-medium-emphasis">Prevent modification</div>
-                                </div>
-                              </div>
-                              <v-switch v-model="localSettings.readOnlyMode" />
-                            </div>
-                          </v-card>
-                        </v-col>
-
-                        <v-col cols="12" sm="6">
-                          <v-card variant="outlined" class="pa-3">
-                            <div class="d-flex align-center justify-space-between">
-                              <div class="d-flex align-center">
-                                <v-icon icon="mdi-image-off-outline" class="me-3 text-medium-emphasis" />
-                                <div>
-                                  <div class="text-body-2 font-weight-medium text-high-emphasis">Disable Processing</div>
-                                  <div class="text-caption text-medium-emphasis">Skip generation</div>
-                                </div>
-                              </div>
-                              <v-switch v-model="localSettings.disableImg" />
-                            </div>
-                          </v-card>
-                        </v-col>
-                      </v-row>
-                    </div>
-                  </v-card-text>
-
-                  <v-divider />
-
-                  <v-card-actions class="pa-6">
-                    <v-btn
-                      variant="text"
-                      @click="resetToStore"
-                      :disabled="loading"
-                    >
-                      Reset Defaults
-                    </v-btn>
-                    <v-spacer />
-                    <v-btn
-                      variant="flat"
-                      type="submit"
-                      :loading="loading"
-                      :disabled="!valid || loading"
-                      min-width="140"
-                      class="font-weight-bold text-none bg-surface-variant"
-                    >
-                      Save Changes
-                    </v-btn>
-                  </v-card-actions>
-                </v-form>
+            <v-form ref="form" v-model="valid" @submit.prevent="save" :disabled="loading">
+              <v-list-subheader class="px-1 text-high-emphasis font-weight-bold"
+                >Security</v-list-subheader
+              >
+              <v-card border flat class="mb-6 rounded-lg">
+                <v-card-text class="d-flex flex-column pt-4">
+                  <v-text-field
+                    v-model="localSettings.password"
+                    label="Application Password"
+                    :type="showPassword ? 'text' : 'password'"
+                    :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
+                    prepend-icon="mdi-lock-outline"
+                    variant="outlined"
+                    density="comfortable"
+                    placeholder="Required for access"
+                    :rules="[rules.required]"
+                    persistent-placeholder
+                    :hide-details="true"
+                    @click:append-inner="showPassword = !showPassword"
+                  ></v-text-field>
+                </v-card-text>
               </v-card>
 
-              <div class="text-center mt-6 text-caption text-medium-emphasis">
-                Urocissa Configuration Manager
+              <v-list-subheader class="px-1 text-high-emphasis font-weight-bold"
+                >Storage & Sync</v-list-subheader
+              >
+              <v-card border flat class="mb-6 rounded-lg overflow-hidden">
+                <v-toolbar density="compact" color="transparent" class="border-b pr-2">
+                  <template #prepend>
+                    <v-icon
+                      icon="mdi-folder-network-outline"
+                      class="ml-4 text-medium-emphasis"
+                    ></v-icon>
+                  </template>
+                  <v-toolbar-title class="text-body-1 font-weight-medium"
+                    >Sync Paths</v-toolbar-title
+                  >
+                  <v-spacer></v-spacer>
+                  <v-btn
+                    color="primary"
+                    variant="text"
+                    prepend-icon="mdi-plus"
+                    class="text-none font-weight-medium"
+                    @click="showFilePicker = true"
+                  >
+                    Add Path
+                  </v-btn>
+                </v-toolbar>
+
+                <v-list v-if="localSettings.syncPaths.length > 0" lines="one" class="py-0">
+                  <template v-for="(path, index) in localSettings.syncPaths" :key="index">
+                    <v-list-item :title="path">
+                      <template #prepend>
+                        <v-icon icon="mdi-folder-outline" class="text-medium-emphasis"></v-icon>
+                      </template>
+                      <template #append>
+                        <v-btn
+                          icon="mdi-delete-outline"
+                          variant="text"
+                          color="error"
+                          density="comfortable"
+                          @click="removePath(path)"
+                          title="Remove path"
+                        ></v-btn>
+                      </template>
+                    </v-list-item>
+                    <v-divider v-if="index < localSettings.syncPaths.length - 1"></v-divider>
+                  </template>
+                </v-list>
+
+                <v-empty-state
+                  v-else
+                  icon="mdi-folder-open-outline"
+                  title="No sync paths"
+                  text="Add a path to start syncing your files."
+                  class="py-6 text-medium-emphasis"
+                ></v-empty-state>
+              </v-card>
+
+              <v-list-subheader class="px-1 text-high-emphasis font-weight-bold"
+                >Advanced</v-list-subheader
+              >
+              <v-card border flat class="mb-8 rounded-lg">
+                <v-card-text class="pt-4 pb-2">
+                  <v-text-field
+                    v-model="localSettings.authKey"
+                    label="JWT Authentication Key"
+                    prepend-icon="mdi-key-outline"
+                    placeholder="Enter JWT Key"
+                    variant="outlined"
+                    density="comfortable"
+                    class="mb-2"
+                  ></v-text-field>
+
+                  <v-text-field
+                    v-model="localSettings.discordHookUrl"
+                    label="Discord Webhook URL"
+                    prepend-icon="mdi-webhook"
+                    placeholder="https://discord.com/api/..."
+                    variant="outlined"
+                    density="comfortable"
+                    class="mb-2"
+                  ></v-text-field>
+
+                  <v-text-field
+                    v-model.number="localSettings.uploadLimitMb"
+                    label="Upload Limit"
+                    prepend-icon="mdi-cloud-upload-outline"
+                    type="number"
+                    suffix="MB"
+                    placeholder="0 for unlimited"
+                    variant="outlined"
+                    density="comfortable"
+                  ></v-text-field>
+                </v-card-text>
+
+                <v-divider></v-divider>
+
+                <v-list lines="two" class="py-0">
+                  <v-list-item title="Read Only Mode" subtitle="Prevent modification of data">
+                    <template #append>
+                      <v-switch
+                        v-model="localSettings.readOnlyMode"
+                        color="primary"
+                        hide-details
+                        inset
+                        density="compact"
+                      ></v-switch>
+                    </template>
+                  </v-list-item>
+
+                  <v-divider></v-divider>
+
+                  <v-list-item
+                    title="Disable Processing"
+                    subtitle="Skip image generation and analysis"
+                  >
+                    <template #append>
+                      <v-switch
+                        v-model="localSettings.disableImg"
+                        color="primary"
+                        hide-details
+                        inset
+                        density="compact"
+                      ></v-switch>
+                    </template>
+                  </v-list-item>
+                </v-list>
+              </v-card>
+
+              <div class="d-flex justify-end align-center ga-4 pb-10">
+                <v-btn variant="text" class="text-none" @click="resetToStore" :disabled="loading">
+                  Reset
+                </v-btn>
+                <v-btn
+                  color="primary"
+                  variant="flat"
+                  type="submit"
+                  :loading="loading"
+                  :disabled="!valid || loading"
+                  class="text-none px-6"
+                >
+                  Save Changes
+                </v-btn>
               </div>
-            </v-defaults-provider>
+            </v-form>
           </v-col>
         </v-row>
       </v-container>
