@@ -1,179 +1,219 @@
 <template>
   <PageTemplate>
     <template #content>
-      <v-container class="fill-height align-start justify-center py-8 overflow-y-auto" fluid>
-        <v-row justify="center" no-gutters>
+      <v-container fluid class="fill-height align-start justify-center">
+        <v-row justify="center">
           <v-col cols="12" sm="10" md="8" lg="6" xl="5">
-            <div class="mb-6">
-              <h1 class="text-h4 font-weight-bold">Settings</h1>
-            </div>
+            <v-row>
+              <v-col cols="12">
+                <h1 class="text-h4 font-weight-bold">Settings</h1>
+              </v-col>
 
-            <v-form ref="form" v-model="valid" @submit.prevent="save" :disabled="loading">
-              <v-list-subheader class="px-1 text-high-emphasis font-weight-bold"
-                >Security</v-list-subheader
-              >
-              <v-card border flat class="mb-6 rounded-lg">
-                <v-card-text class="d-flex flex-column pt-4">
-                  <v-text-field
-                    v-model="localSettings.password"
-                    label="Application Password"
-                    :type="showPassword ? 'text' : 'password'"
-                    :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
-                    prepend-icon="mdi-lock-outline"
-                    variant="outlined"
-                    density="comfortable"
-                    placeholder="Required for access"
-                    :rules="[rules.required]"
-                    persistent-placeholder
-                    :hide-details="true"
-                    @click:append-inner="showPassword = !showPassword"
-                  ></v-text-field>
-                </v-card-text>
-              </v-card>
+              <v-col cols="12">
+                <v-form ref="form" v-model="valid" @submit.prevent="save" :disabled="loading">
+                  <v-row>
+                    <v-col cols="12">
+                      <v-list-subheader class="font-weight-bold text-high-emphasis"
+                        >Security</v-list-subheader
+                      >
+                      <v-card border flat class="rounded-lg">
+                        <v-card-text>
+                          <v-row dense>
+                            <v-col cols="12">
+                              <v-text-field
+                                v-model="localSettings.password"
+                                label="Application Password"
+                                :type="showPassword ? 'text' : 'password'"
+                                :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
+                                prepend-icon="mdi-lock-outline"
+                                variant="outlined"
+                                density="comfortable"
+                                placeholder="Required for access"
+                                :rules="[rules.required]"
+                                persistent-placeholder
+                                hide-details="auto"
+                                @click:append-inner="showPassword = !showPassword"
+                              ></v-text-field>
+                            </v-col>
+                          </v-row>
+                        </v-card-text>
+                      </v-card>
+                    </v-col>
 
-              <v-list-subheader class="px-1 text-high-emphasis font-weight-bold"
-                >Storage & Sync</v-list-subheader
-              >
-              <v-card border flat class="mb-6 rounded-lg overflow-hidden">
-                <v-toolbar density="compact" color="transparent" class="border-b pr-2">
-                  <template #prepend>
-                    <v-icon
-                      icon="mdi-folder-network-outline"
-                      class="ml-4 text-medium-emphasis"
-                    ></v-icon>
-                  </template>
-                  <v-toolbar-title class="text-body-1 font-weight-medium"
-                    >Sync Paths</v-toolbar-title
-                  >
-                  <v-spacer></v-spacer>
-                  <v-btn
-                    color="primary"
-                    variant="text"
-                    prepend-icon="mdi-plus"
-                    class="text-none font-weight-medium"
-                    @click="showFilePicker = true"
-                  >
-                    Add Path
-                  </v-btn>
-                </v-toolbar>
+                    <v-col cols="12">
+                      <v-list-subheader class="font-weight-bold text-high-emphasis"
+                        >Storage & Sync</v-list-subheader
+                      >
+                      <v-card border flat class="rounded-lg">
+                        <v-toolbar density="compact" color="transparent" class="border-b">
+                          <template #prepend>
+                            <v-icon
+                              icon="mdi-folder-network-outline"
+                              color="medium-emphasis"
+                            ></v-icon>
+                          </template>
+                          <v-toolbar-title class="text-body-1 font-weight-medium"
+                            >Sync Paths</v-toolbar-title
+                          >
+                          <v-spacer></v-spacer>
+                          <v-btn
+                            color="primary"
+                            variant="text"
+                            prepend-icon="mdi-plus"
+                            class="text-none font-weight-medium"
+                            @click="showFilePicker = true"
+                          >
+                            Add Path
+                          </v-btn>
+                        </v-toolbar>
 
-                <v-list v-if="localSettings.syncPaths.length > 0" lines="one" class="py-0">
-                  <template v-for="(path, index) in localSettings.syncPaths" :key="index">
-                    <v-list-item :title="path">
-                      <template #prepend>
-                        <v-icon icon="mdi-folder-outline" class="text-medium-emphasis"></v-icon>
-                      </template>
-                      <template #append>
-                        <v-btn
-                          icon="mdi-delete-outline"
-                          variant="text"
-                          color="error"
-                          density="comfortable"
-                          @click="removePath(path)"
-                          title="Remove path"
-                        ></v-btn>
-                      </template>
-                    </v-list-item>
-                    <v-divider v-if="index < localSettings.syncPaths.length - 1"></v-divider>
-                  </template>
-                </v-list>
+                        <v-list v-if="localSettings.syncPaths.length > 0" lines="one">
+                          <template v-for="(path, index) in localSettings.syncPaths" :key="index">
+                            <v-list-item :title="path">
+                              <template #prepend>
+                                <v-icon icon="mdi-folder-outline" color="medium-emphasis"></v-icon>
+                              </template>
+                              <template #append>
+                                <v-btn
+                                  icon="mdi-delete-outline"
+                                  variant="text"
+                                  color="error"
+                                  density="comfortable"
+                                  @click="removePath(path)"
+                                  title="Remove path"
+                                ></v-btn>
+                              </template>
+                            </v-list-item>
+                            <v-divider
+                              v-if="index < localSettings.syncPaths.length - 1"
+                            ></v-divider>
+                          </template>
+                        </v-list>
 
-                <v-empty-state
-                  v-else
-                  icon="mdi-folder-open-outline"
-                  title="No sync paths"
-                  text="Add a path to start syncing your files."
-                  class="py-6 text-medium-emphasis"
-                ></v-empty-state>
-              </v-card>
+                        <v-empty-state
+                          v-else
+                          icon="mdi-folder-open-outline"
+                          title="No sync paths"
+                          text="Add a path to start syncing your files."
+                        ></v-empty-state>
+                      </v-card>
+                    </v-col>
 
-              <v-list-subheader class="px-1 text-high-emphasis font-weight-bold"
-                >Advanced</v-list-subheader
-              >
-              <v-card border flat class="mb-8 rounded-lg">
-                <v-card-text class="pt-4 pb-2">
-                  <v-text-field
-                    v-model="localSettings.authKey"
-                    label="JWT Authentication Key"
-                    prepend-icon="mdi-key-outline"
-                    placeholder="Enter JWT Key"
-                    variant="outlined"
-                    density="comfortable"
-                    class="mb-2"
-                  ></v-text-field>
+                    <v-col cols="12">
+                      <v-list-subheader class="font-weight-bold text-high-emphasis"
+                        >Advanced</v-list-subheader
+                      >
+                      <v-card border flat class="rounded-lg">
+                        <v-card-text>
+                          <v-row dense>
+                            <v-col cols="12">
+                              <v-text-field
+                                v-model="localSettings.authKey"
+                                label="JWT Authentication Key"
+                                prepend-icon="mdi-key-outline"
+                                placeholder="Enter JWT Key"
+                                variant="outlined"
+                                density="comfortable"
+                                hide-details="auto"
+                              ></v-text-field>
+                            </v-col>
 
-                  <v-text-field
-                    v-model="localSettings.discordHookUrl"
-                    label="Discord Webhook URL"
-                    prepend-icon="mdi-webhook"
-                    placeholder="https://discord.com/api/..."
-                    variant="outlined"
-                    density="comfortable"
-                    class="mb-2"
-                  ></v-text-field>
+                            <v-col cols="12">
+                              <v-text-field
+                                v-model="localSettings.discordHookUrl"
+                                label="Discord Webhook URL"
+                                prepend-icon="mdi-webhook"
+                                placeholder="https://discord.com/api/..."
+                                variant="outlined"
+                                density="comfortable"
+                                hide-details="auto"
+                              ></v-text-field>
+                            </v-col>
 
-                  <v-text-field
-                    v-model.number="localSettings.uploadLimitMb"
-                    label="Upload Limit"
-                    prepend-icon="mdi-cloud-upload-outline"
-                    type="number"
-                    suffix="MB"
-                    placeholder="0 for unlimited"
-                    variant="outlined"
-                    density="comfortable"
-                  ></v-text-field>
-                </v-card-text>
+                            <v-col cols="12">
+                              <v-text-field
+                                v-model.number="localSettings.uploadLimitMb"
+                                label="Upload Limit"
+                                prepend-icon="mdi-cloud-upload-outline"
+                                type="number"
+                                suffix="MB"
+                                placeholder="0 for unlimited"
+                                variant="outlined"
+                                density="comfortable"
+                                hide-details="auto"
+                              ></v-text-field>
+                            </v-col>
+                          </v-row>
+                        </v-card-text>
 
-                <v-divider></v-divider>
+                        <v-divider></v-divider>
 
-                <v-list lines="two" class="py-0">
-                  <v-list-item title="Read Only Mode" subtitle="Prevent modification of data">
-                    <template #append>
-                      <v-switch
-                        v-model="localSettings.readOnlyMode"
-                        color="primary"
-                        hide-details
-                        inset
-                        density="compact"
-                      ></v-switch>
-                    </template>
-                  </v-list-item>
+                        <v-list lines="two">
+                          <v-list-item
+                            title="Read Only Mode"
+                            subtitle="Prevent modification of data"
+                          >
+                            <template #append>
+                              <v-switch
+                                v-model="localSettings.readOnlyMode"
+                                color="primary"
+                                hide-details
+                                inset
+                                density="compact"
+                              ></v-switch>
+                            </template>
+                          </v-list-item>
 
-                  <v-divider></v-divider>
+                          <v-divider></v-divider>
 
-                  <v-list-item
-                    title="Disable Processing"
-                    subtitle="Skip image generation and analysis"
-                  >
-                    <template #append>
-                      <v-switch
-                        v-model="localSettings.disableImg"
-                        color="primary"
-                        hide-details
-                        inset
-                        density="compact"
-                      ></v-switch>
-                    </template>
-                  </v-list-item>
-                </v-list>
-              </v-card>
+                          <v-list-item
+                            title="Disable Processing"
+                            subtitle="Skip image generation and analysis"
+                          >
+                            <template #append>
+                              <v-switch
+                                v-model="localSettings.disableImg"
+                                color="primary"
+                                hide-details
+                                inset
+                                density="compact"
+                              ></v-switch>
+                            </template>
+                          </v-list-item>
+                        </v-list>
+                      </v-card>
+                    </v-col>
 
-              <div class="d-flex justify-end align-center ga-4 pb-10">
-                <v-btn variant="text" class="text-none" @click="resetToStore" :disabled="loading">
-                  Reset
-                </v-btn>
-                <v-btn
-                  color="primary"
-                  variant="flat"
-                  type="submit"
-                  :loading="loading"
-                  :disabled="!valid || loading"
-                  class="text-none px-6"
-                >
-                  Save Changes
-                </v-btn>
-              </div>
-            </v-form>
+                    <v-col cols="12">
+                      <v-row justify="end">
+                        <v-col cols="auto">
+                          <v-btn
+                            variant="text"
+                            class="text-none"
+                            @click="resetToStore"
+                            :disabled="loading"
+                          >
+                            Reset
+                          </v-btn>
+                        </v-col>
+                        <v-col cols="auto">
+                          <v-btn
+                            color="primary"
+                            variant="flat"
+                            type="submit"
+                            :loading="loading"
+                            :disabled="!valid || loading"
+                            class="text-none"
+                          >
+                            Save Changes
+                          </v-btn>
+                        </v-col>
+                      </v-row>
+                    </v-col>
+                  </v-row>
+                </v-form>
+              </v-col>
+            </v-row>
           </v-col>
         </v-row>
       </v-container>
