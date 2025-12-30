@@ -1,3 +1,4 @@
+
 import { watchDebounced } from '@vueuse/core'
 import { Ref } from 'vue'
 import { IsolationId, PrefetchReturn } from '@type/types'
@@ -41,37 +42,88 @@ export function usePrefetch(
           locate = route.query.locate
         }
 
-        const prefetchReturn = await prefetch(filterJsonString, priorityId, reverse, locate)
-        await handlePrefetchReturn(prefetchReturn, isolationId, route)
-        stopWatcher() // Stop the watcher after prefetching
+        // Parallel Execution: Run Config chain and Prefetch chain simultaneously
+        await Promise.all([
+          processConfigChain(isolationId),
+          processPrefetchChain(filterJsonString, priorityId, reverse, locate, isolationId, route)
+        ])
+
+        stopWatcher() // Stop the watcher after everything is done
       }
     },
     { immediate: true, debounce: 75, maxWait: 1000 }
   )
 }
 
-// TODO optimize tags fetch
-async function handlePrefetchReturn(
-  prefetchReturn: PrefetchReturn,
+/**
+ * Chain 1: Handles Configuration fetching.
+ * Independent of prefetch data.
+ */
+async function processConfigChain(isolationId: IsolationId) {
+  const configStore = useConfigStore(isolationId)
+  await configStore.fetchConfig()
+}
+
+/**
+ * Chain 2: Handles Data Prefetching and dependent sequential operations.
+ * Flow: Prefetch API -> Sync Store (Token) -> Scrollbar API (needs token) -> Final Trigger
+ */
+async function processPrefetchChain(
+  filterJsonString: string | null,
+  priorityId: string,
+  reverse: string,
+  locate: string | null,
   isolationId: IsolationId,
   route: RouteLocationNormalizedLoadedGeneric
 ) {
-  const configStore = useConfigStore(isolationId)
+  // 1. Fetch main data (Critical step)
+  const prefetchReturn = await prefetch(filterJsonString, priorityId, reverse, locate)
+
+  // 2. Sync Store immediately after prefetch returns
+  // This updates the Token which fetchScrollbar relies on.
+  syncStoreFromPrefetch(prefetchReturn, isolationId)
+
+  // 3. Fetch dependent resources (Scrollbar, Tags, Albums)
+  // fetchScrollbar MUST run after syncStoreFromPrefetch because it needs the new Token.
+  const dependentPromises: Promise<any>[] = []
+
+  dependentPromises.push(fetchScrollbar(isolationId))
+
+  if (route.meta.baseName !== 'share') {
+    const tagStore = useTagStore('mainId')
+    if (!tagStore.fetched) {
+      dependentPromises.push(tagStore.fetchTags())
+    }
+
+    const albumStore = useAlbumStore('mainId')
+    if (!albumStore.fetched) {
+      dependentPromises.push(albumStore.fetchAlbums())
+    }
+  }
+
+  // Wait for all dependent fetches in this chain to complete
+  await Promise.all(dependentPromises)
+
+  // 4. Trigger the final row fetch to display the grid
+  const prefetchStore = usePrefetchStore(isolationId)
+  prefetchStore.updateFetchRowTrigger = !prefetchStore.updateFetchRowTrigger
+}
+
+/**
+ * Helper to update stores with data from prefetch response.
+ */
+function syncStoreFromPrefetch(
+  prefetchReturn: PrefetchReturn,
+  isolationId: IsolationId
+) {
   const prefetchStore = usePrefetchStore(isolationId)
   const initializedStore = useInitializedStore(isolationId)
   const tokenStore = useTokenStore(isolationId)
   const shareStore = useShareStore('mainId')
-  const albumStore = useAlbumStore('mainId')
-  const tagStore = useTagStore('mainId')
 
-  // Refactor: Restore config fetch using the store action
-  // This ensures config is loaded (if not already) before we proceed
-  await configStore.fetchConfig()
+  const { prefetch, token, resolvedShare } = prefetchReturn
 
-  const prefetch = prefetchReturn.prefetch
-  const token = prefetchReturn.token
-
-  shareStore.resolvedShare = prefetchReturn.resolvedShare
+  shareStore.resolvedShare = resolvedShare
   prefetchStore.timestamp = prefetch.timestamp
 
   prefetchStore.updateVisibleRowTrigger = !prefetchStore.updateVisibleRowTrigger
@@ -80,18 +132,4 @@ async function handlePrefetchReturn(
   tokenStore.timestampToken = token
 
   initializedStore.initialized = true
-
-  // Perform initialization:
-  if (route.meta.baseName !== 'share') {
-    if (!tagStore.fetched) {
-      await tagStore.fetchTags()
-    }
-    if (!albumStore.fetched) {
-      await albumStore.fetchAlbums()
-    }
-  }
-
-  await fetchScrollbar(isolationId)
-
-  prefetchStore.updateFetchRowTrigger = !prefetchStore.updateFetchRowTrigger
 }
