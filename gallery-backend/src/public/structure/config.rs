@@ -104,7 +104,7 @@ impl AppConfig {
             true
         };
 
-        let config = if should_migrate {
+        let mut config = if should_migrate {
             println!("Legacy configuration or missing file detected. Starting migration...");
             // NOTE: Ensure construct_migrated_config returns the NEW AppConfig structure!
             let cfg = crate::migration::construct_migrated_config();
@@ -124,13 +124,12 @@ impl AppConfig {
             Self::load_from_file()
         };
 
-        if config.private.auth_key.is_none() {
-            println!("No authKey found in config. Initializing ephemeral fallback key.");
+        if config.private.auth_key.as_ref().filter(|k| !k.is_empty()).is_none() {
+         
+            config.private.auth_key = None; // Normalize empty string to None
             FALLBACK_SECRET_KEY.get_or_init(generate_secret_key);
         }
-
-        println!("Configuration loaded."); // Avoid printing secrets to log
-
+        
         APP_CONFIG
             .set(RwLock::new(config))
             .expect("Config already initialized");
@@ -160,10 +159,15 @@ impl AppConfig {
         }
     }
 
-    pub fn update(new_config: AppConfig) -> anyhow::Result<()> {
+    pub fn update(mut new_config: AppConfig) -> anyhow::Result<()> {
         use crate::tasks::batcher::start_watcher::reload_watcher;
 
         println!("Updating configuration...");
+
+        // Normalize empty authKey to None BEFORE saving or applying
+        if new_config.private.auth_key.as_ref().filter(|k| !k.is_empty()).is_none() {
+             new_config.private.auth_key = None;
+        }
 
         Self::save_update(&new_config).context("Failed to save configuration to file")?;
 
