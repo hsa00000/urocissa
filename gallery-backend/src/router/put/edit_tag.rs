@@ -24,7 +24,7 @@ pub struct EditTagsData {
 #[put("/put/edit_tag", format = "json", data = "<json_data>")]
 pub async fn edit_tag(
     auth: GuardResult<GuardAuth>,
-    read_only_mode: Result<GuardReadOnlyMode>,
+    read_only_mode: GuardResult<GuardReadOnlyMode>,
     json_data: Json<EditTagsData>,
 ) -> AppResult<Json<Vec<TagInfo>>> {
     let _ = auth?;

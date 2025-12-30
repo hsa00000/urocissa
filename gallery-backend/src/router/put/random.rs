@@ -11,7 +11,7 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 #[get("/put/generate_random_data?<number>")]
 pub async fn generate_random_data(
     auth: GuardResult<GuardAuth>,
-    read_only_mode: Result<GuardReadOnlyMode>,
+    read_only_mode: GuardResult<GuardReadOnlyMode>,
     number: usize,
 ) -> AppResult<()> {
     let _ = auth?;

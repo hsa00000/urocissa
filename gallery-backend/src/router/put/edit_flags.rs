@@ -29,7 +29,7 @@ pub struct EditFlagsData {
 #[put("/put/edit_flags", format = "json", data = "<json_data>")]
 pub async fn edit_flags(
     auth: GuardResult<GuardAuth>,
-    read_only_mode: Result<GuardReadOnlyMode>,
+    read_only_mode: GuardResult<GuardReadOnlyMode>,
     json_data: Json<EditFlagsData>,
 ) -> AppResult<Json<()>> {
     let _ = auth?;

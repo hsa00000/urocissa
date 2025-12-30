@@ -1,6 +1,6 @@
 // src/router/fairing/guard_read_only_mode.rs
 use crate::public::structure::config::APP_CONFIG;
-use anyhow::Error;
+use crate::router::GuardError;
 use anyhow::anyhow;
 use rocket::Request;
 use rocket::http::Status;
@@ -10,7 +10,7 @@ pub struct GuardReadOnlyMode;
 
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for GuardReadOnlyMode {
-    type Error = Error;
+    type Error = GuardError;
     async fn from_request(_req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         if APP_CONFIG.get().unwrap().read().unwrap().public.read_only_mode {
             return Outcome::Error((

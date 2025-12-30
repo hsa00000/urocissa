@@ -29,7 +29,7 @@ pub struct CreateShare {
 #[post("/post/create_share", data = "<create_share>")]
 pub async fn create_share(
     auth: GuardResult<GuardAuth>,
-    read_only_mode: Result<GuardReadOnlyMode>,
+    read_only_mode: GuardResult<GuardReadOnlyMode>,
     create_share: Json<CreateShare>,
 ) -> AppResult<String> {
     let _ = auth?;

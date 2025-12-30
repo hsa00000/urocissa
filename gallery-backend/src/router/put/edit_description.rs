@@ -26,7 +26,7 @@ pub struct SetUserDefinedDescription {
 )]
 pub async fn set_user_defined_description(
     auth: GuardResult<GuardShare>,
-    read_only_mode: Result<GuardReadOnlyMode>,
+    read_only_mode: GuardResult<GuardReadOnlyMode>,
     set_user_defined_description: Json<SetUserDefinedDescription>,
 ) -> AppResult<()> {
     let _ = auth?;

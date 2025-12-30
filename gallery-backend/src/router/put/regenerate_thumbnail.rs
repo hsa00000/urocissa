@@ -29,7 +29,7 @@ pub struct RegenerateThumbnailForm<'r> {
 #[put("/put/regenerate-thumbnail-with-frame", data = "<form>")]
 pub async fn regenerate_thumbnail_with_frame(
     auth: GuardResult<GuardAuth>,
-    read_only_mode: Result<GuardReadOnlyMode>,
+    read_only_mode: GuardResult<GuardReadOnlyMode>,
     form: Result<Form<RegenerateThumbnailForm<'_>>, Errors<'_>>,
 ) -> AppResult<()> {
     let _ = auth?;

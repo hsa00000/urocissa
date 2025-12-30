@@ -30,7 +30,7 @@ pub struct RegenerateData {
 #[post("/put/reindex", format = "json", data = "<json_data>")]
 pub async fn reindex(
     auth: GuardResult<GuardAuth>,
-    read_only_mode: Result<GuardReadOnlyMode>,
+    read_only_mode: GuardResult<GuardReadOnlyMode>,
     json_data: Json<RegenerateData>,
 ) -> AppResult<Status> {
     let _ = auth?;

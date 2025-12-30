@@ -40,7 +40,7 @@ pub struct EditAlbumsData {
 #[put("/put/edit_album", format = "json", data = "<json_data>")]
 pub async fn edit_album(
     auth: GuardResult<GuardAuth>,
-    read_only_mode: Result<GuardReadOnlyMode>,
+    read_only_mode: GuardResult<GuardReadOnlyMode>,
     json_data: Json<EditAlbumsData>,
 ) -> AppResult<()> {
     let _ = auth?;
@@ -115,7 +115,7 @@ pub struct SetAlbumCover {
 #[put("/put/set_album_cover", data = "<set_album_cover>")]
 pub async fn set_album_cover(
     auth: GuardResult<GuardAuth>,
-    read_only_mode: Result<GuardReadOnlyMode>,
+    read_only_mode: GuardResult<GuardReadOnlyMode>,
     set_album_cover: Json<SetAlbumCover>,
 ) -> AppResult<()> {
     let _ = auth?;
@@ -166,7 +166,7 @@ pub struct SetAlbumTitle {
 #[put("/put/set_album_title", data = "<set_album_title>")]
 pub async fn set_album_title(
     auth: GuardResult<GuardShare>,
-    read_only_mode: Result<GuardReadOnlyMode>,
+    read_only_mode: GuardResult<GuardReadOnlyMode>,
     set_album_title: Json<SetAlbumTitle>,
 ) -> AppResult<()> {
     let _ = auth?;

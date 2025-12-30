@@ -21,7 +21,7 @@ pub struct EditShare {
 #[put("/put/edit_share", format = "json", data = "<json_data>")]
 pub async fn edit_share(
     auth: GuardResult<GuardAuth>,
-    read_only_mode: Result<GuardReadOnlyMode>,
+    read_only_mode: GuardResult<GuardReadOnlyMode>,
     json_data: Json<EditShare>,
 ) -> AppResult<()> {
     let _ = auth?;
@@ -72,7 +72,7 @@ pub struct DeleteShare {
 #[put("/put/delete_share", format = "json", data = "<json_data>")]
 pub async fn delete_share(
     auth: GuardResult<GuardAuth>,
-    read_only_mode: Result<GuardReadOnlyMode>,
+    read_only_mode: GuardResult<GuardReadOnlyMode>,
     json_data: Json<DeleteShare>,
 ) -> AppResult<()> {
     let _ = auth?;

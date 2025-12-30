@@ -22,7 +22,7 @@ pub struct DeleteList {
 #[delete("/delete/delete-data", format = "json", data = "<json_data>")]
 pub async fn delete_data(
     auth: GuardResult<GuardAuth>,
-    read_only_mode: Result<GuardReadOnlyMode>,
+    read_only_mode: GuardResult<GuardReadOnlyMode>,
     json_data: Json<DeleteList>,
 ) -> AppResult<()> {
     let _ = auth?;
