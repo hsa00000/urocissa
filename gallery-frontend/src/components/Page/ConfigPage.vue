@@ -1,126 +1,134 @@
 <template>
   <PageTemplate>
     <template #content>
-      <v-container fluid class="fill-height align-start pa-4">
+      <v-container fluid class="h-100 overflow-y-auto pa-3 pa-md-4">
         <v-row justify="center">
-          <v-col cols="12" md="8" lg="6">
-            <v-card class="mt-4">
+          <v-col cols="12" md="10" lg="8" xl="6">
+            <v-card :loading="loading" class="rounded-lg" elevation="2">
+              <!-- Loading Overlay -->
               <v-overlay
                 :model-value="loading"
                 contained
                 class="align-center justify-center"
                 persistent
+                scrim="white"
               >
-                <v-progress-circular indeterminate color="primary"></v-progress-circular>
+                <v-progress-circular indeterminate color="primary" size="64"></v-progress-circular>
               </v-overlay>
 
               <v-form ref="form" v-model="valid" @submit.prevent="save" :disabled="loading">
-                <v-tabs v-model="tab" color="primary" align-tabs="start">
-                  <v-tab value="general">General</v-tab>
-                  <v-tab value="security">Security</v-tab>
-                  <v-tab value="paths">Storage</v-tab>
-                </v-tabs>
+                
+                <div class="pa-4 d-flex flex-column">
+                  
+                  <!-- General Section -->
+                  <div class="mb-4">
+                    <div class="text-subtitle-1 font-weight-bold mb-2">General</div>
 
-                <v-window v-model="tab" class="pa-4">
-                  <v-window-item value="general">
-                    <v-list subheader>
-                      <v-list-subheader>Behavior</v-list-subheader>
-                      <v-list-item>
-                        <template v-slot:prepend>
-                          <v-icon
-                            :icon="localSettings.readOnlyMode ? 'mdi-lock' : 'mdi-pencil'"
-                          ></v-icon>
-                        </template>
-                        <v-list-item-title>Read Only Mode</v-list-item-title>
-                        <v-list-item-subtitle
-                          >Prevent any modifications to the database</v-list-item-subtitle
-                        >
+                    <v-list lines="two" bg-color="transparent" class="pa-0" density="compact">
+                      <v-list-item class="px-0">
+                        <v-list-item-title class="font-weight-medium">Read Only Mode</v-list-item-title>
+                        <v-list-item-subtitle>Prevent any modifications to the database</v-list-item-subtitle>
                         <template v-slot:append>
                           <v-switch
                             v-model="localSettings.readOnlyMode"
                             color="primary"
                             hide-details
                             inset
+                            density="compact"
                           ></v-switch>
                         </template>
                       </v-list-item>
 
                       <v-divider class="my-2"></v-divider>
 
-                      <v-list-item>
-                        <template v-slot:prepend>
-                          <v-icon
-                            :icon="localSettings.disableImg ? 'mdi-image-off' : 'mdi-image'"
-                          ></v-icon>
-                        </template>
-                        <v-list-item-title>Disable Image Processing</v-list-item-title>
-                        <v-list-item-subtitle
-                          >Stop generating thumbnails and metadata</v-list-item-subtitle
-                        >
+                      <v-list-item class="px-0">
+                        <v-list-item-title class="font-weight-medium">Disable Image Processing</v-list-item-title>
+                        <v-list-item-subtitle>Stop generating thumbnails and metadata</v-list-item-subtitle>
                         <template v-slot:append>
                           <v-switch
                             v-model="localSettings.disableImg"
                             color="warning"
                             hide-details
                             inset
+                            density="compact"
                           ></v-switch>
                         </template>
                       </v-list-item>
-
-                      <v-divider class="my-4"></v-divider>
-
-                      <v-list-subheader>Integrations</v-list-subheader>
-                      <v-text-field
-                        v-model="localSettings.discordHookUrl"
-                        label="Discord Webhook URL"
-                        prepend-inner-icon="mdi-discord"
-                        variant="outlined"
-                        density="comfortable"
-                        placeholder="https://discord.com/api/webhooks/..."
-                        persistent-placeholder
-                        hide-details="auto"
-                        class="mt-2"
-                      ></v-text-field>
                     </v-list>
-                  </v-window-item>
 
-                  <v-window-item value="security">
+                    <v-text-field
+                      v-model="localSettings.discordHookUrl"
+                      label="Discord Webhook URL"
+                      prepend-inner-icon="mdi-discord"
+                      variant="outlined"
+                      density="compact"
+                      placeholder="https://discord.com/api/webhooks/..."
+                      hide-details="auto"
+                      bg-color="surface"
+                      class="mt-2"
+                    ></v-text-field>
+                  </div>
+
+                  <v-divider class="my-4"></v-divider>
+
+                  <!-- Security Section -->
+                  <div class="mb-4">
+                    <div class="text-subtitle-1 font-weight-bold mb-2">Security</div>
+                    
                     <v-alert
                       type="info"
                       variant="tonal"
                       class="mb-4"
-                      text="Sensitive information is only visible to authenticated administrators."
-                    ></v-alert>
+                      density="compact"
+                      border="start"
+                      closable
+                    >
+                      Sensitive information is only visible to authenticated administrators.
+                    </v-alert>
 
-                    <v-text-field
-                      v-model="localSettings.password"
-                      label="Application Password"
-                      :type="showPassword ? 'text' : 'password'"
-                      :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
-                      @click:append-inner="showPassword = !showPassword"
-                      prepend-inner-icon="mdi-key"
-                      variant="outlined"
-                      :rules="[rules.required]"
-                      class="mb-4"
-                    ></v-text-field>
+                    <v-row dense>
+                      <v-col cols="12" md="6">
+                        <v-text-field
+                          v-model="localSettings.password"
+                          label="Application Password"
+                          :type="showPassword ? 'text' : 'password'"
+                          :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
+                          @click:append-inner="showPassword = !showPassword"
+                          prepend-inner-icon="mdi-key"
+                          variant="outlined"
+                          density="compact"
+                          :rules="[rules.required]"
+                          bg-color="surface"
+                        ></v-text-field>
+                      </v-col>
+                      <v-col cols="12" md="6">
+                        <v-text-field
+                          v-model="localSettings.authKey"
+                          label="JWT Authentication Key"
+                          prepend-inner-icon="mdi-shield-key"
+                          variant="outlined"
+                          density="compact"
+                          hint="Leave empty to generate automatically"
+                          persistent-hint
+                          bg-color="surface"
+                        ></v-text-field>
+                      </v-col>
+                    </v-row>
+                  </div>
 
-                    <v-text-field
-                      v-model="localSettings.authKey"
-                      label="JWT Authentication Key"
-                      prepend-inner-icon="mdi-shield-key"
-                      variant="outlined"
-                      hint="Leave empty to generate automatically on restart"
-                      persistent-hint
-                    ></v-text-field>
-                  </v-window-item>
+                  <v-divider class="my-4"></v-divider>
 
-                  <v-window-item value="paths">
+                  <!-- Storage Section -->
+                  <div class="mb-2">
+                    <div class="text-subtitle-1 font-weight-bold mb-2">Storage</div>
+
                     <v-alert
                       type="warning"
                       variant="tonal"
                       icon="mdi-folder-sync"
                       class="mb-4"
                       density="compact"
+                      border="start"
                     >
                       Changing sync paths will trigger a file system rescan.
                     </v-alert>
@@ -134,14 +142,19 @@
                       multiple
                       hide-selected
                       variant="outlined"
+                      density="compact"
                       prepend-inner-icon="mdi-folder-multiple"
                       :delimiters="[',']"
+                      bg-color="surface"
+                      class="mb-4"
                     >
                       <template v-slot:selection="{ item, index }">
                         <v-chip
                           v-if="index < 5"
                           closable
-                          size="small"
+                          size="x-small"
+                          color="primary"
+                          variant="flat"
                           @click:close="removePath(item.value)"
                         >
                           {{ item.title }}
@@ -154,7 +167,7 @@
                         </span>
                       </template>
                       <template v-slot:no-data>
-                        <v-list-item>
+                        <v-list-item density="compact">
                           <v-list-item-title>
                             Press <kbd>Enter</kbd> to add a directory path
                           </v-list-item-title>
@@ -167,25 +180,31 @@
                       label="Upload Size Limit (MB)"
                       prepend-inner-icon="mdi-upload"
                       variant="outlined"
+                      density="compact"
                       type="number"
                       hint="Maximum file size for uploads in megabytes"
                       persistent-hint
-                      class="mt-4"
+                      bg-color="surface"
+                      style="max-width: 300px;"
                     ></v-text-field>
-                  </v-window-item>
-                </v-window>
+                  </div>
+
+                </div>
 
                 <v-divider></v-divider>
 
-                <v-card-actions class="pa-4">
-                  <v-btn variant="text" @click="resetToStore" :disabled="loading">Reset</v-btn>
+                <v-card-actions class="pa-3 bg-surface-light">
+                  <v-btn variant="text" @click="resetToStore" :disabled="loading" color="medium-emphasis" size="small">
+                    Reset
+                  </v-btn>
                   <v-spacer></v-spacer>
                   <v-btn
                     color="primary"
-                    variant="elevated"
+                    variant="flat"
                     type="submit"
                     :loading="loading"
                     :disabled="!valid || loading"
+                    min-width="100"
                   >
                     Save Changes
                   </v-btn>
@@ -209,7 +228,6 @@ import { tryWithMessageStore } from '@/script/utils/try_catch'
 
 const configStore = useConfigStore('mainId')
 const initializedStore = useInitializedStore('mainId')
-const tab = ref('general')
 const loading = ref(false)
 const valid = ref(false)
 const showPassword = ref(false)
