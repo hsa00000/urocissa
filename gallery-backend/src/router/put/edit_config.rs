@@ -9,6 +9,7 @@ use serde::Deserialize;
 // Import PublicConfig
 use crate::public::structure::config::{APP_CONFIG, AppConfig, PublicConfig};
 use crate::router::fairing::guard_auth::GuardAuth;
+use crate::router::fairing::guard_read_only_mode::GuardReadOnlyMode;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -23,6 +24,7 @@ pub struct UpdateConfigRequest {
 #[put("/put/config", data = "<req>")]
 pub fn update_config_handler(
     _auth: GuardAuth,
+    _read_only: GuardReadOnlyMode,
     req: Json<UpdateConfigRequest>,
 ) -> Result<Status, Status> {
     let req_data = req.into_inner();
