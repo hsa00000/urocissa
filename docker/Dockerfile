@@ -58,25 +58,85 @@ COPY --from=frontend-builder /app/gallery-frontend/public /app/gallery-frontend/
 # 3. Run the urocissa binary
 WORKDIR /app
 
-# Create the entrypoint script
-RUN echo '#!/bin/sh' > /entrypoint.sh && \
-    echo 'set -e' >> /entrypoint.sh && \
-    echo 'if [ -z "${UROCISSA_PATH}" ]; then' >> /entrypoint.sh && \
-    echo '    echo "Error: UROCISSA_PATH is not set. Terminating."' >> /entrypoint.sh && \
-    echo '    exit 1' >> /entrypoint.sh && \
-    echo 'else' >> /entrypoint.sh && \
-    echo '    mkdir -p "${UROCISSA_PATH}/gallery-backend"' >> /entrypoint.sh && \
-    echo '    mkdir -p "${UROCISSA_PATH}/gallery-frontend"' >> /entrypoint.sh && \
-    echo '    mv /app/gallery-backend/* "${UROCISSA_PATH}/gallery-backend"' >> /entrypoint.sh && \
-    echo '    mv /app/gallery-frontend/* "${UROCISSA_PATH}/gallery-frontend"' >> /entrypoint.sh && \
-    echo '    echo "Listing ${UROCISSA_PATH}/gallery-backend:"' >> /entrypoint.sh && \
-    echo '    ls -al "${UROCISSA_PATH}/gallery-backend"' >> /entrypoint.sh && \
-    echo '    echo "Listing ${UROCISSA_PATH}/gallery-frontend:"' >> /entrypoint.sh && \
-    echo '    ls -al "${UROCISSA_PATH}/gallery-frontend"' >> /entrypoint.sh && \
-    echo '    cd "${UROCISSA_PATH}/gallery-backend"' >> /entrypoint.sh && \
-    echo 'fi' >> /entrypoint.sh && \
-    echo 'echo "Attempting to run ./urocissa"' >> /entrypoint.sh && \
-    echo 'exec ./urocissa' >> /entrypoint.sh && \
-    chmod +x /entrypoint.sh
+# Create the entrypoint script using HEREDOC
+# 使用 'EOF' (單引號) 確保變數是在 runtime 才展開，而不是 build time
+RUN cat <<'EOF' > /entrypoint.sh
+#!/bin/sh
+set -e
+
+# 定義顏色，讓 Log 好讀
+CYAN='\033[0;36m'
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+log_info() { echo -e "${CYAN}[ENTRYPOINT]${NC} $1"; }
+log_err()  { echo -e "${RED}[ERROR]${NC}      $1"; }
+
+# 專門用來顯示 ls -al 的函式，帶有標題與分隔線
+list_directory() {
+    local dir="$1"
+    echo -e "${YELLOW}┌──────────────────────────────────────────────────────────────┐${NC}"
+    echo -e "${YELLOW}│ Listing: ${NC}${dir}"
+    echo -e "${YELLOW}└──────────────────────────────────────────────────────────────┘${NC}"
+    if [ -d "$dir" ]; then
+        ls -al "$dir"
+    else
+        echo -e "${RED}(Directory not found)${NC}"
+    fi
+    echo "" # 空一行
+}
+
+# -----------------------------------------------------------------------------
+# 1. 環境檢查
+# -----------------------------------------------------------------------------
+if [ -z "${UROCISSA_PATH}" ]; then
+    log_err "UROCISSA_PATH is not set. Terminating."
+    exit 1
+fi
+
+log_info "Target Root: ${UROCISSA_PATH}"
+
+# -----------------------------------------------------------------------------
+# 2. 準備檔案 (使用 cp -r 確保容器重啟時來源不會消失)
+# -----------------------------------------------------------------------------
+log_info "Syncing application files..."
+
+mkdir -p "${UROCISSA_PATH}/gallery-backend"
+mkdir -p "${UROCISSA_PATH}/gallery-frontend"
+
+# 嘗試將檔案複製過去 (若已存在則覆蓋，確保版本最新)
+if [ -d "/app/gallery-backend" ]; then
+    cp -r /app/gallery-backend/. "${UROCISSA_PATH}/gallery-backend/"
+else
+    log_err "/app/gallery-backend missing!"
+fi
+
+if [ -d "/app/gallery-frontend" ]; then
+    cp -r /app/gallery-frontend/. "${UROCISSA_PATH}/gallery-frontend/"
+else
+    log_err "/app/gallery-frontend missing!"
+fi
+
+# -----------------------------------------------------------------------------
+# 3. 顯示詳細列表 (Debug 重點)
+# -----------------------------------------------------------------------------
+log_info "Verifying file permissions and ownership:"
+
+list_directory "${UROCISSA_PATH}/gallery-backend"
+list_directory "${UROCISSA_PATH}/gallery-frontend"
+
+# -----------------------------------------------------------------------------
+# 4. 啟動程式
+# -----------------------------------------------------------------------------
+cd "${UROCISSA_PATH}/gallery-backend"
+
+log_info "Launching ./urocissa..."
+echo -e "${GREEN}============================================================${NC}"
+exec ./urocissa
+EOF
+
+RUN chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
