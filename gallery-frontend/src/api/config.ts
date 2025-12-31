@@ -22,7 +22,7 @@ export const getConfig = async (): Promise<AppConfig> => {
   return response.data
 }
 
-export const updateConfig = async (config: AppConfig): Promise<void> => {
+export const updateConfig = async (config: AppConfig & { oldPassword?: string }): Promise<void> => {
   // Refactor: path to /put/config
   await axios.put('/put/config', config)
 }

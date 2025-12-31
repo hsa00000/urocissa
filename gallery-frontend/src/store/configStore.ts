@@ -35,7 +35,7 @@ export const useConfigStore = (isolationId: IsolationId) =>
           this.config = data
         })
       },
-      async updateConfig(newConfig: AppConfig) {
+      async updateConfig(newConfig: AppConfig & { oldPassword?: string }) {
         await tryWithMessageStore(isolationId, async () => {
           await updateConfig(newConfig)
           this.config = newConfig

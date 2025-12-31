@@ -19,6 +19,7 @@ pub struct UpdateConfigRequest {
     pub public: PublicConfig,
     // Make password optional so it's only updated if provided
     pub password: Option<String>,
+    pub old_password: Option<String>,
     pub auth_key: Option<String>,
 }
 
@@ -39,6 +40,10 @@ pub fn update_config_handler(
 
     // 2. Update private fields if they are present in the request
     if let Some(pwd) = req_data.password {
+        // Verify old password if changing password
+        if req_data.old_password.as_ref() != Some(&current_private.password) {
+            return Err(anyhow::anyhow!("Incorrect current password").into());
+        }
         current_private.password = pwd;
     }
     if let Some(key) = req_data.auth_key {

@@ -21,15 +21,30 @@
                           <v-row dense>
                             <v-col cols="12">
                               <v-text-field
+                                v-model="oldPassword"
+                                label="Current Password"
+                                :type="showOldPassword ? 'text' : 'password'"
+                                :append-inner-icon="showOldPassword ? 'mdi-eye' : 'mdi-eye-off'"
+                                prepend-icon="mdi-lock-check-outline"
+                                variant="outlined"
+                                density="comfortable"
+                                placeholder="Required if changing password"
+                                :rules="[rules.requiredIfNewPassword]"
+                                persistent-placeholder
+                                hide-details="auto"
+                                class="mb-3"
+                                @click:append-inner="showOldPassword = !showOldPassword"
+                              ></v-text-field>
+
+                              <v-text-field
                                 v-model="localSettings.password"
-                                label="Application Password"
+                                label="New Password"
                                 :type="showPassword ? 'text' : 'password'"
                                 :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
                                 prepend-icon="mdi-lock-outline"
                                 variant="outlined"
                                 density="comfortable"
-                                placeholder="Required for access"
-                                :rules="[rules.required]"
+                                placeholder="Leave empty to keep current"
                                 persistent-placeholder
                                 hide-details="auto"
                                 @click:append-inner="showPassword = !showPassword"
@@ -235,6 +250,8 @@ const initializedStore = useInitializedStore('mainId')
 const loading = ref(false)
 const valid = ref(false)
 const showPassword = ref(false)
+const showOldPassword = ref(false)
+const oldPassword = ref('')
 const form = ref<any>(null)
 const showFilePicker = ref(false)
 
@@ -253,7 +270,8 @@ const localSettings = reactive<AppConfig>({
 })
 
 const rules = {
-  required: (v: string) => !!v || 'Required'
+  required: (v: string) => !!v || 'Required',
+  requiredIfNewPassword: (v: string) => !localSettings.password || !!v || 'Required to change password'
 }
 
 const onFilePickerSelect = (path: string) => {
@@ -284,6 +302,8 @@ const initData = async () => {
 
 const resetToStore = () => {
   syncLocalWithStore()
+  localSettings.password = ''
+  oldPassword.value = ''
   form.value?.resetValidation()
 }
 
@@ -297,8 +317,24 @@ const save = async () => {
   if (!valid) return
 
   loading.value = true
-  await tryWithMessageStore('mainId', async () => {
-    await configStore.updateConfig(localSettings)
+  const success = await tryWithMessageStore('mainId', async () => {
+    const payload: any = { ...localSettings }
+    
+    // Only send password if user intends to change it
+    if (!payload.password) {
+      delete payload.password
+    } else {
+      payload.oldPassword = oldPassword.value
+    }
+
+    await configStore.updateConfig(payload)
+    
+    // Reset password fields on success
+    oldPassword.value = ''
+    localSettings.password = ''
+    // Reset validation state
+    form.value?.resetValidation()
+    return true
   })
   loading.value = false
 }
