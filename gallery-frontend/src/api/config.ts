@@ -13,7 +13,6 @@ export interface AppConfig {
   authKey?: string | null
   discordHookUrl?: string | null
   syncPaths: string[]
-  uploadLimitMb: number
 }
 
 export const getConfig = async (): Promise<AppConfig> => {
@@ -23,6 +22,7 @@ export const getConfig = async (): Promise<AppConfig> => {
 }
 
 export const updateConfig = async (config: AppConfig & { oldPassword?: string }): Promise<void> => {
+
   // Refactor: path to /put/config
   await axios.put('/put/config', config)
 }

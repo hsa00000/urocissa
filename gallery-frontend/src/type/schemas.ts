@@ -210,9 +210,10 @@ export const PublicConfigSchema = z.object({
   syncPaths: z.array(z.string()), // HashSet<PathBuf> deserializes to array
   discordHookUrl: z.string().nullable().optional(),
   readOnlyMode: z.boolean(),
-  disableImg: z.boolean(),
-  uploadLimitMb: z.number()
+  disableImg: z.boolean()
 })
+
+
 
 export const TokenResponseSchema = z.object({
   token: z.string()

@@ -99,8 +99,9 @@
                               </template>
                             </v-list-item>
                             <v-divider
-                              v-if="index < localSettings.syncPaths.length - 1"
+                              v-if="index !== localSettings.syncPaths.length - 1"
                             ></v-divider>
+
                           </template>
                         </v-list>
 
@@ -143,24 +144,11 @@
                                 hide-details="auto"
                               ></v-text-field>
                             </v-col>
-
-                            <v-col cols="12">
-                              <v-text-field
-                                v-model.number="localSettings.uploadLimitMb"
-                                label="Upload Limit"
-                                prepend-icon="mdi-cloud-upload-outline"
-                                type="number"
-                                suffix="MB"
-                                placeholder="0 for unlimited"
-                                variant="outlined"
-                                density="comfortable"
-                                hide-details="auto"
-                              ></v-text-field>
-                            </v-col>
                           </v-row>
                         </v-card-text>
 
                         <v-divider></v-divider>
+
 
                         <v-list lines="two">
                           <v-list-item
@@ -268,8 +256,8 @@ const localSettings = reactive<AppConfig>({
   authKey: '',
   discordHookUrl: '',
   syncPaths: [],
-  uploadLimitMb: 0,
   address: '',
+
   port: 0,
   limits: {}
 })

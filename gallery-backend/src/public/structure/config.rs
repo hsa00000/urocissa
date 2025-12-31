@@ -35,8 +35,8 @@ pub struct PublicConfig {
     pub discord_hook_url: Option<String>,
     pub read_only_mode: bool,
     pub disable_img: bool,
-    pub upload_limit_mb: u64,
 }
+
 
 /// Sensitive configuration kept only on the backend.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -70,8 +70,8 @@ impl Default for AppConfig {
                 discord_hook_url: None,
                 read_only_mode: false,
                 disable_img: false,
-                upload_limit_mb: 2048,
             },
+
             private: PrivateConfig {
                 password: "password".to_string(),
                 auth_key: None,
