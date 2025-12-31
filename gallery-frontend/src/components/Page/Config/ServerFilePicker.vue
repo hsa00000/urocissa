@@ -238,6 +238,12 @@ const navigateUp = () => {
       const newPath = parts.join('/')
       currentPath.value = newPath || '/'
     }
+    
+    // Ensure trailing slash for intermediate directories to avoid "searching" mode
+    const separator = isWindows ? '\\' : '/'
+    if (!currentPath.value.endsWith(separator)) {
+      currentPath.value += separator
+    }
   }
 
   loadItems(currentPath.value)
