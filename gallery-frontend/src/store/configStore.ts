@@ -30,15 +30,16 @@ export const useConfigStore = (isolationId: IsolationId) =>
         // Return if already loaded to avoid redundant calls
         if (this.config) return
 
-        await tryWithMessageStore(isolationId, async () => {
+        return await tryWithMessageStore(isolationId, async () => {
           const data = await getConfig()
           this.config = data
         })
       },
       async updateConfig(newConfig: AppConfig & { oldPassword?: string }) {
-        await tryWithMessageStore(isolationId, async () => {
+        return await tryWithMessageStore(isolationId, async () => {
           await updateConfig(newConfig)
           this.config = newConfig
+          return true
         })
       }
     }

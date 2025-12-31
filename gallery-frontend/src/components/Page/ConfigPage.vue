@@ -333,7 +333,9 @@ const save = async () => {
       payload.oldPassword = oldPassword.value
     }
 
-    await configStore.updateConfig(payload)
+    const result = await configStore.updateConfig(payload)
+
+    if (!result) return false
 
     // Reset password fields on success
     oldPassword.value = ''
