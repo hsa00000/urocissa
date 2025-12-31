@@ -15,6 +15,8 @@ import '@mdi/font/css/materialdesignicons.css'
 
 // Importing Vuetify UI framework and configuration
 import { createVuetify } from 'vuetify'
+import { errorDisplay } from '@/script/utils/errorDisplay'
+
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
@@ -76,7 +78,9 @@ axios.interceptors.response.use(
           }
         } else if (status === 403) {
           // 403: Link expired or access denied
-          messageStore.error('Share link has expired or access is denied.')
+          const displayMsg = errorDisplay(error)
+          messageStore.error(displayMsg !== 'Unknown error occurred' ? displayMsg : 'Share link has expired or access is denied.')
+          
           if (!modalStore.showShareLoginModal) {
             shareStore.isLinkExpired = true
             modalStore.showShareLoginModal = true
@@ -90,7 +94,9 @@ axios.interceptors.response.use(
           const handledError: HandledError = error
           handledError.isHandled = true
         } else if (status === 403) {
-          messageStore.error('Access denied.')
+          const displayMsg = errorDisplay(error)
+          messageStore.error(displayMsg !== 'Unknown error occurred' ? displayMsg : 'Access denied.')
+          
           const handledError: HandledError = error
           handledError.isHandled = true
         } else if (status === 405) {
@@ -104,6 +110,7 @@ axios.interceptors.response.use(
     return Promise.reject(error)
   }
 )
+
 // Create Vue application instance
 const app = createApp(App)
 

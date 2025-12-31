@@ -1,5 +1,5 @@
 import { AxiosInstance, AxiosError } from 'axios'
-import { serverErrorSchema } from '@type/schemas'
+import { errorDisplay } from '@/script/utils/errorDisplay'
 
 export function setupAxiosInterceptor(
   axiosInstance: AxiosInstance,
@@ -8,17 +8,10 @@ export function setupAxiosInterceptor(
   axiosInstance.interceptors.response.use(
     (response) => response,
     (error: AxiosError) => {
+      // Handle server errors (500) or other unexpected errors
+      // Use the unified errorDisplay function to parse the error
       if (error.response?.status === 500) {
-        let errorMessage: string
-
-        try {
-          const parsedError = serverErrorSchema.parse(error.response.data)
-          errorMessage = parsedError.error
-        } catch (parseError) {
-          console.error('Failed to parse server error response:', parseError)
-          errorMessage = 'Unknown error occurred'
-        }
-
+        const errorMessage = errorDisplay(error)
         notify({ text: errorMessage, color: 'error' })
       }
       return Promise.reject(error)
