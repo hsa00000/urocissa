@@ -254,7 +254,7 @@ run_container() {
     if [[ -f "./gallery-backend/Rocket.toml" ]]; then
         ROCKET_PORT=$(grep -E '^port\s*=\s*' ./gallery-backend/Rocket.toml | sed -E 's/^port\s*=\s*"?([0-9]+)"?/\1/' | tr -d '[:space:]')
     fi
-    ROCKET_PORT=${ROCKET_PORT:-4000}
+    ROCKET_PORT=${ROCKET_PORT:-5673}
     log_info "Service Port: $ROCKET_PORT"
     log_info "Image Tag   : $DOCKER_TAG"
 
