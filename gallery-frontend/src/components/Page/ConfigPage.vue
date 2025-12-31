@@ -1,7 +1,10 @@
 <template>
   <PageTemplate>
     <template #content>
-      <v-container fluid class="fill-height align-start justify-center overflow-y-auto">
+      <v-container
+        fluid
+        class="fill-height align-start justify-center overflow-y-auto bg-surface-light"
+      >
         <v-row justify="center">
           <v-col cols="12" sm="10" md="8" lg="6" xl="5">
             <v-row>
@@ -271,7 +274,8 @@ const localSettings = reactive<AppConfig>({
 
 const rules = {
   required: (v: string) => !!v || 'Required',
-  requiredIfNewPassword: (v: string) => !localSettings.password || !!v || 'Required to change password'
+  requiredIfNewPassword: (v: string) =>
+    !localSettings.password || !!v || 'Required to change password'
 }
 
 const onFilePickerSelect = (path: string) => {
@@ -319,7 +323,7 @@ const save = async () => {
   loading.value = true
   const success = await tryWithMessageStore('mainId', async () => {
     const payload: any = { ...localSettings }
-    
+
     // Only send password if user intends to change it
     if (!payload.password) {
       delete payload.password
@@ -328,7 +332,7 @@ const save = async () => {
     }
 
     await configStore.updateConfig(payload)
-    
+
     // Reset password fields on success
     oldPassword.value = ''
     localSettings.password = ''
