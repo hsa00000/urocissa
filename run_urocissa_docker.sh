@@ -121,39 +121,35 @@ setup_environment() {
 }
 
 prepare_volumes() {
-    # 初始化路徑陣列
+    # 初始化變數
     local RAW_PATHS_LIST=()
-    local FOUND_IN_CONFIG=false
+    local CONFIG_SOURCE="None" # 用來記錄來源是 config.json 還是 .env
     local CONFIG_FILE="./gallery-backend/config.json"
     
     # ============================================================
     # 1. 嘗試從 config.json 讀取 syncPaths
     # ============================================================
     if [[ -f "$CONFIG_FILE" ]]; then
-        # 將檔案內容壓縮成一行以處理多行 JSON，並刪除 carriage return (\r)
+        # 壓縮 JSON 為一行並移除 CR 符號
         local FLAT_JSON
         FLAT_JSON=$(cat "$CONFIG_FILE" | tr -d '\n' | tr -d '\r')
 
-        # 使用 sed 匹配 "syncPaths": [ ... ] 內部的內容
-        # 解釋：
-        #   s/.*"syncPaths"[[:space:]]*:[[:space:]]*\[//  -> 刪除 "syncPaths": [ 之前的所有內容
-        #   s/\].*//                                      -> 刪除 ] 之後的所有內容 (閉合陣列)
-        #   注意：這假設 syncPaths 後面的 ] 是該陣列的結尾，對於簡單結構有效
+        # 檢查是否有 syncPaths 欄位
         if echo "$FLAT_JSON" | grep -q '"syncPaths"'; then
              local JSON_CONTENT
+             # 提取 [ ... ] 內的內容
              JSON_CONTENT=$(echo "$FLAT_JSON" | sed -e 's/.*"syncPaths"[[:space:]]*:[[:space:]]*\[//' -e 's/\].*//')
              
              # 如果內容不為空
              if [[ -n "$JSON_CONTENT" ]]; then
-                debug_log "Found syncPaths in config.json: $JSON_CONTENT"
-                FOUND_IN_CONFIG=true
+                CONFIG_SOURCE="config.json"
                 
                 # 以逗號分隔處理陣列元素
                 IFS=',' read -ra JSON_ARR <<< "$JSON_CONTENT"
                 for item in "${JSON_ARR[@]}"; do
                     # 1. 移除雙引號
-                    # 2. 移除前後空白 (xargs)
-                    # 3. 將 Windows 反斜線 (\\ 或 \) 轉換為 Forward Slash (/)
+                    # 2. 移除前後空白
+                    # 3. 將 Windows 雙反斜線 (\\) 或單反斜線 (\) 轉為 Linux 斜線 (/)
                     local cleaned_path
                     cleaned_path=$(echo "$item" | tr -d '"' | xargs | sed 's|\\\\|/|g' | sed 's|\\|/|g')
                     
@@ -166,46 +162,65 @@ prepare_volumes() {
     fi
 
     # ============================================================
-    # 2. 如果 config.json 沒找到，回退讀取 .env
+    # 2. 如果 config.json 沒找到有效內容，回退讀取 .env
     # ============================================================
-    if [[ "$FOUND_IN_CONFIG" == false ]]; then
+    if [[ "$CONFIG_SOURCE" == "None" ]]; then
         SYNC_PATH=$(grep -E '^SYNC_PATH\s*=\s*' ./gallery-backend/.env | sed 's/^SYNC_PATH\s*=\s*//')
         if [[ -n "$SYNC_PATH" ]]; then
-            # 移除引號
+            CONFIG_SOURCE=".env"
+            
+            # 移除字串前後的引號
             SYNC_PATH="${SYNC_PATH%\"}"
             SYNC_PATH="${SYNC_PATH#\"}"
-            debug_log "Using SYNC_PATH from .env: $SYNC_PATH"
 
             IFS=',' read -ra PATHS <<<"$SYNC_PATH"
             for path in "${PATHS[@]}"; do
-                RAW_PATHS_LIST+=("$(echo "$path" | xargs)")
+                # 簡單清理空白
+                local cleaned_path
+                cleaned_path=$(echo "$path" | xargs)
+                if [[ -n "$cleaned_path" ]]; then
+                    RAW_PATHS_LIST+=("$cleaned_path")
+                fi
             done
-        else
-            debug_log "Warning: No sync paths found in config.json or .env."
         fi
     fi
 
     # ============================================================
-    # 3. 統一處理路徑並掛載 (realpath 與 存在性檢查)
+    # 3. [新增] 輸出 Log 資訊 (顯示來源與讀取到的路徑)
+    # ============================================================
+    echo "============================================================"
+    echo " [Volume Configuration Info]"
+    echo " Source Type : $CONFIG_SOURCE"
+    if [ ${#RAW_PATHS_LIST[@]} -eq 0 ]; then
+         echo " Paths Found : (None)"
+    else
+         echo " Paths Found :"
+         for raw_p in "${RAW_PATHS_LIST[@]}"; do
+             echo "   - $raw_p"
+         done
+    fi
+    echo "============================================================"
+
+    # ============================================================
+    # 4. 統一處理路徑並掛載 (realpath 與 存在性檢查)
     # ============================================================
     for path in "${RAW_PATHS_LIST[@]}"; do
-        # 處理相對路徑與絕對路徑
         local abs_path
+        
         if [[ "$path" = /* ]]; then
+            # 如果已經是絕對路徑 (Linux 格式)
             abs_path=$(realpath -m "$path")
         else
-            # 這裡假設相對路徑是相對於 gallery-backend 資料夾 (根據原本 .env 的邏輯推測)
-            # 但原本代碼中 .env 是相對於 .env 檔案的位置。
-            # 這裡統一相對於腳本執行目錄的 ./gallery-backend/.. 或者維持原有的 .env 邏輯
-            # 為了保險，我們使用相對於 config/env 檔案所在的目錄 (gallery-backend)
+            # 相對路徑：預設相對於 gallery-backend 資料夾
             abs_path=$(realpath -m "./gallery-backend/$path")
         fi
 
         debug_log "Processing volume mount: $path -> $abs_path"
 
-        # Panic if the path does not exist
+        # 檢查路徑是否存在，不存在則報錯並退出
         if [[ ! -e "$abs_path" ]]; then
-            echo "Error: Path '$abs_path' (derived from '$path') does not exist. Aborting."
+            echo "Error: Path '$abs_path' (derived from '$path') does not exist."
+            echo "       Check your $CONFIG_SOURCE configuration."
             exit 1
         fi
 
@@ -213,7 +228,7 @@ prepare_volumes() {
     done
 
     # ============================================================
-    # 4. 加入預定義 Volume
+    # 5. 加入預定義 Volume
     # ============================================================
     PREDEFINED_VOLUMES+=( "./gallery-backend/db:${UROCISSA_PATH}/gallery-backend/db" )
     PREDEFINED_VOLUMES+=( "./gallery-backend/object:${UROCISSA_PATH}/gallery-backend/object" )
