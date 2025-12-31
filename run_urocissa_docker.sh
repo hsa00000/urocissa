@@ -97,8 +97,7 @@ parse_arguments() {
             ;;
         --log-file)
             LOG_FILE="$2"
-            >"$LOG_FILE"
-            if [[ $? -ne 0 ]]; then
+            if ! : > "$LOG_FILE"; then
                 log_error "Failed to initialize log file at $LOG_FILE"
             fi
             shift 2
@@ -158,7 +157,7 @@ prepare_volumes() {
     # ------------------------------------------------------------
     if [[ -f "$CONFIG_FILE" ]]; then
         local FLAT_JSON
-        FLAT_JSON=$(cat "$CONFIG_FILE" | tr -d '\n' | tr -d '\r')
+        FLAT_JSON=$(tr -d '\n\r' < "$CONFIG_FILE")
 
         if echo "$FLAT_JSON" | grep -q '"syncPaths"'; then
              local JSON_CONTENT
@@ -260,31 +259,36 @@ run_container() {
     log_info "Service Port: $ROCKET_PORT"
     log_info "Image Tag   : $DOCKER_TAG"
 
-    # Generate Command
-    DOCKER_RUN_COMMAND="docker run -it --rm"
+    # Generate Command using Arrays (Safe for spaces)
+    local cmd=(docker run -it --rm)
+    
     for vol in "${PREDEFINED_VOLUMES[@]}"; do
-        DOCKER_RUN_COMMAND+=" -v $vol"
+        cmd+=(-v "$vol")
     done
     for vol in "${DYNAMIC_VOLUMES[@]}"; do
-        DOCKER_RUN_COMMAND+=" -v $vol"
+        cmd+=(-v "$vol")
     done
 
-    DOCKER_RUN_COMMAND+=" -e UROCISSA_PATH=${UROCISSA_PATH}"
-    DOCKER_RUN_COMMAND+=" -p ${ROCKET_PORT}:${ROCKET_PORT} hsa00000/urocissa:${DOCKER_TAG}"
+    cmd+=(-e "UROCISSA_PATH=${UROCISSA_PATH}")
+    cmd+=(-p "${ROCKET_PORT}:${ROCKET_PORT}")
+    cmd+=( "hsa00000/urocissa:${DOCKER_TAG}" )
 
     # Pretty print the command for debugging
     echo ""
     echo -e "${YELLOW}┌──────────────────────────────────────────────────────────────┐${NC}"
     echo -e "${YELLOW}│ Final Docker Command (Copy below if you need to debug)       │${NC}"
     echo -e "${YELLOW}└──────────────────────────────────────────────────────────────┘${NC}"
-    echo "$DOCKER_RUN_COMMAND"
+    # Print escaped command for easy copy-pasting
+    printf "%q " "${cmd[@]}"
+    echo ""
     echo ""
 
     log_info "Starting container..."
-    eval "$DOCKER_RUN_COMMAND"
+    "${cmd[@]}"
+    local exit_code=$?
 
-    if [[ $? -ne 0 ]]; then
-        log_error "Docker container exited with error code $?"
+    if [[ $exit_code -ne 0 ]]; then
+        log_error "Docker container exited with error code $exit_code"
     else
         log_header "Execution Finished Successfully"
     fi
