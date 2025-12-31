@@ -41,8 +41,6 @@ onBeforeMount(async () => {
   if (typeof albumIdOpt === 'string' && typeof shareIdOpt === 'string') {
     albumId.value = albumIdOpt
     shareId.value = shareIdOpt
-    basicString.value = `and(trashed:false, album:"${albumIdOpt}")`
-
     shareStore.albumId = albumIdOpt
     shareStore.shareId = shareIdOpt
 
@@ -50,6 +48,9 @@ onBeforeMount(async () => {
     if (savedInfo && savedInfo.password) {
       shareStore.password = savedInfo.password
     }
+
+    basicString.value = `and(trashed:false, album:"${albumIdOpt}")`
+
 
     // Sync to IndexedDB for Service Worker
     await shareStore.syncShareInfoToIndexedDB()

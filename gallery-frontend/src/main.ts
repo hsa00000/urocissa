@@ -59,6 +59,16 @@ axios.interceptors.response.use(
 
       if (isSharePage) {
         if (status === 401) {
+          // Check for stale requests (zombies)
+          const sentPassword = error.config?.headers?.['x-share-password']
+          const currentPassword = shareStore.password
+
+          // If we have a password now, but the request didn't send it (or sent a different one),
+          // it means this request is stale. Do not trigger the modal again.
+          if (currentPassword && sentPassword !== currentPassword) {
+            return Promise.reject(error)
+          }
+
           // 401: Password required
           if (!modalStore.showShareLoginModal) {
             shareStore.isLinkExpired = false

@@ -7,15 +7,17 @@ use rocket::serde::json::Json;
 // Import PublicConfig
 use crate::public::structure::config::{PublicConfig, APP_CONFIG};
 use crate::router::fairing::guard_auth::GuardAuth;
+use crate::router::fairing::guard_share::GuardShare;
 
 use crate::router::{AppResult, GuardResult};
 
 #[get("/get/config")]
-pub fn get_config_handler(auth: GuardResult<GuardAuth>) -> AppResult<Json<PublicConfig>> {
+pub fn get_config_handler(auth: GuardResult<GuardShare>) -> AppResult<Json<PublicConfig>> {
     let _ = auth?;
     // Only return the public part
     Ok(Json(APP_CONFIG.get().unwrap().read().unwrap().public.clone()))
 }
+
 
 #[get("/get/config/export")]
 pub fn export_config_handler(auth: GuardResult<GuardAuth>) -> AppResult<(ContentType, String)> {
