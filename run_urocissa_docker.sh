@@ -125,6 +125,12 @@ setup_environment() {
     # Ensure config files exist and mount them
     log_info "Checking configuration files..."
     ensure_config_file "./gallery-backend/Rocket.toml" "${UROCISSA_PATH}/gallery-backend/Rocket.toml"
+
+    # Special handling for config.json: Create if missing
+    if [[ ! -f "./gallery-backend/config.json" ]]; then
+        echo "{}" > "./gallery-backend/config.json"
+        log_success "Created empty config.json"
+    fi
     ensure_config_file "./gallery-backend/config.json" "${UROCISSA_PATH}/gallery-backend/config.json"
     ensure_config_file "$ENV_FILE" "${UROCISSA_PATH}/gallery-backend/.env"
 
