@@ -300,16 +300,6 @@ main() {
 
     parse_arguments "$@"
     
-    # Print Start Header
-    echo -e "${GREEN}"
-    echo "  _   _                 _                  "
-    echo " | | | |_ __ ___   ___ (_)___ ___  __ _    "
-    echo " | | | | '__/ _ \ / __|| / __/ __|/ _\` |   "
-    echo " | |_| | | | (_) | (__ | \__ \__ \ (_| |   "
-    echo "  \___/|_|  \___/ \___||_|___/___/\__,_|   "
-    echo "  Docker Launcher                          "
-    echo -e "${NC}"
-    
     setup_environment
     prepare_volumes
     run_container
