@@ -1,6 +1,49 @@
 #!/bin/bash
 
 # ============================================================
+# Color & Logging Configuration
+# ============================================================
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
+
+log_header() {
+    echo -e "${BLUE}============================================================${NC}"
+    echo -e "${BLUE}# $1${NC}"
+    echo -e "${BLUE}============================================================${NC}"
+}
+
+log_info() {
+    echo -e "${CYAN}[INFO]${NC} $1"
+}
+
+log_success() {
+    echo -e "${GREEN}[OK]${NC} $1"
+}
+
+log_warn() {
+    echo -e "${YELLOW}[WARN]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+    exit 1
+}
+
+log_debug() {
+    if [[ "$DEBUG" == true ]]; then
+        local msg="[DEBUG] $1"
+        if [[ -n "$LOG_FILE" ]]; then
+            echo "$msg" >>"$LOG_FILE"
+        fi
+        echo -e "${YELLOW}$msg${NC}"
+    fi
+}
+
+# ============================================================
 # Function Definitions
 # ============================================================
 
@@ -9,52 +52,31 @@ show_help() {
 Usage: ./run_urocissa_docker.sh [OPTIONS]
 
 Description:
-  This script runs the Urocissa Docker container from an already built image.
-  It sets up environment variables, volumes, and port mappings based on the local configuration files.
+  This script runs the Urocissa Docker container with enhanced logging.
 
 Options:
   --help              Show this help message and exit.
-  --debug             Enable debug mode to display additional information during execution.
-  --dev               Use the 'dev' tag for the Docker image (hsa00000/urocissa:dev).
-  --log-file <file>   Specify a log file for debug output. The file will be created if it does not exist,
-                      or cleared if it already exists.
+  --debug             Enable debug mode (verbose output).
+  --dev               Use the 'dev' tag (hsa00000/urocissa:dev).
+  --log-file <file>   Specify a log file for debug output.
 
 Examples:
-  1. Run the container with default settings:
-     ./run_urocissa_docker.sh
-
-  2. Enable debug mode and specify a log file:
-     ./run_urocissa_docker.sh --debug --log-file run.log
-
-Notes:
-  - Ensure that the Docker image 'urocissa' is already built by running ./build_urocissa_docker.sh beforehand.
-  - Debug mode outputs information to the terminal unless a log file is specified.
-  - The script will mount local directories and set UROCISSA_PATH based on the current directory structure.
+  ./run_urocissa_docker.sh
+  ./run_urocissa_docker.sh --debug --log-file run.log
 EOF
 }
 
-debug_log() {
-    local message="$1"
-    if [[ "$DEBUG" == true ]]; then
-        if [[ -n "$LOG_FILE" ]]; then
-            echo "$message" >>"$LOG_FILE"
-        else
-            echo "$message"
-        fi
-    fi
-}
-
 ensure_config_file() {
-    # This function checks if the target config file exists and adds it to the volume list.
     local target_file="$1"
     local volume_path="${2:-$target_file}"
     
     if [[ -f "$target_file" ]]; then
         if [[ -n "$volume_path" ]]; then
             PREDEFINED_VOLUMES+=("$target_file:$volume_path")
+            log_success "Config found: $target_file -> Mounted"
         fi
     else
-        debug_log "$target_file not found. Skipping volume mount."
+        log_warn "Config missing: $target_file -> Skipped"
     fi
 }
 
@@ -77,24 +99,23 @@ parse_arguments() {
             LOG_FILE="$2"
             >"$LOG_FILE"
             if [[ $? -ne 0 ]]; then
-                echo "Error: Failed to initialize log file at $LOG_FILE"
-                exit 1
+                log_error "Failed to initialize log file at $LOG_FILE"
             fi
             shift 2
             ;;
         *)
-            echo "Error: Unknown option $1"
-            exit 1
+            log_error "Unknown option $1"
             ;;
         esac
     done
 }
 
 setup_environment() {
+    log_header "Step 1: Environment Setup"
+    
     SCRIPT_DIR=$(dirname "$(realpath "$0")")
     UROCISSA_PATH="$SCRIPT_DIR"
-
-    debug_log "Script directory set to $SCRIPT_DIR"
+    log_info "Project Root: $UROCISSA_PATH"
 
     ENV_FILE="./gallery-backend/.env"
 
@@ -103,6 +124,7 @@ setup_environment() {
     DYNAMIC_VOLUMES=()
 
     # Ensure config files exist and mount them
+    log_info "Checking configuration files..."
     ensure_config_file "./gallery-backend/Rocket.toml" "${UROCISSA_PATH}/gallery-backend/Rocket.toml"
     ensure_config_file "./gallery-backend/config.json" "${UROCISSA_PATH}/gallery-backend/config.json"
     ensure_config_file "$ENV_FILE" "${UROCISSA_PATH}/gallery-backend/.env"
@@ -111,45 +133,42 @@ setup_environment() {
     UPLOAD_DIR="./gallery-backend/upload"
     if [ ! -d "$UPLOAD_DIR" ]; then
         mkdir -p "$UPLOAD_DIR"
-        debug_log "Created upload directory at $UPLOAD_DIR"
+        log_success "Created directory: $UPLOAD_DIR"
     else
-        debug_log "Upload directory already exists at $UPLOAD_DIR"
+        log_success "Directory exists: $UPLOAD_DIR"
     fi
 
     # Convert CRLF to LF
-    sed -i 's/\r$//' "$ENV_FILE"
+    if [[ -f "$ENV_FILE" ]]; then
+        sed -i 's/\r$//' "$ENV_FILE"
+        log_debug "Converted CRLF to LF for $ENV_FILE"
+    fi
 }
 
 prepare_volumes() {
+    log_header "Step 2: Volume & Path Parsing"
+
     # 初始化變數
     local RAW_PATHS_LIST=()
-    local CONFIG_SOURCE="None" # 用來記錄來源是 config.json 還是 .env
+    local CONFIG_SOURCE="None" 
     local CONFIG_FILE="./gallery-backend/config.json"
     
-    # ============================================================
+    # ------------------------------------------------------------
     # 1. 嘗試從 config.json 讀取 syncPaths
-    # ============================================================
+    # ------------------------------------------------------------
     if [[ -f "$CONFIG_FILE" ]]; then
-        # 壓縮 JSON 為一行並移除 CR 符號
         local FLAT_JSON
         FLAT_JSON=$(cat "$CONFIG_FILE" | tr -d '\n' | tr -d '\r')
 
-        # 檢查是否有 syncPaths 欄位
         if echo "$FLAT_JSON" | grep -q '"syncPaths"'; then
              local JSON_CONTENT
-             # 提取 [ ... ] 內的內容
              JSON_CONTENT=$(echo "$FLAT_JSON" | sed -e 's/.*"syncPaths"[[:space:]]*:[[:space:]]*\[//' -e 's/\].*//')
              
-             # 如果內容不為空
              if [[ -n "$JSON_CONTENT" ]]; then
                 CONFIG_SOURCE="config.json"
-                
-                # 以逗號分隔處理陣列元素
                 IFS=',' read -ra JSON_ARR <<< "$JSON_CONTENT"
                 for item in "${JSON_ARR[@]}"; do
-                    # 1. 移除雙引號
-                    # 2. 移除前後空白
-                    # 3. 將 Windows 雙反斜線 (\\) 或單反斜線 (\) 轉為 Linux 斜線 (/)
+                    # 清理: 去引號, 去空白, 轉 Windows 斜線
                     local cleaned_path
                     cleaned_path=$(echo "$item" | tr -d '"' | xargs | sed 's|\\\\|/|g' | sed 's|\\|/|g')
                     
@@ -161,89 +180,87 @@ prepare_volumes() {
         fi
     fi
 
-    # ============================================================
-    # 2. 如果 config.json 沒找到有效內容，回退讀取 .env
-    # ============================================================
+    # ------------------------------------------------------------
+    # 2. 回退讀取 .env
+    # ------------------------------------------------------------
     if [[ "$CONFIG_SOURCE" == "None" ]]; then
-        SYNC_PATH=$(grep -E '^SYNC_PATH\s*=\s*' ./gallery-backend/.env | sed 's/^SYNC_PATH\s*=\s*//')
-        if [[ -n "$SYNC_PATH" ]]; then
-            CONFIG_SOURCE=".env"
-            
-            # 移除字串前後的引號
-            SYNC_PATH="${SYNC_PATH%\"}"
-            SYNC_PATH="${SYNC_PATH#\"}"
+        if [[ -f "./gallery-backend/.env" ]]; then
+            SYNC_PATH=$(grep -E '^SYNC_PATH\s*=\s*' ./gallery-backend/.env | sed 's/^SYNC_PATH\s*=\s*//')
+            if [[ -n "$SYNC_PATH" ]]; then
+                CONFIG_SOURCE=".env"
+                SYNC_PATH="${SYNC_PATH%\"}"
+                SYNC_PATH="${SYNC_PATH#\"}"
 
-            IFS=',' read -ra PATHS <<<"$SYNC_PATH"
-            for path in "${PATHS[@]}"; do
-                # 簡單清理空白
-                local cleaned_path
-                cleaned_path=$(echo "$path" | xargs)
-                if [[ -n "$cleaned_path" ]]; then
-                    RAW_PATHS_LIST+=("$cleaned_path")
-                fi
-            done
+                IFS=',' read -ra PATHS <<<"$SYNC_PATH"
+                for path in "${PATHS[@]}"; do
+                    local cleaned_path
+                    cleaned_path=$(echo "$path" | xargs)
+                    if [[ -n "$cleaned_path" ]]; then
+                        RAW_PATHS_LIST+=("$cleaned_path")
+                    fi
+                done
+            fi
         fi
     fi
 
-    # ============================================================
-    # 3. [新增] 輸出 Log 資訊 (顯示來源與讀取到的路徑)
-    # ============================================================
-    echo "============================================================"
-    echo " [Volume Configuration Info]"
-    echo " Source Type : $CONFIG_SOURCE"
+    # ------------------------------------------------------------
+    # 3. 輸出路徑偵測結果 (Visual Log)
+    # ------------------------------------------------------------
+    echo "------------------------------------------------------------"
+    echo -e " ${CYAN}Sync Path Source :${NC} $CONFIG_SOURCE"
     if [ ${#RAW_PATHS_LIST[@]} -eq 0 ]; then
-         echo " Paths Found : (None)"
+         echo -e " ${YELLOW}Paths Found      :${NC} (None)"
     else
-         echo " Paths Found :"
+         echo -e " ${GREEN}Paths Found      :${NC}"
          for raw_p in "${RAW_PATHS_LIST[@]}"; do
              echo "   - $raw_p"
          done
     fi
-    echo "============================================================"
+    echo "------------------------------------------------------------"
 
-    # ============================================================
-    # 4. 統一處理路徑並掛載 (realpath 與 存在性檢查)
-    # ============================================================
+    # ------------------------------------------------------------
+    # 4. 驗證並轉換為絕對路徑
+    # ------------------------------------------------------------
     for path in "${RAW_PATHS_LIST[@]}"; do
         local abs_path
         
         if [[ "$path" = /* ]]; then
-            # 如果已經是絕對路徑 (Linux 格式)
             abs_path=$(realpath -m "$path")
         else
-            # 相對路徑：預設相對於 gallery-backend 資料夾
             abs_path=$(realpath -m "./gallery-backend/$path")
         fi
 
-        debug_log "Processing volume mount: $path -> $abs_path"
+        log_debug "Resolving: $path -> $abs_path"
 
-        # 檢查路徑是否存在，不存在則報錯並退出
         if [[ ! -e "$abs_path" ]]; then
-            echo "Error: Path '$abs_path' (derived from '$path') does not exist."
-            echo "       Check your $CONFIG_SOURCE configuration."
-            exit 1
+            echo ""
+            log_error "Path not found!\n    Source: $CONFIG_SOURCE\n    Raw:    $path\n    Abs:    $abs_path"
         fi
 
         DYNAMIC_VOLUMES+=("$abs_path:$abs_path")
     done
 
-    # ============================================================
+    # ------------------------------------------------------------
     # 5. 加入預定義 Volume
-    # ============================================================
+    # ------------------------------------------------------------
     PREDEFINED_VOLUMES+=( "./gallery-backend/db:${UROCISSA_PATH}/gallery-backend/db" )
     PREDEFINED_VOLUMES+=( "./gallery-backend/object:${UROCISSA_PATH}/gallery-backend/object" )
-
-    debug_log "Predefined volumes: ${PREDEFINED_VOLUMES[*]}"
-    debug_log "Dynamic volumes: ${DYNAMIC_VOLUMES[*]}"
+    
+    log_success "Volume preparation complete."
 }
 
 run_container() {
-    # Extract port from Rocket.toml
-    ROCKET_PORT=$(grep -E '^port\s*=\s*' ./gallery-backend/Rocket.toml | sed -E 's/^port\s*=\s*"?([0-9]+)"?/\1/' | tr -d '[:space:]')
-    ROCKET_PORT=${ROCKET_PORT:-4000}
-    debug_log "Using port: $ROCKET_PORT"
+    log_header "Step 3: Docker Execution"
 
-    # Generate Docker Run command
+    # Extract port
+    if [[ -f "./gallery-backend/Rocket.toml" ]]; then
+        ROCKET_PORT=$(grep -E '^port\s*=\s*' ./gallery-backend/Rocket.toml | sed -E 's/^port\s*=\s*"?([0-9]+)"?/\1/' | tr -d '[:space:]')
+    fi
+    ROCKET_PORT=${ROCKET_PORT:-4000}
+    log_info "Service Port: $ROCKET_PORT"
+    log_info "Image Tag   : $DOCKER_TAG"
+
+    # Generate Command
     DOCKER_RUN_COMMAND="docker run -it --rm"
     for vol in "${PREDEFINED_VOLUMES[@]}"; do
         DOCKER_RUN_COMMAND+=" -v $vol"
@@ -255,14 +272,21 @@ run_container() {
     DOCKER_RUN_COMMAND+=" -e UROCISSA_PATH=${UROCISSA_PATH}"
     DOCKER_RUN_COMMAND+=" -p ${ROCKET_PORT}:${ROCKET_PORT} hsa00000/urocissa:${DOCKER_TAG}"
 
-    debug_log "Generated Docker Run command: $DOCKER_RUN_COMMAND"
+    # Pretty print the command for debugging
+    echo ""
+    echo -e "${YELLOW}┌──────────────────────────────────────────────────────────────┐${NC}"
+    echo -e "${YELLOW}│ Final Docker Command (Copy below if you need to debug)       │${NC}"
+    echo -e "${YELLOW}└──────────────────────────────────────────────────────────────┘${NC}"
+    echo "$DOCKER_RUN_COMMAND"
+    echo ""
+
+    log_info "Starting container..."
     eval "$DOCKER_RUN_COMMAND"
 
     if [[ $? -ne 0 ]]; then
-        echo "Error: Docker Run command failed to execute"
-        exit 1
+        log_error "Docker container exited with error code $?"
     else
-        debug_log "Docker container has been successfully started"
+        log_header "Execution Finished Successfully"
     fi
 }
 
@@ -271,7 +295,21 @@ main() {
     LOG_FILE=""
     DOCKER_TAG="latest"
 
+    # Catch Ctrl+C
+    trap 'echo -e "\n${RED}[ABORT] Script interrupted by user.${NC}"; exit 1' INT
+
     parse_arguments "$@"
+    
+    # Print Start Header
+    echo -e "${GREEN}"
+    echo "  _   _                 _                  "
+    echo " | | | |_ __ ___   ___ (_)___ ___  __ _    "
+    echo " | | | | '__/ _ \ / __|| / __/ __|/ _\` |   "
+    echo " | |_| | | | (_) | (__ | \__ \__ \ (_| |   "
+    echo "  \___/|_|  \___/ \___||_|___/___/\__,_|   "
+    echo "  Docker Launcher                          "
+    echo -e "${NC}"
+    
     setup_environment
     prepare_volumes
     run_container
