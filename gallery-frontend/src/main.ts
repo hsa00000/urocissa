@@ -76,13 +76,17 @@ axios.interceptors.response.use(
         if (status === 401) {
           messageStore.error('Session expired or unauthorized. Please login.')
           await redirectionStore.redirectionToLogin()
-          ;(error as HandledError).isHandled = true
+
+          const handledError: HandledError = error
+          handledError.isHandled = true
         } else if (status === 403) {
           messageStore.error('Access denied.')
-          ;(error as HandledError).isHandled = true
+          const handledError: HandledError = error
+          handledError.isHandled = true
         } else if (status === 405) {
           messageStore.error('Read only mode is on.')
-          ;(error as HandledError).isHandled = true
+          const handledError: HandledError = error
+          handledError.isHandled = true
         }
       }
     }
