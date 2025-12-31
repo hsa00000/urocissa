@@ -62,3 +62,8 @@ export interface EditShareData {
   share: Share
   displayName: string
 }
+
+export interface HandledError extends Error {
+  isHandled?: boolean
+}
+

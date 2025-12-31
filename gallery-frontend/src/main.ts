@@ -23,6 +23,7 @@ import { useShareStore } from '@/store/shareStore'
 import { useConstStore } from '@/store/constStore'
 import { useModalStore } from '@/store/modalStore'
 import { useMessageStore } from '@/store/messageStore'
+import { HandledError } from '@/type/types'
 
 // Request interceptor
 axios.interceptors.request.use((config: InternalAxiosRequestConfig) => {
@@ -74,8 +75,13 @@ axios.interceptors.response.use(
       } else {
         if (status === 401) {
           await redirectionStore.redirectionToLogin()
+          ;(error as HandledError).isHandled = true
         } else if (status === 403) {
           messageStore.error('Access denied.')
+          ;(error as HandledError).isHandled = true
+        } else if (status === 405) {
+          messageStore.error('Read only mode is on.')
+          ;(error as HandledError).isHandled = true
         }
       }
     }
