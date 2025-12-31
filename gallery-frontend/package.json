@@ -32,7 +32,7 @@
     "typesafe-agent-events": "^1.0.2",
     "vue": "^3.5.26",
     "vue-router": "^4.6.4",
-    "vuetify": "^3.11.5",
+    "vuetify": "^3.11.6",
     "zod": "^4.2.1"
   },
   "devDependencies": {
@@ -52,7 +52,7 @@
     "sass-embedded": "^1.97.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.50.1",
+    "typescript-eslint": "^8.51.0",
     "upath": "^2.0.1",
     "vite": "^7.3.0",
     "vite-plugin-pwa": "^1.2.0",
