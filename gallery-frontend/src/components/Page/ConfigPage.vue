@@ -1,7 +1,7 @@
 <template>
   <PageTemplate>
     <template #content>
-      <v-container fluid class="fill-height align-start justify-center">
+      <v-container fluid class="fill-height align-start justify-center overflow-y-auto">
         <v-row justify="center">
           <v-col cols="12" sm="10" md="8" lg="6" xl="5">
             <v-row>
