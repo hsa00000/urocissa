@@ -245,9 +245,11 @@ import type { AppConfig } from '@/api/config'
 import PageTemplate from './PageLayout/PageTemplate.vue'
 import ServerFilePicker from './Config/ServerFilePicker.vue'
 import { tryWithMessageStore } from '@/script/utils/try_catch'
+import { useMessageStore } from '@/store/messageStore'
 
 const configStore = useConfigStore('mainId')
 const initializedStore = useInitializedStore('mainId')
+const messageStore = useMessageStore('mainId')
 
 // UI State
 const loading = ref(false)
@@ -340,6 +342,10 @@ const save = async () => {
     form.value?.resetValidation()
     return true
   })
+
+  if (success) {
+    messageStore.success('Success')
+  }
   loading.value = false
 }
 

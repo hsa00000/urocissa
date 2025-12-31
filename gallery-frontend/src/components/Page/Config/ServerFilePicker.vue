@@ -29,6 +29,7 @@
                 density="compact"
                 variant="outlined"
                 single-line
+                :error="!!errorMsg"
                 @keyup.enter="loadItems(currentPath)"
               >
                 <template #append-inner>
@@ -45,28 +46,46 @@
             </v-col>
 
             <v-col cols="auto">
-              <v-btn
-                icon="mdi-close"
-                variant="text"
-                @click="$emit('update:modelValue', false)"
-              />
+              <v-btn icon="mdi-close" variant="text" @click="$emit('update:modelValue', false)" />
             </v-col>
           </v-row>
         </v-container>
       </v-toolbar>
 
-      <v-card-text class="pa-0">
+      <v-card-text class="pa-0 d-flex flex-column">
         <v-list v-if="loading" disabled>
           <v-skeleton-loader type="list-item@5" />
         </v-list>
 
+        <v-empty-state
+          v-else-if="items.length === 0 && roots.length === 0"
+          :icon="emptyStateIcon"
+          title="No folders found"
+          :text="errorMsg || 'This folder has no subfolders.'"
+          class="ma-auto"
+        />
+
         <v-list v-else lines="one" density="default">
-          <v-empty-state
-            v-if="items.length === 0"
-            icon="mdi-folder-open-outline"
-            title="No folders found"
-            text="This directory is empty or does not exist."
-          />
+          <template v-if="isDefault && roots.length > 0">
+            <v-list-subheader>Drives / Roots</v-list-subheader>
+            <v-list-item
+              v-for="item in roots"
+              :key="item"
+              :value="item"
+              color="primary"
+              @click="navigateDown(item)"
+            >
+              <template #prepend>
+                <v-icon icon="mdi-harddisk" />
+              </template>
+              <v-list-item-title>{{ item }}</v-list-item-title>
+              <template #append>
+                <v-icon icon="mdi-chevron-right" size="small" />
+              </template>
+            </v-list-item>
+            <v-divider class="my-2" />
+            <v-list-subheader>Current Directory</v-list-subheader>
+          </template>
 
           <v-list-item
             v-for="item in items"
@@ -98,18 +117,12 @@
             <v-col>
               <div class="text-caption text-medium-emphasis text-truncate">
                 Selected:
-                <span class="text-high-emphasis">{{
-                  currentPath || "Root"
-                }}</span>
+                <span class="text-high-emphasis">{{ currentPath || 'Root' }}</span>
               </div>
             </v-col>
 
             <v-col cols="auto">
-              <v-btn
-                variant="tonal"
-                @click="confirmSelection"
-                :disabled="!currentPath"
-              >
+              <v-btn variant="tonal" @click="confirmSelection" :disabled="!currentPath">
                 Select Folder
               </v-btn>
             </v-col>
@@ -121,125 +134,142 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
-import { useDisplay } from "vuetify";
-import { fetchFsCompletion } from "@/api/fs";
+import { ref, computed, watch } from 'vue'
+import { useDisplay } from 'vuetify'
+import { fetchFsCompletion } from '@/api/fs'
 
 // --- Props & Emits ---
 const props = defineProps<{
-  modelValue: boolean;
-  initialPath?: string;
-}>();
+  modelValue: boolean
+  initialPath?: string
+}>()
 
 const emit = defineEmits<{
-  (e: "update:modelValue", val: boolean): void;
-  (e: "select", path: string): void;
-}>();
+  (e: 'update:modelValue', val: boolean): void
+  (e: 'select', path: string): void
+}>()
 
 // --- Responsiveness ---
-const { mobile } = useDisplay();
-const isMobile = computed(() => mobile.value);
+const { mobile } = useDisplay()
+const isMobile = computed(() => mobile.value)
 
 // --- State ---
-const currentPath = ref("");
-const items = ref<string[]>([]);
-const loading = ref(false);
+const currentPath = ref('')
+const items = ref<string[]>([])
+const roots = ref<string[]>([])
+const isDefault = ref(false)
+const loading = ref(false)
+const errorMsg = ref('')
+
+const emptyStateIcon = computed(() => {
+  if (errorMsg.value) return 'mdi-folder-alert-outline'
+  return 'mdi-folder-open-outline'
+})
 
 // --- Utilities ---
 const getFolderName = (fullPath: string) => {
-  if (!fullPath) return "";
-  const separator = fullPath.includes("\\") ? "\\" : "/";
-  if (fullPath.endsWith(separator)) return fullPath;
-  return fullPath.split(separator).pop() || fullPath;
-};
+  if (!fullPath) return ''
+  const separator = fullPath.includes('\\') ? '\\' : '/'
+  if (fullPath.endsWith(separator)) return fullPath
+  return fullPath.split(separator).pop() || fullPath
+}
 
 // --- Logic ---
 const loadItems = async (path: string) => {
-  loading.value = true;
+  loading.value = true
+  errorMsg.value = ''
   try {
-    const res = await fetchFsCompletion(path);
-    items.value = res;
-  } catch (e) {
-    console.error(e);
-    items.value = [];
+    const res = await fetchFsCompletion(path)
+    items.value = res.children
+    roots.value = res.roots
+    isDefault.value = res.is_default
+  } catch (e: any) {
+    console.error(e)
+    items.value = []
+    roots.value = []
+    isDefault.value = false
+    if (e.response && e.response.status === 404) {
+      errorMsg.value = 'Directory does not exist'
+    } else {
+      errorMsg.value = 'Error listing directory'
+    }
   } finally {
-    loading.value = false;
+    loading.value = false
   }
-};
+}
 
 const navigateDown = (path: string) => {
-  const isWindows = path.includes("\\");
-  const separator = isWindows ? "\\" : "/";
+  const isWindows = path.includes('\\')
+  const separator = isWindows ? '\\' : '/'
 
-  let target = path;
+  let target = path
   if (!target.endsWith(separator)) {
-    target += separator;
+    target += separator
   }
 
-  currentPath.value = target;
-  loadItems(target);
-};
+  currentPath.value = target
+  loadItems(target)
+}
 
 const navigateUp = () => {
-  if (!currentPath.value) return;
+  if (!currentPath.value) return
 
-  const isWindows = currentPath.value.includes("\\");
-  const separator = isWindows ? "\\" : "/";
+  const isWindows = currentPath.value.includes('\\')
+  const separator = isWindows ? '\\' : '/'
 
   // Clean up existing path to handle parsing
   const cleanPath = currentPath.value.endsWith(separator)
     ? currentPath.value.slice(0, -1)
-    : currentPath.value;
+    : currentPath.value
 
-  const parts = cleanPath.split(separator);
+  const parts = cleanPath.split(separator)
 
   // Go to root logic
   if (parts.length <= 1) {
-    currentPath.value = "";
+    currentPath.value = ''
   } else {
-    parts.pop(); // Remove last segment
+    parts.pop() // Remove last segment
 
     if (isWindows) {
       // e.g. "C:" needs backslash to be valid root often
-      currentPath.value = parts.join("\\") + (parts.length === 1 ? "\\" : "");
+      currentPath.value = parts.join('\\') + (parts.length === 1 ? '\\' : '')
     } else {
       // e.g. "" -> join -> "" implies root /
-      const newPath = parts.join("/");
-      currentPath.value = newPath || "/";
+      const newPath = parts.join('/')
+      currentPath.value = newPath || '/'
     }
   }
 
-  loadItems(currentPath.value);
-};
+  loadItems(currentPath.value)
+}
 
 const confirmSelection = () => {
   if (currentPath.value) {
-    let selected = currentPath.value;
-    const isWindows = selected.includes("\\");
-    const separator = isWindows ? "\\" : "/";
+    let selected = currentPath.value
+    const isWindows = selected.includes('\\')
+    const separator = isWindows ? '\\' : '/'
 
     // Normalize root check
-    const isRoot =
-      (isWindows && selected.length <= 3) || (!isWindows && selected === "/");
+    const isRoot = (isWindows && selected.length <= 3) || (!isWindows && selected === '/')
 
     // Remove trailing slash if not root
     if (!isRoot && selected.endsWith(separator)) {
-      selected = selected.slice(0, -1);
+      selected = selected.slice(0, -1)
     }
 
-    emit("select", selected);
-    emit("update:modelValue", false);
+    emit('select', selected)
+    emit('update:modelValue', false)
   }
-};
+}
 
 // --- Watchers ---
 watch(
   () => props.modelValue,
   (isOpen) => {
     if (isOpen) {
-      currentPath.value = props.initialPath || "";
-      loadItems(currentPath.value);
+      currentPath.value = props.initialPath || ''
+      loadItems(currentPath.value)
     }
   }
-);
+)
 </script>
