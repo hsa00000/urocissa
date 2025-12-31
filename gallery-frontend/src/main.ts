@@ -74,6 +74,7 @@ axios.interceptors.response.use(
         }
       } else {
         if (status === 401) {
+          messageStore.error('Session expired or unauthorized. Please login.')
           await redirectionStore.redirectionToLogin()
           ;(error as HandledError).isHandled = true
         } else if (status === 403) {
