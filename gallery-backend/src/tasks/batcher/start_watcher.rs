@@ -1,6 +1,6 @@
-use crate::public::structure::config::APP_CONFIG;
 use crate::public::constant::runtime::INDEX_RUNTIME;
 use crate::public::constant::{VALID_IMAGE_EXTENSIONS, VALID_VIDEO_EXTENSIONS};
+use crate::public::structure::config::APP_CONFIG;
 use crate::{public::error_data::handle_error, workflow::index_for_watch};
 use anyhow::Result;
 use log::{error, info};
@@ -63,7 +63,19 @@ fn start_watcher_task_internal() -> Result<()> {
     }
 
     // Get paths from config system
-    let sync_paths = APP_CONFIG.get().unwrap().read().unwrap().public.sync_paths.clone();
+    let sync_paths = APP_CONFIG
+        .get()
+        .unwrap()
+        .read()
+        .unwrap()
+        .public
+        .sync_paths
+        .clone();
+
+    if sync_paths.is_empty() {
+        info!("No paths to watch");
+        return Ok(());
+    }
 
     // Build the watcher.
     let mut watcher = new_watcher()?;
