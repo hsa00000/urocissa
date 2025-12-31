@@ -58,10 +58,8 @@ impl Claims {
     }
 
     pub fn encode(&self) -> String {
-        // 引入 APP_CONFIG
         use crate::public::structure::config::APP_CONFIG;
         
-        // 獲取 ReadGuard 並呼叫方法
         let config = APP_CONFIG.get().unwrap().read().unwrap();
         self.encode_with_key(&config.get_jwt_secret_key())
     }

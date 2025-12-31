@@ -54,18 +54,17 @@ axios.interceptors.response.use(
       const shareStore = useShareStore('mainId')
       const redirectionStore = useRedirectionStore('mainId')
 
-      // 檢查是否為分享頁面 (有 albumId 與 shareId)
       const isSharePage = shareStore.albumId && shareStore.shareId
 
       if (isSharePage) {
         if (status === 401) {
-          // 401: 需要密碼，未過期
+          // 401: Password required
           if (!modalStore.showShareLoginModal) {
             shareStore.isLinkExpired = false
             modalStore.showShareLoginModal = true
           }
         } else if (status === 403) {
-          // 403: 過期
+          // 403: Link expired or access denied
           messageStore.error('Share link has expired or access is denied.')
           if (!modalStore.showShareLoginModal) {
             shareStore.isLinkExpired = true
@@ -73,7 +72,6 @@ axios.interceptors.response.use(
           }
         }
       } else {
-        // 一般頁面邏輯 (Home/Admin)
         if (status === 401) {
           await redirectionStore.redirectionToLogin()
         } else if (status === 403) {

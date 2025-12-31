@@ -2,8 +2,8 @@ import { thumbHashToDataURL } from 'thumbhash'
 import { UnifiedData } from '@type/types'
 
 /**
- * 為 UnifiedData 添加 thumbhashUrl 屬性
- * 後端回傳的資料經過 Zod transform 後已經是扁平結構
+ * Enriches data with a thumbhash URL.
+ * Backend data is already flattened by Zod transformation.
  */
 export function enrichWithThumbhash<T extends UnifiedData>(
   data: T
@@ -13,7 +13,7 @@ export function enrichWithThumbhash<T extends UnifiedData>(
 }
 
 /**
- * 取得顯示用的 filename
+ * Returns the appropriate filename/title for display.
  */
 export function getFilename(data: UnifiedData): string {
   if (data.type === 'image' || data.type === 'video') {

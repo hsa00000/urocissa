@@ -50,12 +50,12 @@ const BooleanValue: TokenType = createToken({
 
 const Identifier: TokenType = createToken({
   name: 'Identifier',
-  // 語法解釋：
-  // "         : 字串起始
-  // (?:\\.|[^"\\])* : 非捕獲群組，允許：
-  //     \\.: 反斜線後跟任意字元 (如 \" 用來轉譯引號)
-  //     [^"\\]: 非引號且非反斜線的任意字元
-  // "         : 字串結束
+  // Syntax explanation:
+  // "         : String start
+  // (?:\\.|[^"\\])* : Non-capturing group, allows:
+  //     \\.: Backslash followed by any char (e.g. \" to escape quote)
+  //     [^"\\]: Any char except quote and backslash
+  // "         : String end
   pattern: /"(?:\\.|[^"\\])*"/
 })
 

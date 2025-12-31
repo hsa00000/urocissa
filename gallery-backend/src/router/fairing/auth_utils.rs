@@ -3,10 +3,8 @@ use crate::public::constant::redb::DATA_TABLE;
 use crate::public::db::tree::TREE;
 use crate::public::structure::abstract_data::AbstractData;
 use crate::public::structure::album::{ResolvedShare, Share};
-// 引入 APP_CONFIG
 use crate::public::structure::config::APP_CONFIG;
 use crate::router::claims::claims::Claims;
-// 移除舊的 get_jwt_secret_key 引入
 use anyhow::Error;
 use anyhow::Result;
 use anyhow::anyhow;

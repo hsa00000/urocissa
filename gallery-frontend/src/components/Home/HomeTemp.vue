@@ -28,11 +28,9 @@ const props = defineProps<{
 
 const basicString = `and(not(type:"album"), trashed:false, not(album:"${props.album.id}"))`
 onBeforeRouteLeave(() => {
-  // 如果 overlay 正在顯示，就先關掉並阻止這次導航
   if (modalStore.showHomeTempModal) {
     modalStore.showHomeTempModal = false
-    return false // 取消這次 route 切換（包含瀏覽器上一頁）
+    return false
   }
-  // 若 overlay 已經關閉，直接允許導航（什麼都不 return 就是放行）
 })
 </script>

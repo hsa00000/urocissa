@@ -47,7 +47,6 @@ export function useHandleClick(
       const dataStore = useDataStore(isolationId)
       const abstractData = dataStore.data.get(currentIndex)
       if (abstractData) {
-        // 新結構：直接使用 abstractData.id
         const hashOrId = abstractData.id
         if (hashOrId !== undefined) {
           const page = route.meta.getChildPage(route, hashOrId)

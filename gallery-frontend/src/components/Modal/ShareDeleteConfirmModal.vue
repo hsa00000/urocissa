@@ -53,7 +53,7 @@ const modalStore = useModalStore('mainId')
 const albumStore = useAlbumStore('mainId')
 const messageStore = useMessageStore('mainId')
 
-const dummy = ref(true) // v-confirm-edit 需要的綁定值
+const dummy = ref(true) // Required by v-confirm-edit
 const shareUrl = `${window.location.origin}/share/${props.deleteShareData.albumId}-${props.deleteShareData.share.url}`
 
 const submit = ref<(() => void) | undefined>()
@@ -68,7 +68,7 @@ onMounted(() => {
 
       messageStore.success('Share deleted')
       modalStore.showDeleteShareModal = false
-      await albumStore.fetchAlbums() // 重新載入列表
+      await albumStore.fetchAlbums()
     })
   }
 })

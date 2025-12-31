@@ -174,7 +174,7 @@ const createNonEmptyAlbumWithLoading = async () => {
     )
 
     if (typeof newAlbumId === 'string' && newAlbumId.length > 0) {
-      // 先把可能會擋導航的狀態關掉
+      // Close states that might block navigation first
       modalStore.showBatchEditAlbumsModal = false
       collectionStore.editModeOn = false
 

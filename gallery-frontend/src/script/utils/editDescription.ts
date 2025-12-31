@@ -12,7 +12,6 @@ export async function editUserDefinedDescription(
   const dataStore = useDataStore('mainId')
 
   function getCurrentDescription(): string {
-    // 新結構：description 直接在 data 上
     return abstractData.description ?? ''
   }
 
@@ -28,10 +27,8 @@ export async function editUserDefinedDescription(
       timestamp: timestamp
     })
 
-    // Update local data store
     const item = dataStore.data.get(index)
     if (item) {
-      // 新結構：直接更新 description 屬性
       item.description = descriptionModelValue === '' ? null : descriptionModelValue
     }
   }

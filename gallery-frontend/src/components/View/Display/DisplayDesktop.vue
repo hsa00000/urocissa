@@ -51,16 +51,16 @@ const configStore = useConfigStore(props.isolationId)
 </script>
 
 <style scoped>
-/* 以容器（#image-display-col）為查詢上下文 */
+/* Use container (#image-display-col) as query context */
 .nav-btn {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
   z-index: 1;
-  /* 觸控/滑鼠友善的點擊面積 */
+  /* Touch/mouse friendly click area */
   inline-size: 48px;
   block-size: 50%;
-  /* 去除卡片背景/陰影干擾（Vuetify 可按需調整） */
+  /* Remove card background/shadow interference */
   box-shadow: none;
 }
 
@@ -71,7 +71,7 @@ const configStore = useConfigStore(props.isolationId)
   right: 0;
 }
 
-/* 窄容器時，縮小導覽按鈕的高度 */
+/* Shrink nav button height on narrow containers */
 @container image-col (max-width: 600px) {
   .nav-btn {
     block-size: 40%;

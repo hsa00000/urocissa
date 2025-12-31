@@ -113,7 +113,6 @@
       @swiper="onSwiper"
       class="h-100"
     >
-      <!-- 前一張 -->
       <swiper-slide v-if="previousHash !== undefined">
         <div class="slide-content">
           <ViewPageDisplayDatabase
@@ -140,7 +139,6 @@
         </div>
       </swiper-slide>
 
-      <!-- 目前這張 -->
       <swiper-slide>
         <div class="slide-content">
           <ViewPageDisplayDatabase
@@ -163,7 +161,6 @@
         </div>
       </swiper-slide>
 
-      <!-- 下一張 -->
       <swiper-slide v-if="nextHash !== undefined">
         <div class="slide-content">
           <ViewPageDisplayDatabase

@@ -26,7 +26,6 @@ export const useDataStore = (isolationId: IsolationId) =>
           return false
         }
 
-        // 新結構：data 本身就是 UnifiedData，直接使用 tags 屬性
         tags.forEach((tag) => {
           if (!data.tags.includes(tag)) {
             data.tags.push(tag)
@@ -37,22 +36,19 @@ export const useDataStore = (isolationId: IsolationId) =>
       removeTags(index: number, tags: string[]): boolean {
         const data = this.data.get(index)
         if (!data) {
-          // Index does not exist
           return false
         }
 
-        // 新結構：data 本身就是 UnifiedData，直接使用 tags 屬性
         data.tags = data.tags.filter((tag) => !tags.includes(tag))
         return true
       },
       addAlbums(index: number, albums: string[]): boolean {
         const data = this.data.get(index)
         if (!data) {
-          // Index does not exist
           return false
         }
 
-        // 只有 Image/Video 有 albums 屬性
+        // Albums are only applicable to Images/Videos, not nested Albums
         if (data.type === 'image' || data.type === 'video') {
           albums.forEach((album) => {
             if (!data.albums.includes(album)) {
@@ -62,23 +58,19 @@ export const useDataStore = (isolationId: IsolationId) =>
           return true
         }
 
-        // Album 類型不能加入其他 album
         return false
       },
       removeAlbums(index: number, albums: string[]): boolean {
         const data = this.data.get(index)
         if (!data) {
-          // Index does not exist
           return false
         }
 
-        // 只有 Image/Video 有 albums 屬性
         if (data.type === 'image' || data.type === 'video') {
           data.albums = data.albums.filter((album) => !albums.includes(album))
           return true
         }
 
-        // Album 類型不能從其他 album 移除
         return false
       }
     }

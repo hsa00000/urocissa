@@ -147,13 +147,12 @@ setup_environment() {
 prepare_volumes() {
     log_header "Step 2: Volume & Path Parsing"
 
-    # 初始化變數
     local RAW_PATHS_LIST=()
     local CONFIG_SOURCE="None" 
     local CONFIG_FILE="./gallery-backend/config.json"
     
     # ------------------------------------------------------------
-    # 1. 嘗試從 config.json 讀取 syncPaths
+    # 1. Try to read syncPaths from config.json
     # ------------------------------------------------------------
     if [[ -f "$CONFIG_FILE" ]]; then
         local FLAT_JSON
@@ -167,7 +166,7 @@ prepare_volumes() {
                 CONFIG_SOURCE="config.json"
                 IFS=',' read -ra JSON_ARR <<< "$JSON_CONTENT"
                 for item in "${JSON_ARR[@]}"; do
-                    # 清理: 去引號, 去空白, 轉 Windows 斜線
+                    # Cleanup: remove quotes, whitespace, and normalize Windows slashes
                     local cleaned_path
                     cleaned_path=$(echo "$item" | tr -d '"' | xargs | sed 's|\\\\|/|g' | sed 's|\\|/|g')
                     
@@ -180,7 +179,7 @@ prepare_volumes() {
     fi
 
     # ------------------------------------------------------------
-    # 2. 回退讀取 .env
+    # 2. Fallback to reading .env
     # ------------------------------------------------------------
     if [[ "$CONFIG_SOURCE" == "None" ]]; then
         if [[ -f "./gallery-backend/.env" ]]; then
@@ -203,7 +202,7 @@ prepare_volumes() {
     fi
 
     # ------------------------------------------------------------
-    # 3. 輸出路徑偵測結果 (Visual Log)
+    # 3. Output path detection results (Visual Log)
     # ------------------------------------------------------------
     echo "------------------------------------------------------------"
     echo -e " ${CYAN}Sync Path Source :${NC} $CONFIG_SOURCE"
@@ -218,7 +217,7 @@ prepare_volumes() {
     echo "------------------------------------------------------------"
 
     # ------------------------------------------------------------
-    # 4. 驗證並轉換為絕對路徑
+    # 4. Validate and convert to absolute path
     # ------------------------------------------------------------
     for path in "${RAW_PATHS_LIST[@]}"; do
         local abs_path
@@ -240,7 +239,7 @@ prepare_volumes() {
     done
 
     # ------------------------------------------------------------
-    # 5. 加入預定義 Volume
+    # 5. Add predefined Volumes
     # ------------------------------------------------------------
     PREDEFINED_VOLUMES+=( "./gallery-backend/db:${UROCISSA_PATH}/gallery-backend/db" )
     PREDEFINED_VOLUMES+=( "./gallery-backend/object:${UROCISSA_PATH}/gallery-backend/object" )

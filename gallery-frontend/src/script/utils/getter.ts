@@ -101,20 +101,24 @@ export async function searchByTag(tag: string, router: Router) {
   }
 }
 
-// 適用於完整 URL（包含 http:// 或 https://）
+/**
+ * Extracts hash from a full URL.
+ */
 export function extractHashFromAbsoluteUrl(url: URL): string | null {
-  const segments = url.pathname.split('/').filter(Boolean) // 移除空字串
-  const lastSegment = segments.pop() // 取得最後一個片段
+  const segments = url.pathname.split('/').filter(Boolean)
+  const lastSegment = segments.pop()
 
-  return lastSegment?.split('.').shift() ?? null // 移除副檔名，保留 hash
+  return lastSegment?.split('.').shift() ?? null
 }
 
-// 適用於相對路徑（不含 http:// 或 https://）
+/**
+ * Extracts hash from a relative path.
+ */
 export function extractHashFromPath(path: string): string | null {
-  const segments = path.split('/').filter(Boolean) // 移除空字串
-  const lastSegment = segments.pop() // 取得最後一個片段
+  const segments = path.split('/').filter(Boolean)
+  const lastSegment = segments.pop()
 
-  return lastSegment?.split('.').shift() ?? null // 移除副檔名，保留 hash
+  return lastSegment?.split('.').shift() ?? null
 }
 
 export function getSrc(hash: string, original: boolean, ext: string) {

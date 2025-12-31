@@ -70,9 +70,8 @@ export const useConstStore = (isolationId: IsolationId) =>
         }
       },
 
-      // ===== 新增：concurrencyNumber =====
       async updateConcurrencyNumber(value: number): Promise<void> {
-        // 保障為 >= 1 的整數
+        // Ensure minimum concurrency of 1
         const v = Math.max(1, Math.floor(value))
         this.concurrencyNumber = v
         await storeConcurrencyNumber(v)

@@ -16,7 +16,6 @@ export const useUploadStore = (isolationId: IsolationId) =>
       abortController: null as AbortController | null
     }),
 
-    // ===== Getters（屬性存取，非函式呼叫）=====
     getters: {
       percentComplete: (state): number =>
         state.total !== undefined && state.loaded !== undefined && state.total > 0
@@ -40,30 +39,26 @@ export const useUploadStore = (isolationId: IsolationId) =>
       }
     },
 
-    // ===== Actions =====
     actions: {
-      // 顯式型別：albumId 必傳，但可為 undefined
       triggerFileInput(albumId: string | undefined): void {
         const fileInput = document.createElement('input')
         fileInput.type = 'file'
         fileInput.multiple = true
         fileInput.style.display = 'none'
-        // fileInput.accept = 'image/*,video/*' // 需要時再開
 
-        // 實際異步處理
         const handleChange = async (event: Event): Promise<void> => {
           const target = event.target as HTMLInputElement
           const files = target.files
           try {
             if (files && files.length > 0) {
-              await this.fileUpload([...files], albumId) // albumId 由 closure 固定
+              await this.fileUpload([...files], albumId)
             }
           } finally {
-            document.body.removeChild(fileInput) // { once: true } 會自動移除監聽
+            document.body.removeChild(fileInput)
           }
         }
 
-        // 同步 wrapper，避免 no-misused-promises
+        // Wrapper to satisfy no-misused-promises
         const changeHandler = (e: Event): void => {
           void handleChange(e)
         }
@@ -73,7 +68,6 @@ export const useUploadStore = (isolationId: IsolationId) =>
         fileInput.click()
       },
 
-      // 顯式型別：albumId 必傳，但可為 undefined
       async fileUpload(files: File[], albumId: string | undefined): Promise<void> {
         const modalStore = useModalStore('mainId')
         const messageStore = useMessageStore('mainId')
@@ -104,7 +98,7 @@ export const useUploadStore = (isolationId: IsolationId) =>
             onUploadProgress: (e: AxiosProgressEvent) => {
               if (e.total !== undefined) {
                 this.total = e.total
-                // e.loaded 可能為 undefined（類型上），保守處理
+                // Axios types say loaded can be undefined
                 if (typeof e.loaded === 'number') {
                   this.loaded = e.loaded
                 }

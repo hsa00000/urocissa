@@ -43,7 +43,6 @@ impl BatchTask for StartWatcherTask {
 pub fn reload_watcher() {
     info!("Reloading watcher...");
 
-    // 1. 停止舊的 watcher
     {
         let mut guard = WATCHER_HANDLE.lock().unwrap();
         *guard = None; // Drop old watcher
@@ -52,7 +51,6 @@ pub fn reload_watcher() {
     // Reset the flag so we can start again
     IS_WATCHING.store(false, Ordering::SeqCst);
 
-    // 2. 重新啟動
     if let Err(e) = start_watcher_task_internal() {
         error!("Failed to reload watcher: {}", e);
     }

@@ -58,7 +58,7 @@ const props = defineProps({
   modelValue: { type: Boolean, required: true },
   title: { type: String, default: '' },
   width: { type: [String, Number], default: 450 },
-  // 保持 contentClass 讓外部控制內部 padding，預設仍為 pa-4 (Vuetify 標準卡片內距)
+  /** External control of inner padding. Default: 'pa-4' (Standard) */
   contentClass: { type: String, default: 'pa-4' },
   loading: { type: Boolean, default: false },
   hideClose: { type: Boolean, default: false },

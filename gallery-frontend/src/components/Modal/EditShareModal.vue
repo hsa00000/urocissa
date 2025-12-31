@@ -29,7 +29,6 @@ const albumStore = useAlbumStore('mainId')
 
 const loading = ref(false)
 
-// 初始化表單狀態
 const formState = ref<ShareFormData>({
   description: '',
   passwordRequired: false,
@@ -41,7 +40,6 @@ const formState = ref<ShareFormData>({
   showMetadata: false
 })
 
-// 監聽 props 變更以初始化資料
 watchEffect(() => {
   if (props.editShareData && props.editShareData.share) {
     const share = props.editShareData.share
@@ -49,9 +47,8 @@ watchEffect(() => {
       description: share.description || '',
       passwordRequired: !!share.password,
       password: share.password || '',
-      // 如果 exp > 0 代表有過期時間
       expireEnabled: share.exp > 0,
-      // 編輯模式下，duration 預設為 null (不改變)，除非使用者想重設
+      // In edit mode, default to null (unchanged)
       expDuration: null,
       showUpload: share.showUpload,
       showDownload: share.showDownload,
@@ -63,17 +60,13 @@ watchEffect(() => {
 const saveChanges = async (formData: ShareFormData) => {
   loading.value = true
 
-  // 計算新的過期時間
   let newExp = props.editShareData.share.exp
 
   if (!formData.expireEnabled) {
-    // 使用者關閉了過期
     newExp = 0
   } else if (formData.expDuration) {
-    // 使用者選擇了新的時長，重設過期時間
     newExp = Math.floor(Date.now() / 1000) + formData.expDuration * 60
   }
-  // 如果 enabled 為 true 但 duration 為 null，則保持原有的 exp 不變
 
   const updatedShare = {
     url: props.editShareData.share.url,
@@ -86,7 +79,7 @@ const saveChanges = async (formData: ShareFormData) => {
   }
 
   try {
-    // Optimistic Update (更新 Store)
+    // Optimistic Update
     const album = albumStore.albums.get(props.editShareData.albumId)
     if (album) {
       Object.assign(props.editShareData.share, updatedShare)

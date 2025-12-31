@@ -89,13 +89,12 @@ const workerStore = useWorkerStore(props.isolationId)
 const scorllTopStore = useScrollTopStore(props.isolationId)
 const timeInterval = ref(0)
 const isLongPress = ref(false)
-const pressTimer = ref<number | null>(null) // 定時器 ID
+const pressTimer = ref<number | null>(null)
 const scrollingTimer = ref<number | null>(null)
 const isScrolling = ref(false)
 
 const mobile = configStore.isMobile
 
-// Prevent accidental touches while scrolling
 watch(
   () => scorllTopStore.scrollTop,
   () => {
@@ -119,11 +118,11 @@ const handlePointerdown = (event: MouseEvent, currentIndex: number) => {
   if (isScrolling.value) {
     return
   }
-  isLongPress.value = false // 初始為非長按
+  isLongPress.value = false
   pressTimer.value = window.setTimeout(() => {
-    isLongPress.value = true // 設置為長按
-    handleLongPressClick(event, currentIndex) // 觸發長按事件
-  }, 600) // 長按持續時間 (例如 800 毫秒)
+    isLongPress.value = true
+    handleLongPressClick(event, currentIndex)
+  }, 600)
 }
 
 const handlePointerUp = (event: MouseEvent, currentIndex: number) => {
@@ -131,17 +130,17 @@ const handlePointerUp = (event: MouseEvent, currentIndex: number) => {
     return
   }
   if (pressTimer.value !== null) {
-    clearTimeout(pressTimer.value) // 清除定時器
+    clearTimeout(pressTimer.value)
     pressTimer.value = null
   }
   if (!isLongPress.value) {
-    handleClick(event, currentIndex) // 若非長按則觸發點擊事件
+    handleClick(event, currentIndex)
   }
 }
 
 const handlePointerLeave = () => {
   if (pressTimer.value !== null) {
-    clearTimeout(pressTimer.value) // 取消長按事件
+    clearTimeout(pressTimer.value)
     pressTimer.value = null
   }
 }

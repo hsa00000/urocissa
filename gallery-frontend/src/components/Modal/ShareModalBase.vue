@@ -23,7 +23,6 @@
         ]"
         :height="mobile ? 'auto' : 54"
       >
-        <!-- 顯示已建立的連結 -->
         <div
           v-if="showLinkDisplay && !mobile"
           class="text-body-2 text-grey-lighten-1 text-truncate flex-grow-1 mr-3"
@@ -32,7 +31,6 @@
           {{ shareLink }}
         </div>
 
-        <!-- Mobile 版連結顯示 -->
         <v-sheet
           v-if="showLinkDisplay && mobile"
           color="grey-darken-4"
@@ -67,16 +65,11 @@ import BaseModal from '@/components/Modal/BaseModal.vue'
 import ShareSettingsForm, { ShareFormData } from '@/components/Modal/ShareSettingsForm.vue'
 import { useMessageStore } from '@/store/messageStore'
 
-// Props
 const props = withDefaults(
   defineProps<{
-    /** Modal 標題 */
     title: string
-    /** 已建立的分享連結（若有） */
     shareLink?: string | null
-    /** 外部控制的 loading 狀態 */
     loading?: boolean
-    /** 模式：'create' = 建立新連結, 'edit' = 編輯現有連結 */
     mode: 'create' | 'edit'
   }>(),
   {
@@ -85,31 +78,21 @@ const props = withDefaults(
   }
 )
 
-// Emits
 const emit = defineEmits<{
-  /** 建立連結 */
   create: [formData: ShareFormData]
-  /** 更新連結 */
   update: [formData: ShareFormData]
-  /** 複製連結 */
   copy: [link: string]
 }>()
 
-// Models
 const modelValue = defineModel<boolean>({ required: true })
 const formState = defineModel<ShareFormData>('formState', { required: true })
 
-// 取得 mobile 狀態
 const { mobile } = useDisplay()
-
-// Clipboard
 const { copy, copied } = useClipboard({ legacy: true })
 const messageStore = useMessageStore('mainId')
 
-// --- 內部狀態追蹤 ---
 const lastSavedState = ref('')
 
-// 當有連結產生時，儲存當前狀態
 watch(
   () => props.shareLink,
   (newLink) => {
@@ -119,7 +102,6 @@ watch(
   }
 )
 
-// --- Computed ---
 const showLinkDisplay = computed(() => !!props.shareLink)
 
 const isFormValid = computed(() => {
@@ -136,27 +118,23 @@ const buttonLabel = computed(() => {
   if (props.mode === 'edit') {
     return 'Save Changes'
   }
-  // Create mode
   if (!props.shareLink) return 'Create Link'
   if (hasChanges.value) return 'Save Changes'
   return copied.value ? 'Copied!' : 'Copy'
 })
 
-// --- Actions ---
 const handleAction = async () => {
   if (props.mode === 'edit') {
     emit('update', { ...formState.value })
     return
   }
 
-  // Create mode
   if (!props.shareLink) {
     emit('create', { ...formState.value })
   } else if (hasChanges.value) {
     emit('update', { ...formState.value })
     lastSavedState.value = JSON.stringify(formState.value)
   } else {
-    // Copy action
     if (props.shareLink) {
       await copy(props.shareLink)
       messageStore.success('Link copied to clipboard')
@@ -165,9 +143,7 @@ const handleAction = async () => {
   }
 }
 
-// 暴露方法給父組件使用
 defineExpose({
-  /** 標記當前狀態為已儲存（用於成功儲存後） */
   markAsSaved: () => {
     lastSavedState.value = JSON.stringify(formState.value)
   }

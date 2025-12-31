@@ -95,18 +95,14 @@ export interface ShareFormData {
   showMetadata: boolean
 }
 
-// 使用 defineModel (Vue 3.4+) 簡化 v-model 邏輯
-// 如果是舊版 Vue 3，請保留原本的 props + computed 寫法
 const model = defineModel<ShareFormData>({ required: true })
 
-// 定義設置項目的配置，讓 Template 更乾淨 (DRY 原則)
 const settingsItems = [
   { title: 'Show Metadata', key: 'showMetadata' },
   { title: 'Allow Download', key: 'showDownload' },
   { title: 'Allow Upload', key: 'showUpload' }
 ] as const
 
-// 通用切換函數
 const toggleSetting = (
   key: keyof Pick<ShareFormData, 'showMetadata' | 'showDownload' | 'showUpload'>
 ) => {

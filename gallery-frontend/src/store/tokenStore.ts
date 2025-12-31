@@ -24,7 +24,6 @@ export const useTokenStore = (isolationId: IsolationId) =>
     }),
 
     actions: {
-      // === 基礎工具方法 ===
       _isExpired(exp?: number): boolean {
         return typeof exp === 'number' && exp < Math.floor(Date.now() / 1000)
       },
@@ -43,7 +42,6 @@ export const useTokenStore = (isolationId: IsolationId) =>
         return decoded ? this._isExpired(decoded.exp) : true
       },
 
-      // === Token 信息獲取 ===
       _getTimestampFromToken(): number | null {
         if (this.timestampToken == null) return null
         const decoded = this._decodeToken(this.timestampToken)
@@ -57,7 +55,6 @@ export const useTokenStore = (isolationId: IsolationId) =>
         return decoded?.timestamp
       },
 
-      // === 核心更新邏輯 ===
       async _updateTimestampToken(): Promise<void> {
         try {
           const response = await axios.post('/post/renew-timestamp-token', {
@@ -90,7 +87,9 @@ export const useTokenStore = (isolationId: IsolationId) =>
         }
       },
 
-      // === 帶併發控制的 Timestamp Token 更新 ===
+      /**
+       * Updates the timestamp token with a lock to prevent concurrent renewals.
+       */
       async _refreshTimestampTokenWithLock(): Promise<void> {
         if (this._renewingTimestamp) {
           await this._renewingTimestamp
@@ -106,7 +105,6 @@ export const useTokenStore = (isolationId: IsolationId) =>
         await this._renewingTimestamp
       },
 
-      // === 通用的 Hash Token 處理邏輯 ===
       async _ensureHashTokenFresh(hash: string): Promise<string | null> {
         const currentToken = this.hashTokenMap.get(hash)
         if (currentToken === undefined) {
@@ -118,10 +116,8 @@ export const useTokenStore = (isolationId: IsolationId) =>
           return currentToken
         }
 
-        // 確保 timestamp token 最新
         await this.refreshTimestampTokenIfExpired()
 
-        // 更新 hash token
         const newToken = await this._updateHashToken(currentToken)
         if (newToken !== null) {
           this.hashTokenMap.set(hash, newToken)
@@ -129,7 +125,6 @@ export const useTokenStore = (isolationId: IsolationId) =>
         return newToken
       },
 
-      // === 公開接口 ===
       async refreshTimestampTokenIfExpired(): Promise<void> {
         if (this.timestampToken == null || !this._isTokenExpired(this.timestampToken)) return
         await this._refreshTimestampTokenWithLock()

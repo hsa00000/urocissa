@@ -118,7 +118,6 @@ const showMetadata = computed(() => {
   return route.meta.baseName !== 'share' || shareStore.resolvedShare?.share.showMetadata
 })
 
-// 新增：判斷是否為分享模式
 const isShareMode = computed(() => {
   return route.meta.baseName === 'share'
 })

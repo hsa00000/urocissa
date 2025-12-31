@@ -27,7 +27,6 @@ const props = defineProps<{
 const modalStore = useModalStore('mainId')
 const messageStore = useMessageStore('mainId')
 
-// 初始狀態
 const defaultFormState: ShareFormData = {
   description: '',
   passwordRequired: false,
@@ -41,7 +40,6 @@ const defaultFormState: ShareFormData = {
 
 const formState = ref<ShareFormData>({ ...defaultFormState })
 
-// 當 Modal 關閉時重置表單
 watch(
   () => modalStore.showShareModal,
   (val) => {
@@ -53,12 +51,10 @@ watch(
   }
 )
 
-// 狀態資料
 const shareLink: Ref<string | null> = ref(null)
 const createdShareKey: Ref<string | null> = ref(null)
 const loading = ref(false)
 
-// --- API 操作 ---
 const createLink = async (formData: ShareFormData) => {
   loading.value = true
   const expirationTimestamp =

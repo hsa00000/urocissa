@@ -41,10 +41,8 @@ onUnmounted(() => {
 })
 
 onBeforeRouteLeave(() => {
-  // 如果有從編輯模式退回，就取消這次導航
   if (exitEditMode()) {
     return false
   }
-  // 沒在編輯模式，就直接放行（不 return 任何東西）
 })
 </script>
