@@ -346,7 +346,7 @@ const save = async () => {
   })
 
   if (success) {
-    messageStore.success('Success')
+    messageStore.success('Settings saved successfully.')
   }
   loading.value = false
 }
