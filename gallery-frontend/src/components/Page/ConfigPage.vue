@@ -41,43 +41,39 @@
                     </v-col>
 
                     <v-col cols="12">
-                      <v-list-subheader class="font-weight-bold text-high-emphasis"
-                        >Storage & Sync</v-list-subheader
-                      >
+                      <v-list-subheader class="font-weight-bold text-high-emphasis">
+                        Storage & Sync
+                      </v-list-subheader>
+
                       <v-card border flat class="rounded-lg">
-                        <v-toolbar density="compact" color="transparent" class="border-b">
-                          <template #prepend>
-                            <v-icon
-                              icon="mdi-folder-network-outline"
-                              color="medium-emphasis"
-                            ></v-icon>
+                        <v-card-item
+                          density="compact"
+                          prepend-icon="mdi-folder-network-outline"
+                          class="border-b"
+                        >
+                          <v-card-title class="text-body-1 font-weight-medium">
+                            Sync Paths
+                          </v-card-title>
+
+                          <template #append>
+                            <v-btn
+                              variant="tonal"
+                              prepend-icon="mdi-plus"
+                              class="text-none font-weight-medium"
+                              @click="showFilePicker = true"
+                            >
+                              Add Path
+                            </v-btn>
                           </template>
-                          <v-toolbar-title class="text-body-1 font-weight-medium"
-                            >Sync Paths</v-toolbar-title
-                          >
-                          <v-spacer></v-spacer>
-                          <v-btn
-                            color="primary"
-                            variant="text"
-                            prepend-icon="mdi-plus"
-                            class="text-none font-weight-medium"
-                            @click="showFilePicker = true"
-                          >
-                            Add Path
-                          </v-btn>
-                        </v-toolbar>
+                        </v-card-item>
 
                         <v-list v-if="localSettings.syncPaths.length > 0" lines="one">
                           <template v-for="(path, index) in localSettings.syncPaths" :key="index">
                             <v-list-item :title="path">
-                              <template #prepend>
-                                <v-icon icon="mdi-folder-outline" color="medium-emphasis"></v-icon>
-                              </template>
                               <template #append>
                                 <v-btn
                                   icon="mdi-delete-outline"
                                   variant="text"
-                                  color="error"
                                   density="comfortable"
                                   @click="removePath(path)"
                                   title="Remove path"
