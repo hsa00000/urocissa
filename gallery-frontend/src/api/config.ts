@@ -16,19 +16,15 @@ export interface AppConfig {
 }
 
 export const getConfig = async (): Promise<AppConfig> => {
-  // Refactor: path to /get/config
   const response = await axios.get<AppConfig>('/get/config')
   return response.data
 }
 
 export const updateConfig = async (config: AppConfig & { oldPassword?: string }): Promise<void> => {
-
-  // Refactor: path to /put/config
   await axios.put('/put/config', config)
 }
 
 export const exportConfig = async (): Promise<AppConfig> => {
-  // Refactor: path to /get/config/export
   const response = await axios.get<AppConfig>('/get/config/export')
   return response.data
 }
