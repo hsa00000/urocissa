@@ -2,8 +2,6 @@ name: Build and Push Urocissa Docker Images (Multi-arch)
 
 on:
   push:
-    branches:
-      - main
     tags:
       # Change here: Listen to tags starting with a number (e.g. 0.20.1)
       # Or simply write - '*' to trigger on all tags
