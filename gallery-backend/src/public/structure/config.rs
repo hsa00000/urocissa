@@ -14,6 +14,29 @@ const CONFIG_FILE: &str = "config.json";
 
 pub static FALLBACK_SECRET_KEY: OnceLock<String> = OnceLock::new();
 
+/// Resolves relative paths in sync_paths to absolute paths based on UROCISSA_PATH environment variable.
+/// This ensures that relative paths like "./src" work correctly in Docker containers.
+fn resolve_sync_paths(paths: HashSet<PathBuf>) -> HashSet<PathBuf> {
+    // Get base path from UROCISSA_PATH env var, or fall back to current directory
+    let base_path = std::env::var("UROCISSA_PATH")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default());
+
+    paths
+        .into_iter()
+        .map(|p| {
+            if p.is_relative() {
+                // Resolve relative path based on UROCISSA_PATH/gallery-backend
+                let resolved = base_path.join("gallery-backend").join(&p);
+                // Try to canonicalize (normalize . and ..), fall back to resolved path
+                resolved.canonicalize().unwrap_or(resolved)
+            } else {
+                p
+            }
+        })
+        .collect()
+}
+
 fn generate_secret_key() -> String {
     let mut secret = vec![0u8; 32];
     OsRng
@@ -36,7 +59,6 @@ pub struct PublicConfig {
     pub read_only_mode: bool,
     pub disable_img: bool,
 }
-
 
 /// Sensitive configuration kept only on the backend.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -124,12 +146,17 @@ impl AppConfig {
             Self::load_from_file()
         };
 
-        if config.private.auth_key.as_ref().filter(|k| !k.is_empty()).is_none() {
-         
+        if config
+            .private
+            .auth_key
+            .as_ref()
+            .filter(|k| !k.is_empty())
+            .is_none()
+        {
             config.private.auth_key = None; // Normalize empty string to None
             FALLBACK_SECRET_KEY.get_or_init(generate_secret_key);
         }
-        
+
         APP_CONFIG
             .set(RwLock::new(config))
             .expect("Config already initialized");
@@ -144,9 +171,11 @@ impl AppConfig {
             "{}".to_string()
         });
 
-        match serde_json::from_str(&file_content) {
-            Ok(config) => {
+        match serde_json::from_str::<AppConfig>(&file_content) {
+            Ok(mut config) => {
                 println!("Successfully loaded configuration from {}", CONFIG_FILE);
+                // Resolve relative paths in sync_paths based on UROCISSA_PATH
+                config.public.sync_paths = resolve_sync_paths(config.public.sync_paths);
                 config
             }
             Err(e) => {
@@ -178,11 +207,19 @@ impl AppConfig {
                 }
             })
             .collect();
-        new_config.public.sync_paths = sanitized_paths;
+
+        // Resolve relative paths based on UROCISSA_PATH
+        new_config.public.sync_paths = resolve_sync_paths(sanitized_paths);
 
         // Normalize empty authKey to None BEFORE saving or applying
-        if new_config.private.auth_key.as_ref().filter(|k| !k.is_empty()).is_none() {
-             new_config.private.auth_key = None;
+        if new_config
+            .private
+            .auth_key
+            .as_ref()
+            .filter(|k| !k.is_empty())
+            .is_none()
+        {
+            new_config.private.auth_key = None;
         }
 
         Self::save_update(&new_config).context("Failed to save configuration to file")?;
