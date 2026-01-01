@@ -17,14 +17,14 @@ import axios from 'axios'
 import { bindActionDispatch, createHandler } from 'typesafe-agent-events'
 import { fromDataWorker, toDataWorker } from './workerApi'
 import { z } from 'zod'
-import { setupAxiosInterceptor } from './axiosInterceptor'
+import { setupWorkerAxiosInterceptor } from './axiosInterceptor'
 
 const shouldProcessBatch: number[] = []
 const fetchedRowData = new Map<number, Row>()
 const postToMainData = bindActionDispatch(fromDataWorker, self.postMessage.bind(self))
 const workerAxios = axios.create()
 
-setupAxiosInterceptor(workerAxios, postToMainData.notification)
+setupWorkerAxiosInterceptor(workerAxios, postToMainData.notification)
 
 self.addEventListener('message', (e) => {
   const handler = createHandler<typeof toDataWorker>({
@@ -105,7 +105,10 @@ async function fetchData(
 ): Promise<{
   result: Map<
     number,
-    { abstractData: UnifiedData & { thumbhashUrl: string | null; timestamp: number }; hashToken: string }
+    {
+      abstractData: UnifiedData & { thumbhashUrl: string | null; timestamp: number }
+      hashToken: string
+    }
   >
   startIndex: number
   endIndex: number
@@ -137,7 +140,10 @@ async function fetchData(
 
   const data = new Map<
     number,
-    { abstractData: UnifiedData & { thumbhashUrl: string | null; timestamp: number }; hashToken: string }
+    {
+      abstractData: UnifiedData & { thumbhashUrl: string | null; timestamp: number }
+      hashToken: string
+    }
   >()
 
   for (let i = 0; i < databaseTimestampArray.length; i++) {

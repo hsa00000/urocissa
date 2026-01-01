@@ -9,7 +9,7 @@ import {
 import axiosRetry from 'axios-retry'
 import axios from 'axios'
 import { getSrc } from '@utils/getter'
-import { setupAxiosInterceptor } from './axiosInterceptor'
+import { setupWorkerAxiosInterceptor } from './axiosInterceptor'
 
 const postToMainImg = bindActionDispatch(fromImgWorker, self.postMessage.bind(self))
 const controllerMap = new Map<number, AbortController>()
@@ -25,7 +25,7 @@ axiosRetry(workerAxios, {
   }
 })
 
-setupAxiosInterceptor(workerAxios, postToMainImg.notification)
+setupWorkerAxiosInterceptor(workerAxios, postToMainImg.notification)
 
 const handler = createHandler<typeof toImgWorker>({
   async processSmallImage(event: ProcessSmallImagePayload) {

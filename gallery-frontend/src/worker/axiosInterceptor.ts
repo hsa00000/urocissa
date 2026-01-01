@@ -1,7 +1,7 @@
 import { AxiosInstance, AxiosError } from 'axios'
 import { errorDisplay } from '@/script/utils/errorDisplay'
 
-export function setupAxiosInterceptor(
+export function setupWorkerAxiosInterceptor(
   axiosInstance: AxiosInstance,
   notify: (payload: { text: string; color: 'error' }) => void
 ) {
