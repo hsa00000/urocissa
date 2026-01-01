@@ -25,7 +25,9 @@ import { useShareStore } from '@/store/shareStore'
 import { useConstStore } from '@/store/constStore'
 import { useModalStore } from '@/store/modalStore'
 import { useMessageStore } from '@/store/messageStore'
-import { HandledError } from '@/type/types'
+
+// Variable to track the last 401 error time for debouncing
+let last401Timestamp = 0
 
 // Request interceptor
 axios.interceptors.request.use((config: InternalAxiosRequestConfig) => {
@@ -79,8 +81,12 @@ axios.interceptors.response.use(
         } else if (status === 403) {
           // 403: Link expired or access denied
           const displayMsg = errorDisplay(error)
-          messageStore.error(displayMsg !== 'Unknown error occurred' ? displayMsg : 'Share link has expired or access is denied.')
-          
+          messageStore.error(
+            displayMsg !== 'Unknown error occurred'
+              ? displayMsg
+              : 'Share link has expired or access is denied.'
+          )
+
           if (!modalStore.showShareLoginModal) {
             shareStore.isLinkExpired = true
             modalStore.showShareLoginModal = true
@@ -88,21 +94,27 @@ axios.interceptors.response.use(
         }
       } else {
         if (status === 401) {
+          // Debounce 401 handling to prevent duplicate modals/snackbars
+          const now = Date.now()
+          if (now - last401Timestamp < 1000) {
+            return Promise.reject(error)
+          }
+          last401Timestamp = now
+
           messageStore.error('Session expired or unauthorized. Please login.')
           await redirectionStore.redirectionToLogin()
-
-          const handledError: HandledError = error
-          handledError.isHandled = true
         } else if (status === 403) {
           const displayMsg = errorDisplay(error)
-          messageStore.error(displayMsg !== 'Unknown error occurred' ? displayMsg : 'Access denied.')
-          
-          const handledError: HandledError = error
-          handledError.isHandled = true
+          messageStore.error(
+            displayMsg !== 'Unknown error occurred' ? displayMsg : 'Access denied.'
+          )
         } else if (status === 405) {
           messageStore.error('Read only mode is on.')
-          const handledError: HandledError = error
-          handledError.isHandled = true
+        } else {
+          // Generic error handler for other Axios errors (e.g. 404, 400, etc.)
+          // This ensures no silent failures now that tryWithMessageStore ignores Axios errors
+          const displayMsg = errorDisplay(error)
+          messageStore.error(displayMsg)
         }
       }
     }

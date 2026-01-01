@@ -1,6 +1,7 @@
 import { useMessageStore } from '@/store/messageStore'
 import { errorDisplay } from './errorDisplay'
-import type { IsolationId, HandledError } from '@/type/types'
+import type { IsolationId } from '@/type/types'
+import axios from 'axios'
 
 /**
  * Utility function to handle try-catch with automatic error handling using messageStore
@@ -18,7 +19,11 @@ export async function tryWithMessageStore<T>(
   try {
     return await tryFn()
   } catch (error: unknown) {
-    if ((error as HandledError).isHandled) return undefined
+    // If it's an Axios error, let the global interceptor handle the display.
+    if (axios.isAxiosError(error)) {
+      return undefined
+    }
+
     messageStore.error(errorDisplay(error))
     return undefined
   }
@@ -39,8 +44,12 @@ export function tryWithMessageStoreSync<T>(
   try {
     return tryFn()
   } catch (error: unknown) {
-    if ((error as HandledError).isHandled) return undefined
+    if (axios.isAxiosError(error)) {
+      return undefined
+    }
+    
     messageStore.error(errorDisplay(error))
     return undefined
   }
 }
+
