@@ -14,7 +14,7 @@
         class="d-flex flex-wrap position-relative flex-grow-1 min-h-0 h-100 pa-1 pb-2 bg-surface-light"
         :class="stopScroll ? 'overflow-y-hidden' : 'overflow-y-scroll'"
         @scroll="
-          // If prefetchStore.locateTo triggers initializeScrollPosition, prevent the user from triggering the scrolling function.
+          // Suspend scroll handling while auto-scrolling to a target location to avoid conflicts.
           prefetchStore.locateTo === null ? throttledHandleScroll() : () => {}
         "
       >
