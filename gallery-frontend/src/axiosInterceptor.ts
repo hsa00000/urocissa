@@ -5,103 +5,156 @@ import { useModalStore } from '@/store/modalStore'
 import { useMessageStore } from '@/store/messageStore'
 import { useRedirectionStore } from '@/store/redirectionStore'
 
-// Variable to track the last 401 error time for debouncing
-let last401Timestamp = 0
+// --- Constants ---
+const HEADERS = {
+  ALBUM_ID: 'x-album-id',
+  SHARE_ID: 'x-share-id',
+  SHARE_PASSWORD: 'x-share-password'
+}
+
+// --- Helpers ---
+
+/**
+ * Creates a simple throttler to prevent spamming actions (like 401 redirects).
+ */
+const createThrottler = (delay: number) => {
+  let lastTime = 0
+  return () => {
+    const now = Date.now()
+    if (now - lastTime < delay) return true
+    lastTime = now
+    return false
+  }
+}
+
+const isThrottled401 = createThrottler(1000)
+
+/**
+ * Aggregates stores to avoid repetitive useStore calls.
+ * Note: Must be called inside the interceptor to ensure Pinia is active.
+ */
+const getStores = () => ({
+  shareStore: useShareStore('mainId'),
+  modalStore: useModalStore('mainId'),
+  messageStore: useMessageStore('mainId'),
+  redirectionStore: useRedirectionStore('mainId')
+})
+
+// --- Error Handlers ---
+
+/**
+ * Handles errors specific to the Public Share / Album context.
+ */
+async function handleShareError(error: AxiosError, stores: ReturnType<typeof getStores>) {
+  const { shareStore, modalStore, messageStore } = stores
+  const status = error.response?.status
+
+  // 1. Handle 401: Password Required / Stale Request
+  if (status === 401) {
+    const sentPassword = error.config?.headers?.[HEADERS.SHARE_PASSWORD]
+    const currentPassword = shareStore.password
+
+    // Check for "Zombie" requests (stale password sent vs current store state)
+    if (currentPassword && sentPassword !== currentPassword) {
+      return // Ignore stale request
+    }
+
+    if (!modalStore.showShareLoginModal) {
+      shareStore.isLinkExpired = false
+      modalStore.showShareLoginModal = true
+    }
+    return
+  }
+
+  // 2. Handle 403: Link Expired / Access Denied
+  if (status === 403) {
+    const displayMsg = errorDisplay(error)
+    messageStore.error(
+      displayMsg !== 'Unknown error occurred'
+        ? displayMsg
+        : 'Share link has expired or access is denied.'
+    )
+
+    if (!modalStore.showShareLoginModal) {
+      shareStore.isLinkExpired = true
+      modalStore.showShareLoginModal = true
+    }
+  }
+}
+
+/**
+ * Handles standard application errors (Auth, Permissions, Generic).
+ */
+async function handleGeneralError(error: AxiosError, stores: ReturnType<typeof getStores>) {
+  const { messageStore, redirectionStore } = stores
+  const status = error.response?.status
+
+  switch (status) {
+    case 401:
+      if (isThrottled401()) return // Prevent duplicate snackbars/redirects
+      messageStore.error('Session expired or unauthorized. Please login.')
+      await redirectionStore.redirectionToLogin()
+      break
+
+    case 403: {
+      const displayMsg = errorDisplay(error)
+      messageStore.error(displayMsg !== 'Unknown error occurred' ? displayMsg : 'Access denied.')
+      break
+    }
+
+    case 405:
+      messageStore.error('Read only mode is on.')
+      break
+
+    default: {
+      // Generic error handler (400, 404, 500, etc.)
+      const displayMsg = errorDisplay(error)
+      messageStore.error(displayMsg)
+      break
+    }
+  }
+}
+
+/**
+ * Main Error Interceptor Logic
+ */
+async function handleAxiosResponseError(error: AxiosError) {
+  if (!error.response) return Promise.reject(error)
+
+  const stores = getStores()
+  const isSharePage = stores.shareStore.albumId && stores.shareStore.shareId
+
+  if (isSharePage) {
+    await handleShareError(error, stores)
+  } else {
+    await handleGeneralError(error, stores)
+  }
+
+  return Promise.reject(error)
+}
+
+// --- Interceptor Setup ---
 
 export function setupMainAxiosInterceptor() {
-  // Request interceptor
+  // Request Interceptor
   axios.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     const shareStore = useShareStore('mainId')
 
+    // Only attach share headers if both IDs exist
     if (typeof shareStore.albumId === 'string' && typeof shareStore.shareId === 'string') {
-      config.headers.set('x-album-id', shareStore.albumId)
-      config.headers.set('x-share-id', shareStore.shareId)
+      config.headers.set(HEADERS.ALBUM_ID, shareStore.albumId)
+      config.headers.set(HEADERS.SHARE_ID, shareStore.shareId)
 
-      // Add password header if it exists
       if (shareStore.password) {
-        config.headers.set('x-share-password', shareStore.password)
+        config.headers.set(HEADERS.SHARE_PASSWORD, shareStore.password)
       }
     }
 
     return config
   })
 
-  // Response interceptor
-  axios.interceptors.response.use(
-    (response) => {
-      return response
-    },
-    async (error: AxiosError) => {
-      if (error.response) {
-        const status = error.response.status
-        const modalStore = useModalStore('mainId')
-        const messageStore = useMessageStore('mainId')
-        const shareStore = useShareStore('mainId')
-        const redirectionStore = useRedirectionStore('mainId')
-
-        const isSharePage = shareStore.albumId && shareStore.shareId
-
-        if (isSharePage) {
-          if (status === 401) {
-            // Check for stale requests (zombies)
-            const sentPassword = error.config?.headers?.['x-share-password']
-            const currentPassword = shareStore.password
-
-            // If we have a password now, but the request didn't send it (or sent a different one),
-            // it means this request is stale. Do not trigger the modal again.
-            if (currentPassword && sentPassword !== currentPassword) {
-              return Promise.reject(error)
-            }
-
-            // 401: Password required
-            if (!modalStore.showShareLoginModal) {
-              shareStore.isLinkExpired = false
-              modalStore.showShareLoginModal = true
-            }
-          } else if (status === 403) {
-            // 403: Link expired or access denied
-            const displayMsg = errorDisplay(error)
-            messageStore.error(
-              displayMsg !== 'Unknown error occurred'
-                ? displayMsg
-                : 'Share link has expired or access is denied.'
-            )
-
-            if (!modalStore.showShareLoginModal) {
-              shareStore.isLinkExpired = true
-              modalStore.showShareLoginModal = true
-            }
-          }
-        } else {
-          if (status === 401) {
-            // Debounce 401 handling to prevent duplicate modals/snackbars
-            const now = Date.now()
-            if (now - last401Timestamp < 1000) {
-              return Promise.reject(error)
-            }
-            last401Timestamp = now
-
-            messageStore.error('Session expired or unauthorized. Please login.')
-            await redirectionStore.redirectionToLogin()
-          } else if (status === 403) {
-            const displayMsg = errorDisplay(error)
-            messageStore.error(
-              displayMsg !== 'Unknown error occurred' ? displayMsg : 'Access denied.'
-            )
-          } else if (status === 405) {
-            messageStore.error('Read only mode is on.')
-          } else {
-            // Generic error handler for other Axios errors (e.g. 404, 400, etc.)
-            // This ensures no silent failures now that tryWithMessageStore ignores Axios errors
-            const displayMsg = errorDisplay(error)
-            messageStore.error(displayMsg)
-          }
-        }
-      }
-
-      return Promise.reject(error)
-    }
-  )
+  // Response Interceptor
+  axios.interceptors.response.use((response) => response, handleAxiosResponseError)
 }
 
 export function setupWorkerAxiosInterceptor(
@@ -111,8 +164,7 @@ export function setupWorkerAxiosInterceptor(
   axiosInstance.interceptors.response.use(
     (response) => response,
     (error: AxiosError) => {
-      // Handle server errors (500) or other unexpected errors
-      // Use the unified errorDisplay function to parse the error
+      // Explicitly handling 500 for workers, passing others through
       if (error.response?.status === 500) {
         const errorMessage = errorDisplay(error)
         notify({ text: errorMessage, color: 'error' })
