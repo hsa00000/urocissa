@@ -1,5 +1,9 @@
 <template>
-  <!-- This router-view contains the ViewPage.vue -->
+  <!-- This router-view contains ViewPage.vue. -->
+  <!--
+    albumHomeIsolatedKey triggers a ViewPage re-render when photos are added or removed
+    via HomeTempBar while browsing an album, ensuring the latest album data is displayed.
+  -->
   <router-view :key="albumHomeIsolatedKey"></router-view>
   <div class="w-100 h-100 d-flex flex-column">
     <div class="w-100 flex-grow-0 flex-shrink-0"><slot name="home-toolbar"> </slot></div>
