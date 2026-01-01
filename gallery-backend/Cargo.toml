@@ -53,6 +53,7 @@ terminal_size = "0.4.3"
 thumbhash = "0.1.0"
 tokio = { version = "1.48.0", features = ["full"] }
 tokio-rayon = "2.1.0"
+toml = "0.8"
 unicode-width = "0.2.2"
 uuid = { version = "1.19.0", features = ["v4"] }
 walkdir = "2.5.0"

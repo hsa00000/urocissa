@@ -4406,6 +4406,7 @@ dependencies = [
  "thumbhash",
  "tokio",
  "tokio-rayon",
+ "toml",
  "unicode-width",
  "uuid",
  "walkdir",

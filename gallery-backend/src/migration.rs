@@ -1,4 +1,3 @@
-
 // frontend/src/type/schemas.ts
 //! Database Migration Module
 //!
@@ -488,7 +487,7 @@ pub fn migrate() -> Result<()> {
 // Config Migration Logic
 // ==================================================================================
 
-/// Reads legacy configuration sources (config.json, .env, env vars) and constructs 
+/// Reads legacy configuration sources (config.json, .env, env vars) and constructs
 /// the new nested `AppConfig` (PublicConfig + PrivateConfig).
 pub fn construct_migrated_config() -> AppConfig {
     let mut config = AppConfig::default();
@@ -497,6 +496,7 @@ pub fn construct_migrated_config() -> AppConfig {
     // Legacy files were flat. We map recognized fields to `config.public`.
     if let Ok(file) = File::open("config.json") {
         #[derive(serde::Deserialize)]
+        #[serde(rename_all = "camelCase")]
         struct LegacyConfigJson {
             #[serde(default)]
             read_only_mode: bool,
@@ -509,6 +509,41 @@ pub fn construct_migrated_config() -> AppConfig {
             config.public.read_only_mode = old.read_only_mode;
             config.public.disable_img = old.disable_img;
             println!("Migrated settings from legacy config.json into PublicConfig");
+        }
+    }
+
+    // 1b. Migrate from Rocket.toml (legacy Rocket configuration)
+    if let Ok(toml_content) = fs::read_to_string("Rocket.toml") {
+        if let Ok(toml_value) = toml_content.parse::<toml::Table>() {
+            // Try to read from [default] section first, then root level
+            let default_section = toml_value.get("default").and_then(|v| v.as_table());
+
+            // Read port
+            let port = default_section
+                .and_then(|d| d.get("port"))
+                .or_else(|| toml_value.get("port"))
+                .and_then(|v| v.as_integer())
+                .map(|p| p as u16);
+
+            if let Some(p) = port {
+                config.public.port = p;
+                println!("Migrated port {} from Rocket.toml into PublicConfig", p);
+            }
+
+            // Read address
+            let address = default_section
+                .and_then(|d| d.get("address"))
+                .or_else(|| toml_value.get("address"))
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+
+            if let Some(addr) = address {
+                config.public.address = addr.clone();
+                println!(
+                    "Migrated address {} from Rocket.toml into PublicConfig",
+                    addr
+                );
+            }
         }
     }
 
@@ -550,16 +585,22 @@ pub fn construct_migrated_config() -> AppConfig {
             }
         }
         if count > 0 {
-            println!("Migrated {} sync paths from SYNC_PATH into PublicConfig", count);
+            println!(
+                "Migrated {} sync paths from SYNC_PATH into PublicConfig",
+                count
+            );
         }
     }
 
     // Constraint: Prevent recursive syncing.
     if let Ok(upload_path) = fs::canonicalize(PathBuf::from("./upload")) {
-        config.public.sync_paths.retain(|p| match fs::canonicalize(p) {
-            Ok(c) => c != upload_path,
-            Err(_) => p != &upload_path,
-        });
+        config
+            .public
+            .sync_paths
+            .retain(|p| match fs::canonicalize(p) {
+                Ok(c) => c != upload_path,
+                Err(_) => p != &upload_path,
+            });
     }
 
     config
