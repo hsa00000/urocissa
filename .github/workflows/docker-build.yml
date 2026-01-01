@@ -5,8 +5,8 @@ on:
     branches:
       - main
     tags:
-      # 修改處：這裡改成監聽數字開頭的 Tag (例如 0.20.1)
-      # 或者簡單寫成 - '*' 代表所有 Tag 都觸發
+      # Change here: Listen to tags starting with a number (e.g. 0.20.1)
+      # Or simply write - '*' to trigger on all tags
       - "[0-9]*"
     paths-ignore:
       - "**/README*"
@@ -33,12 +33,12 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # 計算 Tag 變數 (無 v 版本)
+      # Calculate Tag variable (version without v)
       - name: Calculate Tag
         id: tag_calc
         run: |
           if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            # 這行指令會把 'refs/tags/0.20.1' 變成 '0.20.1'
+            # This command converts 'refs/tags/0.20.1' to '0.20.1'
             echo "TAG_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
             echo "IS_RELEASE=true" >> $GITHUB_ENV
           else
@@ -118,8 +118,8 @@ jobs:
           fi
 
       - name: Create and Push Manifest (Versioned/Edge)
+        # Create Manifest for main tag (e.g. 0.20.1 or edge)
         run: |
-          # 建立主要標籤的 Manifest (例如 0.20.1 或 edge)
           docker manifest create ${{ env.IMAGE_NAME }}:${{ env.TAG_NAME }} \
             --amend ${{ env.IMAGE_NAME }}:${{ env.TAG_NAME }}-amd64 \
             --amend ${{ env.IMAGE_NAME }}:${{ env.TAG_NAME }}-arm64
@@ -127,7 +127,7 @@ jobs:
           docker manifest push ${{ env.IMAGE_NAME }}:${{ env.TAG_NAME }}
 
       - name: Create and Push Manifest (Latest)
-        # 只有在發布 Tag 版本時，才更新 latest
+        # Only update latest when releasing a Tag version
         if: env.IS_RELEASE == 'true'
         run: |
           docker manifest create ${{ env.IMAGE_NAME }}:latest \
