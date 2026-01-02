@@ -5,9 +5,10 @@ use rocket::http::Status;
 use rocket::put;
 use rocket::serde::json::Json;
 use serde::Deserialize;
+use tokio::task::spawn_blocking;
 
 // Import PublicConfig
-use crate::public::structure::config::{APP_CONFIG, AppConfig, PublicConfig};
+use crate::public::structure::config::{AppConfig, PublicConfig, APP_CONFIG};
 use crate::router::fairing::guard_auth::GuardAuth;
 use crate::router::fairing::guard_read_only_mode::GuardReadOnlyMode;
 use crate::router::{AppResult, GuardResult};
@@ -24,7 +25,7 @@ pub struct UpdateConfigRequest {
 }
 
 #[put("/put/config", data = "<req>")]
-pub fn update_config_handler(
+pub async fn update_config_handler(
     _auth: GuardAuth,
     read_only: GuardResult<GuardReadOnlyMode>,
     req: Json<UpdateConfigRequest>,
@@ -32,35 +33,39 @@ pub fn update_config_handler(
     let _ = read_only?;
     let req_data = req.into_inner();
 
-    // 1. Get the current private config to preserve fields not being updated
-    let mut current_private = {
-        let read_lock = APP_CONFIG.get().unwrap().read().unwrap();
-        read_lock.private.clone()
-    };
+    spawn_blocking(move || {
+        // 1. Get the current private config to preserve fields not being updated
+        let mut current_private = {
+            let read_lock = APP_CONFIG.get().unwrap().read().unwrap();
+            read_lock.private.clone()
+        };
 
-    // 2. Update private fields if they are present in the request
-    if let Some(pwd) = req_data.password {
-        // Verify old password if changing password
-        if req_data.old_password.as_ref() != Some(&current_private.password) {
-            return Err(anyhow::anyhow!("Incorrect current password").into());
+        // 2. Update private fields if they are present in the request
+        if let Some(pwd) = req_data.password {
+            // Verify old password if changing password
+            if req_data.old_password.as_ref() != Some(&current_private.password) {
+                return Err(anyhow::anyhow!("Incorrect current password").into());
+            }
+            current_private.password = pwd;
         }
-        current_private.password = pwd;
-    }
-    if let Some(key) = req_data.auth_key {
-        current_private.auth_key = Some(key);
-    }
+        if let Some(key) = req_data.auth_key {
+            current_private.auth_key = Some(key);
+        }
 
-    // 3. Construct the new full config
-    let new_full_config = AppConfig {
-        public: req_data.public,
-        private: current_private,
-    };
+        // 3. Construct the new full config
+        let new_full_config = AppConfig {
+            public: req_data.public,
+            private: current_private,
+        };
 
-    // 4. Update using the full config
-    AppConfig::update(new_full_config).map_err(|e| {
-        error!("Failed to update config: {}", e);
-        e
-    })?;
+        // 4. Update using the full config
+        AppConfig::update(new_full_config).map_err(|e| {
+            error!("Failed to update config: {}", e);
+            e
+        })?;
 
-    Ok(Status::Ok)
+        Ok(Status::Ok)
+    })
+    .await
+    .map_err(|e| anyhow::anyhow!("Task join error: {}", e))?
 }
