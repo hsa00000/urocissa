@@ -16,7 +16,7 @@ pub fn generate_thumbnail_for_image(
     dynamic_image: DynamicImage,
 ) -> Result<()> {
     let (compressed_width, compressed_height) =
-        small_width_height(abstract_data.width(), abstract_data.height(), 1280);
+        small_width_height(abstract_data.width(), abstract_data.height(), 720);
 
     let thumbnail_image = dynamic_image
         .thumbnail_exact(compressed_width, compressed_height)
