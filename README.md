@@ -124,7 +124,7 @@ This script will launch Urocissa. You can access the app using the following lin
 
 [http://127.0.0.1:5673](http://127.0.0.1:5673)
 
-The default login password is `password`. If you want to change the default port or password, refer to the [Configuration Guide](docs/LINUX.md#3-configure-backend-settings).
+The default login password is `password`. If you want to change the default port or password, refer to the [Configuration Guide](docs/CONFIG.md).
 
 ### Quick Update with Docker
 

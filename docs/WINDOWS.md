@@ -1,4 +1,4 @@
-## Steps to Set Up and Use the App (Windows Version)
+## Build from Source (Windows Version)
 
 Follow these instructions to set up and run the Urocissa app on a Windows machine.
 
@@ -36,42 +36,7 @@ npm run build
 
 ---
 
-### 4. Configure Backend Settings
-
-1. Navigate to the backend directory:
-
-   ```bash
-   cd ./Urocissa/gallery-backend
-   ```
-
-2. Copy the default config file and fill in the necessary settings:
-
-   ```bash
-   copy .env.default .env
-   copy Rocket.default.toml Rocket.toml
-   ```
-
-   **.env:**
-
-   ```env
-   PASSWORD=password
-   SYNC_PATH=
-   DISCORD_HOOK_URL=
-   ```
-
-   _Explanation:_
-
-   - `PASSWORD`: Your password for the app.
-   - `SYNC_PATH`: A comma-separated list of directories that the app will monitor for new or modified photos. For example: `SYNC_PATH=./some/relative/path,/some/absolute/path`.
-   - `DISCORD_HOOK_URL`: (Optional) Fill in your Discord webhook URL to receive error notifications.
-
-   **Rocket.toml:**
-
-   - `port`: Default is `5673`. You can change this to your desired port number.
-
----
-
-### 5. Run the Application
+### 4. Run the Application
 
 Navigate to the `gallery-backend` directory and run the following command to start the app:
 
@@ -94,26 +59,6 @@ git pull
 ```
 
 ### 2. Rebuild
-
-If using Docker, follow these steps:
-
-1. Pull the latest Docker image:
-
-   ```bash
-   docker pull hsa00000/urocissa:latest
-   ```
-
-2. Run the Docker script:
-
-   ```bash
-   bash run_urocissa_docker.sh
-   ```
-
-This will update and start the updated app.
-
----
-
-If you are not using Docker and prefer to build from source, follow these manual steps to update:
 
 ### Rebuild the Frontend
 
