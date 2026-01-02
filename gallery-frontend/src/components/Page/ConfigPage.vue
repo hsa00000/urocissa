@@ -17,7 +17,7 @@
                   <v-row>
                     <v-col cols="12">
                       <v-list-subheader class="font-weight-bold text-high-emphasis"
-                        >Security</v-list-subheader
+                        >Change Password</v-list-subheader
                       >
                       <v-card border flat class="rounded-lg">
                         <v-card-text>
@@ -70,7 +70,7 @@
                           class="border-b"
                         >
                           <v-card-title class="text-body-1 font-weight-medium">
-                            Sync Paths
+                            Monitored Paths
                           </v-card-title>
 
                           <template #append>
@@ -101,7 +101,6 @@
                             <v-divider
                               v-if="index !== localSettings.syncPaths.length - 1"
                             ></v-divider>
-
                           </template>
                         </v-list>
 
@@ -148,7 +147,6 @@
                         </v-card-text>
 
                         <v-divider></v-divider>
-
 
                         <v-list lines="two">
                           <v-list-item
