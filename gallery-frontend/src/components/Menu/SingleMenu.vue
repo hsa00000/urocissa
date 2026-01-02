@@ -20,6 +20,7 @@
       <v-divider></v-divider>
       <ItemRegenerateMetadata :index-list="[props.index]" />
       <ItemRegenerateThumbnailByFrame v-if="currentFrameStore.video !== null" />
+      <ItemRotateImage v-if="database.type === 'image'" />
     </v-list>
   </v-menu>
 </template>
@@ -36,6 +37,7 @@ import ItemPermanentlyDelete from '@Menu/MenuItem/ItemPermanentlyDelete.vue'
 import ItemRegenerateMetadata from '@Menu/MenuItem/ItemRegenerateMetadata.vue'
 import ItemRestore from '@Menu/MenuItem/ItemRestore.vue'
 import ItemRegenerateThumbnailByFrame from '@Menu/MenuItem/ItemRegenerateThumbnailByFrame.vue'
+import ItemRotateImage from '@Menu/MenuItem/ItemRotateImage.vue'
 import { useCurrentFrameStore } from '@/store/currentFrameStore'
 const props = defineProps<{
   isolationId: IsolationId

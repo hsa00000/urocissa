@@ -57,6 +57,10 @@ import delay from 'delay'
 import { useConfigStore } from '@/store/configStore'
 import { useShareStore } from '@/store/shareStore'
 import { useTokenStore } from '@/store/tokenStore'
+import axios from 'axios'
+import { getSrc } from '@utils/getter'
+import { useMessageStore } from '@/store/messageStore'
+import { tryWithMessageStore } from '@/script/utils/try_catch'
 
 const props = defineProps<{
   isolationId: IsolationId
@@ -75,6 +79,7 @@ const tokenStore = useTokenStore(props.isolationId)
 const modalStore = useModalStore('mainId')
 const constStore = useConstStore('mainId')
 const shareStore = useShareStore('mainId')
+const messageStore = useMessageStore('mainId')
 const dataStore = useDataStore(props.isolationId)
 const route = useRoute()
 const router = useRouter()
@@ -206,6 +211,32 @@ watch(
   { immediate: true }
 )
 
+const rotateImageHandler = async () => {
+  await tryWithMessageStore(props.isolationId, async () => {
+    const hash = props.hash
+    if (hash && props.abstractData?.type === 'image') {
+      messageStore.info('Rotating image...')
+
+      await axios.put('/put/rotate-image', { hash })
+
+      // Refresh hash token and fetch with bearer token to bust cache
+      await tokenStore.refreshHashTokenIfExpired(hash)
+      const hashToken = tokenStore.hashTokenMap.get(hash)
+      if (hashToken) {
+        await fetch(getSrc(hash, false, 'jpg'), {
+          method: 'GET',
+          cache: 'reload',
+          headers: {
+            Authorization: `Bearer ${hashToken}`
+          }
+        })
+      }
+      
+      messageStore.success('Image rotated successfully')
+    }
+  })
+}
+
 const handleKeyDown = (event: KeyboardEvent) => {
   if (
     (route.meta.level === 2 && props.isolationId === 'mainId') ||
@@ -222,6 +253,8 @@ const handleKeyDown = (event: KeyboardEvent) => {
       router.replace(previousPage.value).catch((error: unknown) => {
         console.error('Navigation Error:', error)
       })
+    } else if (event.key === 'R' && event.shiftKey && props.abstractData?.type === 'image') {
+      rotateImageHandler()
     }
   }
 }

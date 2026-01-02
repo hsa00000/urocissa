@@ -10,6 +10,7 @@ pub mod edit_tag;
 pub mod random;
 pub mod regenerate_thumbnail;
 pub mod reindex;
+pub mod rotate_image;
 pub fn generate_put_routes() -> Vec<Route> {
     routes![
         edit_album::edit_album,
@@ -23,6 +24,7 @@ pub fn generate_put_routes() -> Vec<Route> {
         random::generate_random_data,
         regenerate_thumbnail::regenerate_thumbnail_with_frame,
         reindex::reindex,
-        edit_config::update_config_handler
+        edit_config::update_config_handler,
+        rotate_image::rotate_image
     ]
 }
