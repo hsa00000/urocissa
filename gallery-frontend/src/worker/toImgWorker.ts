@@ -9,7 +9,7 @@ import {
 import axiosRetry from 'axios-retry'
 import axios from 'axios'
 import { getSrc } from '@utils/getter'
-import { setupWorkerAxiosInterceptor } from '@/axiosInterceptor'
+import { setupWorkerAxiosInterceptor } from './workerAxiosInterceptor'
 
 const postToMainImg = bindActionDispatch(fromImgWorker, self.postMessage.bind(self))
 const controllerMap = new Map<number, AbortController>()

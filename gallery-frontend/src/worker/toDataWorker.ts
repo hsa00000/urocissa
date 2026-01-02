@@ -17,7 +17,7 @@ import axios from 'axios'
 import { bindActionDispatch, createHandler } from 'typesafe-agent-events'
 import { fromDataWorker, toDataWorker } from './workerApi'
 import { z } from 'zod'
-import { setupWorkerAxiosInterceptor } from '@/axiosInterceptor'
+import { setupWorkerAxiosInterceptor } from './workerAxiosInterceptor'
 
 const shouldProcessBatch: number[] = []
 const fetchedRowData = new Map<number, Row>()

@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios'
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
 import { errorDisplay } from '@/script/utils/errorDisplay'
 import { useShareStore } from '@/store/shareStore'
 import { useModalStore } from '@/store/modalStore'
@@ -157,19 +157,4 @@ export function setupMainAxiosInterceptor() {
   axios.interceptors.response.use((response) => response, handleAxiosResponseError)
 }
 
-export function setupWorkerAxiosInterceptor(
-  axiosInstance: AxiosInstance,
-  notify: (payload: { text: string; color: 'error' }) => void
-) {
-  axiosInstance.interceptors.response.use(
-    (response) => response,
-    (error: AxiosError) => {
-      // Explicitly handling 500 for workers, passing others through
-      if (error.response?.status === 500) {
-        const errorMessage = errorDisplay(error)
-        notify({ text: errorMessage, color: 'error' })
-      }
-      return Promise.reject(error)
-    }
-  )
-}
+
