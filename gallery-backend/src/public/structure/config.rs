@@ -14,29 +14,6 @@ const CONFIG_FILE: &str = "config.json";
 
 pub static FALLBACK_SECRET_KEY: OnceLock<String> = OnceLock::new();
 
-/// Resolves relative paths in sync_paths to absolute paths based on UROCISSA_PATH environment variable.
-/// This ensures that relative paths like "./src" work correctly in Docker containers.
-fn resolve_sync_paths(paths: HashSet<PathBuf>) -> HashSet<PathBuf> {
-    // Get base path from UROCISSA_PATH env var, or fall back to current directory
-    let base_path = std::env::var("UROCISSA_PATH")
-        .map(PathBuf::from)
-        .unwrap_or_else(|_| std::env::current_dir().unwrap_or_default());
-
-    paths
-        .into_iter()
-        .map(|p| {
-            if p.is_relative() {
-                // Resolve relative path based on UROCISSA_PATH/gallery-backend
-                let resolved = base_path.join("gallery-backend").join(&p);
-                // Try to canonicalize (normalize . and ..), fall back to resolved path
-                resolved.canonicalize().unwrap_or(resolved)
-            } else {
-                p
-            }
-        })
-        .collect()
-}
-
 fn generate_secret_key() -> String {
     let mut secret = vec![0u8; 32];
     OsRng
@@ -45,9 +22,6 @@ fn generate_secret_key() -> String {
     general_purpose::STANDARD.encode(secret)
 }
 
-// --- New Split Structures ---
-
-/// Configuration safe to send to the frontend.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct PublicConfig {
@@ -60,7 +34,6 @@ pub struct PublicConfig {
     pub disable_img: bool,
 }
 
-/// Sensitive configuration kept only on the backend.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct PrivateConfig {
@@ -68,7 +41,6 @@ pub struct PrivateConfig {
     pub auth_key: Option<String>,
 }
 
-/// Root configuration struct.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct AppConfig {
@@ -106,7 +78,6 @@ pub static APP_CONFIG: OnceLock<RwLock<AppConfig>> = OnceLock::new();
 
 impl AppConfig {
     pub fn get_jwt_secret_key(&self) -> Vec<u8> {
-        // Access via self.private
         match self.private.auth_key.as_ref() {
             Some(auth_key) => auth_key.as_bytes().to_vec(),
             None => FALLBACK_SECRET_KEY
@@ -128,7 +99,6 @@ impl AppConfig {
 
         let mut config = if should_migrate {
             println!("Legacy configuration or missing file detected. Starting migration...");
-            // NOTE: Ensure construct_migrated_config returns the NEW AppConfig structure!
             let cfg = crate::migration::construct_migrated_config();
 
             if let Err(e) = Self::save_update(&cfg) {
@@ -153,7 +123,7 @@ impl AppConfig {
             .filter(|k| !k.is_empty())
             .is_none()
         {
-            config.private.auth_key = None; // Normalize empty string to None
+            config.private.auth_key = None;
             FALLBACK_SECRET_KEY.get_or_init(generate_secret_key);
         }
 
@@ -172,10 +142,8 @@ impl AppConfig {
         });
 
         match serde_json::from_str::<AppConfig>(&file_content) {
-            Ok(mut config) => {
+            Ok(config) => {
                 println!("Successfully loaded configuration from {}", CONFIG_FILE);
-                // Resolve relative paths in sync_paths based on UROCISSA_PATH
-                config.public.sync_paths = resolve_sync_paths(config.public.sync_paths);
                 config
             }
             Err(e) => {
@@ -193,25 +161,16 @@ impl AppConfig {
 
         println!("Updating configuration...");
 
-        // Sanitize sync_paths: Remove surrounding quotes if present (common user error)
+        // Sanitize paths: only remove quotes and spaces, do not resolve paths
         let sanitized_paths: HashSet<PathBuf> = new_config
             .public
             .sync_paths
             .iter()
-            .map(|p| {
-                let s = p.to_string_lossy();
-                if s.starts_with('"') && s.ends_with('"') && s.len() >= 2 {
-                    PathBuf::from(&s[1..s.len() - 1])
-                } else {
-                    p.clone()
-                }
-            })
+            .map(|p| PathBuf::from(p.to_string_lossy().trim().trim_matches('"')))
             .collect();
 
-        // Resolve relative paths based on UROCISSA_PATH
-        new_config.public.sync_paths = resolve_sync_paths(sanitized_paths);
+        new_config.public.sync_paths = sanitized_paths;
 
-        // Normalize empty authKey to None BEFORE saving or applying
         if new_config
             .private
             .auth_key

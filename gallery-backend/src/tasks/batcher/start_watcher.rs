@@ -56,14 +56,40 @@ pub fn reload_watcher() {
     }
 }
 
+/// Resolve relative paths in the config file to absolute paths
+/// If UROCISSA_PATH is set, use it as the base, otherwise use the current working directory as the base
+fn resolve_sync_paths(paths: HashSet<PathBuf>) -> HashSet<PathBuf> {
+    let (base_path, append_subdir) = match std::env::var("UROCISSA_PATH") {
+        Ok(p) => (PathBuf::from(p), true),
+        Err(_) => (std::env::current_dir().unwrap_or_default(), false),
+    };
+
+    paths
+        .into_iter()
+        .map(|p| {
+            if p.is_relative() {
+                let mut resolved = base_path.clone();
+                if append_subdir {
+                    resolved.push("gallery-backend");
+                }
+                resolved.push(&p);
+                // Try to canonicalize (normalize . and ..), fall back to resolved path
+                resolved.canonicalize().unwrap_or(resolved)
+            } else {
+                p
+            }
+        })
+        .collect()
+}
+
 fn start_watcher_task_internal() -> Result<()> {
     // Fast-path: already running.
     if IS_WATCHING.swap(true, Ordering::SeqCst) {
         return Ok(());
     }
 
-    // Get paths from config system
-    let sync_paths = APP_CONFIG
+    // Get raw paths from config system
+    let raw_sync_paths = APP_CONFIG
         .get()
         .unwrap()
         .read()
@@ -72,10 +98,13 @@ fn start_watcher_task_internal() -> Result<()> {
         .sync_paths
         .clone();
 
-    if sync_paths.is_empty() {
+    if raw_sync_paths.is_empty() {
         info!("No paths to watch");
         return Ok(());
     }
+
+    // Resolve paths to absolute paths before watching
+    let sync_paths = resolve_sync_paths(raw_sync_paths);
 
     // Build the watcher.
     let mut watcher = new_watcher()?;
@@ -106,7 +135,6 @@ fn is_valid_media_file(path: &Path) -> bool {
         .unwrap_or(false)
 }
 
-/// Push the path into the debounce pool: if there is no later event for the same path within 1 second, trigger indexing
 fn submit_to_debounce_pool(path: PathBuf) {
     let now = Instant::now();
 
