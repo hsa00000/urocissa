@@ -117,13 +117,6 @@ fn validate_share_access(share: &Share, req: &Request<'_>) -> Result<(), ShareEr
             }
         }
 
-        // Check Query Param: password
-        if let Some(Ok(query_pwd)) = req.query_value::<&str>("password") {
-            if query_pwd == pwd {
-                return Ok(());
-            }
-        }
-
         return Err(ShareError::Unauthorized);
     }
 
