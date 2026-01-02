@@ -1,7 +1,6 @@
 <template>
   <v-dialog
-    :model-value="modelValue"
-    @update:model-value="$emit('update:modelValue', $event)"
+  v-model="modelValue"
     :fullscreen="isMobile"
     :max-width="isMobile ? undefined : 600"
     :height="isMobile ? undefined : 600"
@@ -46,7 +45,7 @@
             </v-col>
 
             <v-col cols="auto">
-              <v-btn icon="mdi-close" variant="text" @click="$emit('update:modelValue', false)" />
+              <v-btn icon="mdi-close" variant="text" @click="modelValue = false" />
             </v-col>
           </v-row>
         </v-container>
@@ -139,13 +138,13 @@ import { useDisplay } from 'vuetify'
 import { fetchFsCompletion } from '@/api/fs'
 
 // --- Props & Emits ---
+const modelValue = defineModel<boolean>({ required: true })
+
 const props = defineProps<{
-  modelValue: boolean
   initialPath?: string
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', val: boolean): void
   (e: 'select', path: string): void
 }>()
 
@@ -264,13 +263,13 @@ const confirmSelection = () => {
     }
 
     emit('select', selected)
-    emit('update:modelValue', false)
+    modelValue.value = false
   }
 }
 
 // --- Watchers ---
 watch(
-  () => props.modelValue,
+  modelValue,
   (isOpen) => {
     if (isOpen) {
       currentPath.value = props.initialPath || ''
