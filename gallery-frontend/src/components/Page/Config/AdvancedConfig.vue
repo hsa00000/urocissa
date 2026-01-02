@@ -1,6 +1,6 @@
 <template>
   <v-col cols="12">
-    <v-list-subheader class="font-weight-bold text-high-emphasis">Advanced</v-list-subheader>
+    <v-list-subheader class="font-weight-bold text-high-emphasis">Advanced Config</v-list-subheader>
     <v-card border flat class="rounded-lg">
       <v-card-text>
         <v-row dense>
@@ -33,10 +33,7 @@
       <v-divider></v-divider>
 
       <v-list lines="two">
-        <v-list-item
-          title="Read Only Mode"
-          subtitle="Prevent modification of data"
-        >
+        <v-list-item title="Read Only Mode" subtitle="Prevent modification of data">
           <template #append>
             <v-switch
               v-model="readOnlyMode"
@@ -50,10 +47,7 @@
 
         <v-divider></v-divider>
 
-        <v-list-item
-          title="Disable Processing"
-          subtitle="Skip image generation and analysis"
-        >
+        <v-list-item title="Disable Processing" subtitle="Skip image generation and analysis">
           <template #append>
             <v-switch
               v-model="disableImg"
