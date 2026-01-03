@@ -1,5 +1,5 @@
+use chrono::Utc;
 use std::collections::{HashMap, HashSet};
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use arrayvec::ArrayString;
 use bitcode::{Decode, Encode};
@@ -31,10 +31,7 @@ pub struct Album {
 
 impl Album {
     pub fn new(id: ArrayString<64>, title: Option<String>) -> Self {
-        let timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_millis();
+        let timestamp = Utc::now().timestamp_millis() as u128;
         Self {
             id,
             title,

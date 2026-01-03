@@ -1,8 +1,8 @@
 // src/router/claims/claims.rs
 use crate::public::structure::album::ResolvedShare;
-use jsonwebtoken::{EncodingKey, Header, encode};
+use chrono::Utc;
+use jsonwebtoken::{encode, EncodingKey, Header};
 use serde::{Deserialize, Serialize};
-use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -20,11 +20,7 @@ pub struct Claims {
 
 impl Claims {
     pub fn new_admin() -> Self {
-        let exp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards")
-            .as_secs()
-            + 14 * 86_400; // 14 days
+        let exp = (Utc::now().timestamp_millis() / 1000) as u64 + 14 * 86_400; // 14 days
 
         Self {
             role: Role::Admin,
@@ -33,11 +29,7 @@ impl Claims {
     }
 
     pub fn new_share(resolved_share: ResolvedShare) -> Self {
-        let exp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards")
-            .as_secs()
-            + 14 * 86_400; // 14 days
+        let exp = (Utc::now().timestamp_millis() / 1000) as u64 + 14 * 86_400; // 14 days
 
         Self {
             role: Role::Share(resolved_share),
@@ -59,7 +51,7 @@ impl Claims {
 
     pub fn encode(&self) -> String {
         use crate::public::structure::config::APP_CONFIG;
-        
+
         let config = APP_CONFIG.get().unwrap().read().unwrap();
         self.encode_with_key(&config.get_jwt_secret_key())
     }

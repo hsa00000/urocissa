@@ -1,7 +1,7 @@
 // src/router/claims/claims_timestamp.rs
+use chrono::Utc;
 use jsonwebtoken::{encode, EncodingKey, Header};
 use serde::{Deserialize, Serialize};
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::public::structure::album::ResolvedShare;
 use crate::public::structure::config::APP_CONFIG;
@@ -16,11 +16,7 @@ pub struct ClaimsTimestamp {
 
 impl ClaimsTimestamp {
     pub fn new(resolved_share_opt: Option<ResolvedShare>, timestamp: i64) -> Self {
-        let exp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards")
-            .as_secs()
-            + 300;
+        let exp = (Utc::now().timestamp_millis() / 1000) as u64 + 300;
 
         Self {
             resolved_share_opt,

@@ -1,8 +1,8 @@
 use arrayvec::ArrayString;
 use bitcode::{Decode, Encode};
+use chrono::Utc;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use super::metadata::AlbumMetadata;
 use crate::public::db::tree::TREE;
@@ -99,10 +99,7 @@ impl AlbumCombined {
         self.metadata.item_size = data_in_album.iter().map(|info| info.size).sum();
 
         // Update last_modified_time
-        self.metadata.last_modified_time = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_millis() as i64;
+        self.metadata.last_modified_time = Utc::now().timestamp_millis();
 
         // Set cover if not already set
         if self.metadata.cover.is_none() {

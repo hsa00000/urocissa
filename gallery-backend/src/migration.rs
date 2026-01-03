@@ -2,10 +2,12 @@
 //! Database Migration Module
 //!
 //! Handles the migration from redb 2.6.x (Old Schema) to redb 3.1.x (New AbstractData Schema).
+//!
 
 use anyhow::{Context, Result};
 use arrayvec::ArrayString;
 use bitcode::{Decode, Encode};
+use chrono::Utc;
 use dotenv::dotenv;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -13,7 +15,6 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fs::{self, File};
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use redb::{
     ReadableDatabase, ReadableTable as NewReadableTable,
@@ -186,10 +187,7 @@ enum MigrationType {
 
 fn transform_database_to_abstract_data(old_data: OldDatabase) -> AbstractData {
     let description = old_data.exif_vec.get(USER_DEFINED_DESCRIPTION).cloned();
-    let timestamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_millis() as i64;
+    let timestamp = Utc::now().timestamp_millis();
 
     // Legacy Business Logic:
     // Tags starting with "_" (e.g., _favorite) were previously used as boolean flags.
@@ -351,10 +349,7 @@ fn transform_album_to_abstract_data(old_album: OldAlbum) -> AbstractData {
 fn transform_v30_to_v31(old_data: AbstractDataOld) -> AbstractData {
     match old_data {
         AbstractDataOld::Image(img) => {
-            let update_at = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_millis() as i64;
+            let update_at = Utc::now().timestamp_millis();
             let object = ObjectSchema {
                 id: img.object.id,
                 obj_type: ObjectType::Image,
@@ -390,10 +385,7 @@ fn transform_v30_to_v31(old_data: AbstractDataOld) -> AbstractData {
             AbstractData::Image(ImageCombined { object, metadata })
         }
         AbstractDataOld::Video(vid) => {
-            let update_at = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_millis() as i64;
+            let update_at = Utc::now().timestamp_millis();
             let object = ObjectSchema {
                 id: vid.object.id,
                 obj_type: ObjectType::Video,

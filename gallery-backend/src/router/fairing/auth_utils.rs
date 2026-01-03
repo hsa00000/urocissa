@@ -14,7 +14,7 @@ use log::info;
 use redb::ReadableDatabase;
 use rocket::Request;
 use serde::de::DeserializeOwned;
-use std::time::{SystemTime, UNIX_EPOCH};
+use chrono::Utc;
 
 // Error types for share validation
 #[derive(Debug)]
@@ -98,10 +98,7 @@ pub fn extract_hash_from_path(req: &Request<'_>) -> Result<String> {
 fn validate_share_access(share: &Share, req: &Request<'_>) -> Result<(), ShareError> {
     // 1. Check expiration
     if share.exp > 0 {
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map_err(|e| ShareError::Internal(anyhow!("Time error: {}", e)))?
-            .as_secs() as i64;
+        let now = Utc::now().timestamp_millis() / 1000;
 
         if now > share.exp {
             return Err(ShareError::Expired);

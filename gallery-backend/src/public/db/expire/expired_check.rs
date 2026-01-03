@@ -1,4 +1,4 @@
-use crate::operations::utils::timestamp::get_current_timestamp_u64;
+use chrono::Utc;
 
 // Import necessary modules and items
 use super::{Expire, EXPIRE_TABLE_DEFINITION};
@@ -39,7 +39,7 @@ impl Expire {
             .and_then(|entry| entry.value())
         {
             // If an expiration time exists and the current time has surpassed it
-            Some(expire_time) if get_current_timestamp_u64() > expire_time => {
+            Some(expire_time) if Utc::now().timestamp_millis() > expire_time => {
                 // Begin a write transaction to modify the expiration table
                 let write_transaction = self.in_disk.begin_write().unwrap();
                 {

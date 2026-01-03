@@ -2,7 +2,8 @@ use std::collections::{BTreeMap, HashSet};
 use std::fs::metadata;
 use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
-use std::time::{SystemTime, UNIX_EPOCH};
+use chrono::Utc;
+use std::time::UNIX_EPOCH;
 
 use anyhow::{Context, Result};
 use arrayvec::ArrayString;
@@ -84,10 +85,7 @@ impl AbstractData {
 
     /// Update the update_at timestamp
     pub fn update_update_at(&mut self) {
-        let timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_millis() as i64;
+        let timestamp = Utc::now().timestamp_millis();
         match self {
             AbstractData::Image(img) => img.object.update_at = timestamp,
             AbstractData::Video(vid) => vid.object.update_at = timestamp,
@@ -324,10 +322,7 @@ impl AbstractData {
             is_favorite: false,
             is_archived: false,
             is_trashed: false,
-            update_at: SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_millis() as i64,
+            update_at: Utc::now().timestamp_millis(),
         };
 
         let metadata = ImageMetadata {
@@ -529,10 +524,7 @@ impl AbstractData {
                 is_favorite: vid.object.is_favorite,
                 is_archived: vid.object.is_archived,
                 is_trashed: vid.object.is_trashed,
-                update_at: SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis() as i64,
+                update_at: Utc::now().timestamp_millis(),
             };
             let metadata = ImageMetadata {
                 id: vid.metadata.id,

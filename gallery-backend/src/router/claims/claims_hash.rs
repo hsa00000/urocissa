@@ -1,8 +1,8 @@
 // src/router/claims/claims_hash.rs
 use arrayvec::ArrayString;
+use chrono::Utc;
 use jsonwebtoken::{encode, EncodingKey, Header};
 use serde::{Deserialize, Serialize};
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::public::structure::config::APP_CONFIG;
 
@@ -17,11 +17,7 @@ pub struct ClaimsHash {
 
 impl ClaimsHash {
     pub fn new(hash: ArrayString<64>, timestamp: i64, allow_original: bool) -> Self {
-        let exp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards")
-            .as_secs()
-            + 300;
+        let exp = (Utc::now().timestamp_millis() / 1000) as u64 + 300;
 
         Self {
             allow_original,

@@ -1,4 +1,4 @@
-use crate::operations::utils::timestamp::get_current_timestamp_u64;
+use chrono::Utc;
 use crate::public::db::expire::{EXPIRE, EXPIRE_TABLE_DEFINITION};
 use crate::public::db::tree::VERSION_COUNT_TIMESTAMP;
 use crate::tasks::BATCH_COORDINATOR;
@@ -18,7 +18,7 @@ impl BatchTask for UpdateExpireTask {
 }
 
 fn update_expire_task() {
-    let current_timestamp = get_current_timestamp_u64();
+    let current_timestamp = Utc::now().timestamp_millis();
     let last_timestamp = VERSION_COUNT_TIMESTAMP.swap(current_timestamp, Ordering::SeqCst);
 
     if last_timestamp > 0 {

@@ -25,8 +25,8 @@ use std::hash::Hasher;
 use std::hash::{DefaultHasher, Hash};
 use std::mem;
 use std::sync::atomic::Ordering;
-use std::time::SystemTime;
-use std::time::{Instant, UNIX_EPOCH};
+use std::time::Instant;
+use chrono::Utc;
 
 #[derive(Debug, Clone, Copy, Deserialize, Serialize, Decode, Encode)]
 #[serde(rename_all = "camelCase")]
@@ -186,7 +186,7 @@ fn insert_data_into_tree_snapshot(reduced_data_vector: Vec<ReducedData>) -> Resu
     let db_start_time = Instant::now();
 
     // Persist to snapshot
-    let timestamp_millis = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis() as i64;
+    let timestamp_millis = Utc::now().timestamp_millis();
     let reduced_data_vector_length = reduced_data_vector.len();
     TREE_SNAPSHOT
         .in_memory

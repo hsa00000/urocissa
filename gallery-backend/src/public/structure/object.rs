@@ -1,10 +1,10 @@
 use arrayvec::ArrayString;
 use bitcode::{Decode, Encode};
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fmt;
 use std::str::FromStr;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Encode, Decode)]
 #[serde(rename_all = "camelCase")]
@@ -64,10 +64,7 @@ impl ObjectSchema {
             is_favorite: false,
             is_archived: false,
             is_trashed: false,
-            update_at: SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_millis() as i64,
+            update_at: Utc::now().timestamp_millis(),
         }
     }
 }

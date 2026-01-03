@@ -1,5 +1,5 @@
 use crate::operations::open_db::open_data_table;
-use crate::operations::utils::timestamp::get_current_timestamp_u64;
+use chrono::Utc;
 use crate::public::db::tree::TREE;
 use crate::public::structure::response::database_timestamp::DatabaseTimestamp;
 use crate::tasks::BATCH_COORDINATOR;
@@ -66,7 +66,7 @@ fn update_tree_task() {
 
     BATCH_COORDINATOR.execute_batch_detached(UpdateExpireTask);
 
-    let current_timestamp = get_current_timestamp_u64();
+    let current_timestamp = Utc::now().timestamp_millis();
     let duration = format!("{:?}", start_time.elapsed());
     info!(duration = &*duration; "In-memory cache updated ({}).", current_timestamp);
 }
