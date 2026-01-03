@@ -96,8 +96,8 @@ onMounted(() => {
 
       const isolationId = getIsolationIdByRoute(route)
 
-      await editTags(hashArray, addTagsArrayComputed, removeTagsArrayComputed, isolationId)
       modalStore.showEditTagsModal = false
+      await editTags(hashArray, addTagsArrayComputed, removeTagsArrayComputed, isolationId)
     }
     return innerSubmit
   }

@@ -98,9 +98,8 @@ onMounted(() => {
       const addAlbumIds = selectedIds.filter((id) => !defaultAlbumIds.includes(id))
       const removeAlbumIds = defaultAlbumIds.filter((id) => !selectedIds.includes(id))
 
-      await editAlbums([index], addAlbumIds, removeAlbumIds, getIsolationIdByRoute(route))
-
       modalStore.showEditAlbumsModal = false
+      await editAlbums([index], addAlbumIds, removeAlbumIds, getIsolationIdByRoute(route))
     }
 
     return innerSubmit
