@@ -576,7 +576,7 @@ fn needs_migration() -> MigrationType {
     }
 }
 
-/// Executes the migration from redb 2.6 to 3.1.
+/// Executes the migration from v2 to v4
 ///
 /// This requires user confirmation via stdin. It backs up the old database to `.bak`,
 /// transforms all records, and creates a new database at the original path.
