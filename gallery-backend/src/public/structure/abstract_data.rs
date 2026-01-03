@@ -87,7 +87,7 @@ impl AbstractData {
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
-            .as_millis();
+            .as_millis() as i64;
         match self {
             AbstractData::Image(img) => img.object.update_at = timestamp,
             AbstractData::Video(vid) => vid.object.update_at = timestamp,
@@ -97,9 +97,9 @@ impl AbstractData {
 
     /// Compute timestamp for sorting based on priority list
     /// Checks fields in order: DateTimeOriginal, filename, scan_time, modified, random
-    pub fn compute_timestamp(&self, priority_list: &[&str]) -> u128 {
+    pub fn compute_timestamp(&self, priority_list: &[&str]) -> i64 {
         if let AbstractData::Album(alb) = self {
-            return alb.metadata.created_time as u128;
+            return alb.metadata.created_time;
         }
 
         let now_time = chrono::Local::now().naive_local();
@@ -117,7 +117,7 @@ impl AbstractData {
                             chrono::Local.from_local_datetime(&naive_dt).single()
                         && local_dt.naive_local() <= now_time
                     {
-                        return local_dt.timestamp_millis() as u128;
+                        return local_dt.timestamp_millis();
                     }
                 }
                 "filename" => {
@@ -152,13 +152,13 @@ impl AbstractData {
                         return chrono::Local
                             .from_local_datetime(&datetime)
                             .unwrap()
-                            .timestamp_millis() as u128;
+                            .timestamp_millis();
                     }
                 }
                 "scan_time" => {
                     let latest_scan_time = alias.iter().map(|a| a.scan_time).max();
                     if let Some(latest_time) = latest_scan_time {
-                        return latest_time as u128;
+                        return latest_time;
                     }
                 }
                 "modified" => {
@@ -168,7 +168,7 @@ impl AbstractData {
                 }
                 "random" => {
                     let mut rng = rand::rng();
-                    let random_number: u128 = rng.random();
+                    let random_number: i64 = rng.random();
                     return random_number;
                 }
                 _ => panic!("Unknown field type: {}", field),
@@ -275,7 +275,7 @@ impl AbstractData {
             .modified()?
             .duration_since(UNIX_EPOCH)
             .with_context(|| format!("Modification time is before UNIX_EPOCH: {:?}", path))?
-            .as_millis();
+            .as_millis() as i64;
 
         let file_modify = FileModify::new(path, modified_millis);
         let obj_type = Self::determine_type(&ext);
@@ -327,7 +327,7 @@ impl AbstractData {
             update_at: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
-                .as_millis(),
+                .as_millis() as i64,
         };
 
         let metadata = ImageMetadata {
@@ -532,7 +532,7 @@ impl AbstractData {
                 update_at: SystemTime::now()
                     .duration_since(UNIX_EPOCH)
                     .unwrap()
-                    .as_millis(),
+                    .as_millis() as i64,
             };
             let metadata = ImageMetadata {
                 id: vid.metadata.id,

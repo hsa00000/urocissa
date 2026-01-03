@@ -18,7 +18,7 @@ pub struct EditTagsData {
     index_array: Vec<usize>,
     add_tags_array: Vec<String>,
     remove_tags_array: Vec<String>,
-    timestamp: u128,
+    timestamp: i64,
 }
 
 #[put("/put/edit_tag", format = "json", data = "<json_data>")]

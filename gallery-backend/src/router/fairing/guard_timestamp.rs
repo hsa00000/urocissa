@@ -38,7 +38,7 @@ impl<'r> FromRequest<'r> for GuardTimestamp {
             query
                 .segments()
                 .find(|(key, _)| *key == "timestamp")
-                .and_then(|(_, value)| value.parse::<u128>().ok())
+                .and_then(|(_, value)| value.parse::<i64>().ok())
         });
 
         let query_timestamp = match query_timestamp {

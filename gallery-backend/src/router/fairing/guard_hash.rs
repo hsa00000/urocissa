@@ -175,7 +175,7 @@ pub async fn renew_hash_token(
 }
 
 pub struct TimestampGuardModified {
-    pub timestamp_decoded: u128,
+    pub timestamp_decoded: i64,
 }
 
 #[rocket::async_trait]

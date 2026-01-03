@@ -31,13 +31,13 @@ use std::time::{Instant, UNIX_EPOCH};
 #[derive(Debug, Clone, Copy, Deserialize, Serialize, Decode, Encode)]
 #[serde(rename_all = "camelCase")]
 pub struct Prefetch {
-    pub timestamp: u128,
+    pub timestamp: i64,
     pub locate_to: Option<usize>,
     pub data_length: usize,
 }
 
 impl Prefetch {
-    fn new(timestamp: u128, locate_to: Option<usize>, data_length: usize) -> Self {
+    fn new(timestamp: i64, locate_to: Option<usize>, data_length: usize) -> Self {
         Self {
             timestamp,
             locate_to,
@@ -182,11 +182,11 @@ fn build_cache_key(expression_option: &Option<Expression>, locate_option: &Optio
     query_hash
 }
 
-fn insert_data_into_tree_snapshot(reduced_data_vector: Vec<ReducedData>) -> Result<(u128, usize)> {
+fn insert_data_into_tree_snapshot(reduced_data_vector: Vec<ReducedData>) -> Result<(i64, usize)> {
     let db_start_time = Instant::now();
 
     // Persist to snapshot
-    let timestamp_millis = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis();
+    let timestamp_millis = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis() as i64;
     let reduced_data_vector_length = reduced_data_vector.len();
     TREE_SNAPSHOT
         .in_memory
@@ -200,7 +200,7 @@ fn insert_data_into_tree_snapshot(reduced_data_vector: Vec<ReducedData>) -> Resu
 }
 
 fn create_json_response(
-    timestamp_millis: u128,
+    timestamp_millis: i64,
     locate_to_index: Option<usize>,
     reduced_data_vector_length: usize,
     query_hash: u64,

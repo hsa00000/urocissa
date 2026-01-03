@@ -30,7 +30,7 @@ pub struct EditAlbumsData {
     /// List of album IDs to remove these items from.
     remove_albums_array: Vec<ArrayString<64>>,
     /// Snapshot timestamp to ensure data consistency during the read-modify-write cycle.
-    timestamp: u128,
+    timestamp: i64,
 }
 
 /// Batches modifications to album associations for multiple media items.

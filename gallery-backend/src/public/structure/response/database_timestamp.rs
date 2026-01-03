@@ -8,7 +8,7 @@ use crate::{
 #[serde(rename_all = "camelCase")]
 pub struct DatabaseTimestamp {
     pub abstract_data: AbstractData,
-    pub timestamp: u128,
+    pub timestamp: i64,
 }
 
 impl DatabaseTimestamp {
@@ -25,7 +25,7 @@ impl DatabaseTimestamp {
 #[serde(rename_all = "camelCase")]
 pub struct DataBaseTimestampReturn {
     pub abstract_data: AbstractData,
-    pub timestamp: u128,
+    pub timestamp: i64,
     pub token: String,
 }
 
@@ -33,7 +33,7 @@ impl DataBaseTimestampReturn {
     pub fn new(
         abstract_data: AbstractData,
         priority_list: &[&str],
-        token_timestamp: u128,
+        token_timestamp: i64,
         allow_original: bool,
     ) -> Self {
         let timestamp = abstract_data.compute_timestamp(priority_list);

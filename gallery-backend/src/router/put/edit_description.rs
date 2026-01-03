@@ -17,7 +17,7 @@ use serde::Serialize;
 pub struct SetUserDefinedDescription {
     pub index: usize,
     pub description: Option<String>,
-    pub timestamp: u128,
+    pub timestamp: i64,
 }
 
 #[put(

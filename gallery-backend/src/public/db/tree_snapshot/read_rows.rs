@@ -3,10 +3,10 @@ use crate::{
     public::constant::ROW_BATCH_NUMBER,
     public::structure::response::row::{DisplayElement, Row},
 };
-use anyhow::{Result, bail};
+use anyhow::{bail, Result};
 
 impl TreeSnapshot {
-    pub fn read_row(&'static self, row_index: usize, timestamp: u128) -> Result<Row> {
+    pub fn read_row(&'static self, row_index: usize, timestamp: i64) -> Result<Row> {
         let tree_snapshot = self.read_tree_snapshot(&timestamp)?;
 
         let data_length = tree_snapshot.len();

@@ -1,8 +1,7 @@
 use crate::public::{
     db::tree_snapshot::read_tree_snapshot::MyCow,
     structure::{
-        abstract_data::AbstractData,
-        response::database_timestamp::DataBaseTimestampReturn,
+        abstract_data::AbstractData, response::database_timestamp::DataBaseTimestampReturn,
     },
 };
 use anyhow::Result;
@@ -70,7 +69,7 @@ pub fn clear_abstract_data_metadata(abstract_data: &mut AbstractData, show_metad
 
 pub fn abstract_data_to_database_timestamp_return(
     mut abstract_data: AbstractData,
-    timestamp: u128,
+    timestamp: i64,
     show_download: bool,
     show_metadata: bool,
 ) -> DataBaseTimestampReturn {

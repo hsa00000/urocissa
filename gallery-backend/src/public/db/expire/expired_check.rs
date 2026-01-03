@@ -1,7 +1,7 @@
 use crate::operations::utils::timestamp::get_current_timestamp_u64;
 
 // Import necessary modules and items
-use super::{EXPIRE_TABLE_DEFINITION, Expire};
+use super::{Expire, EXPIRE_TABLE_DEFINITION};
 use log::info;
 use redb::{ReadableDatabase, ReadableTable, ReadableTableMetadata};
 
@@ -17,13 +17,13 @@ impl Expire {
     ///
     /// # Arguments
     ///
-    /// * `timestamp` - A `u64` value representing the timestamp to check for expiration.
+    /// * `timestamp` - A `i64` value representing the timestamp to check for expiration.
     ///
     /// # Returns
     ///
     /// * `true` if the `timestamp` has expired or does not exist (already removed).
     /// * `false` if the `timestamp` has not yet expired.
-    pub fn expired_check(&self, timestamp: u64) -> bool {
+    pub fn expired_check(&self, timestamp: i64) -> bool {
         // Begin a read transaction on the in-memory disk
         let read_transaction = self.in_disk.begin_read().unwrap();
 

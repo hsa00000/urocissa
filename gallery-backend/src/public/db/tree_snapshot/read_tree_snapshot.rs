@@ -7,7 +7,7 @@ use dashmap::mapref::one::Ref;
 use redb::{ReadOnlyTable, ReadableDatabase, ReadableTableMetadata, TableDefinition};
 
 impl TreeSnapshot {
-    pub fn read_tree_snapshot(&'static self, timestamp: &u128) -> Result<MyCow> {
+    pub fn read_tree_snapshot(&'static self, timestamp: &i64) -> Result<MyCow> {
         if let Some(data) = self.in_memory.get(timestamp) {
             return Ok(MyCow::DashMap(data));
         }
@@ -24,7 +24,7 @@ impl TreeSnapshot {
 
 #[derive(Debug)]
 pub enum MyCow {
-    DashMap(Ref<'static, u128, Vec<ReducedData>>),
+    DashMap(Ref<'static, i64, Vec<ReducedData>>),
     Redb(ReadOnlyTable<u64, ReducedData>),
 }
 

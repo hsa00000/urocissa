@@ -8,16 +8,16 @@ use std::{cmp::Ordering, path::Path};
 #[serde(rename_all = "camelCase")]
 pub struct FileModify {
     pub file: String,
-    pub modified: u128,
-    pub scan_time: u128,
+    pub modified: i64,
+    pub scan_time: i64,
 }
 
 impl FileModify {
-    pub fn new(file: &Path, modified: u128) -> Self {
+    pub fn new(file: &Path, modified: i64) -> Self {
         Self {
             file: file.to_string_lossy().into_owned(),
             modified,
-            scan_time: Utc::now().timestamp_millis() as u128,
+            scan_time: Utc::now().timestamp_millis(),
         }
     }
 }

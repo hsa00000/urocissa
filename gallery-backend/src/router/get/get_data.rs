@@ -21,7 +21,7 @@ use std::time::Instant;
 #[get("/get/get-data?<timestamp>&<start>&<end>")]
 pub async fn get_data(
     guard_timestamp: GuardResult<GuardTimestamp>,
-    timestamp: u128,
+    timestamp: i64,
     start: usize,
     mut end: usize,
 ) -> AppResult<Json<Vec<DataBaseTimestampReturn>>> {
@@ -68,7 +68,7 @@ pub async fn get_data(
 pub async fn get_rows(
     auth: GuardResult<GuardTimestamp>,
     index: usize,
-    timestamp: u128,
+    timestamp: i64,
 ) -> AppResult<Json<Row>> {
     let _ = auth;
     tokio::task::spawn_blocking(move || {
@@ -84,7 +84,7 @@ pub async fn get_rows(
 #[get("/get/get-scroll-bar?<timestamp>")]
 pub async fn get_scroll_bar(
     auth: GuardResult<GuardTimestamp>,
-    timestamp: u128,
+    timestamp: i64,
 ) -> Json<Vec<ScrollBarData>> {
     let _ = auth;
     let scrollbar_data = TREE_SNAPSHOT.read_scrollbar(timestamp);

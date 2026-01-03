@@ -49,7 +49,7 @@ pub struct ObjectSchema {
     pub is_favorite: bool,
     pub is_archived: bool,
     pub is_trashed: bool,
-    pub update_at: u128,
+    pub update_at: i64,
 }
 
 impl ObjectSchema {
@@ -67,7 +67,7 @@ impl ObjectSchema {
             update_at: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
-                .as_millis(),
+                .as_millis() as i64,
         }
     }
 }

@@ -1,6 +1,6 @@
 // src/router/claims/claims_hash.rs
 use arrayvec::ArrayString;
-use jsonwebtoken::{EncodingKey, Header, encode};
+use jsonwebtoken::{encode, EncodingKey, Header};
 use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -11,12 +11,12 @@ use crate::public::structure::config::APP_CONFIG;
 pub struct ClaimsHash {
     pub allow_original: bool,
     pub hash: ArrayString<64>,
-    pub timestamp: u128,
+    pub timestamp: i64,
     pub exp: u64,
 }
 
 impl ClaimsHash {
-    pub fn new(hash: ArrayString<64>, timestamp: u128, allow_original: bool) -> Self {
+    pub fn new(hash: ArrayString<64>, timestamp: i64, allow_original: bool) -> Self {
         let exp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .expect("Time went backwards")
@@ -32,7 +32,12 @@ impl ClaimsHash {
     }
 
     pub fn encode(&self) -> String {
-        let secret_key = APP_CONFIG.get().unwrap().read().unwrap().get_jwt_secret_key();
+        let secret_key = APP_CONFIG
+            .get()
+            .unwrap()
+            .read()
+            .unwrap()
+            .get_jwt_secret_key();
         encode(
             &Header::default(),
             &self,

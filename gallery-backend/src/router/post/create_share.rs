@@ -23,7 +23,7 @@ pub struct CreateShare {
     pub show_metadata: bool,
     pub show_download: bool,
     pub show_upload: bool,
-    pub exp: u64,
+    pub exp: i64,
 }
 
 #[post("/post/create_share", data = "<create_share>")]

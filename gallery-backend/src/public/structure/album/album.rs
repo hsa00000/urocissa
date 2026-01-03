@@ -65,7 +65,7 @@ impl Album {
             is_favorite: false,
             is_archived: false,
             is_trashed: false,
-            update_at: self.last_modified_time as u128,
+            update_at: self.last_modified_time as i64,
         };
 
         // Create AlbumMetadata

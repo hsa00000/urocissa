@@ -101,7 +101,7 @@ fn validate_share_access(share: &Share, req: &Request<'_>) -> Result<(), ShareEr
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map_err(|e| ShareError::Internal(anyhow!("Time error: {}", e)))?
-            .as_secs();
+            .as_secs() as i64;
 
         if now > share.exp {
             return Err(ShareError::Expired);

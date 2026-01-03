@@ -29,7 +29,7 @@ use crate::tasks::batcher::update_tree::UpdateTreeTask;
 pub struct CreateAlbum {
     pub title: Option<String>,
     pub elements_index: Vec<usize>,
-    pub timestamp: u128,
+    pub timestamp: i64,
 }
 
 #[post("/post/create_empty_album")]
@@ -84,7 +84,7 @@ async fn create_album_internal(title: Option<String>) -> Result<ArrayString<64>>
 async fn create_album_elements(
     album_id: ArrayString<64>,
     elements_index: Vec<usize>,
-    timestamp: u128,
+    timestamp: i64,
 ) -> Result<()> {
     let element_batch = tokio::task::spawn_blocking(move || -> Result<Vec<AbstractData>> {
         let tree_snapshot = open_tree_snapshot_table(timestamp)?;

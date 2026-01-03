@@ -13,7 +13,7 @@ use crate::public::structure::response::reduced_data::ReducedData;
 #[derive(Debug)]
 pub struct TreeSnapshot {
     pub in_disk: &'static redb::Database,
-    pub in_memory: &'static DashMap<u128, Vec<ReducedData>>,
+    pub in_memory: &'static DashMap<i64, Vec<ReducedData>>,
 }
 
 pub static TREE_SNAPSHOT: LazyLock<TreeSnapshot> = LazyLock::new(|| TreeSnapshot::new());

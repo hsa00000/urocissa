@@ -24,7 +24,7 @@ use serde::Deserialize;
 #[serde(rename_all = "camelCase")]
 pub struct RegenerateData {
     index_array: Vec<usize>,
-    timestamp: u128,
+    timestamp: i64,
 }
 
 #[post("/put/reindex", format = "json", data = "<json_data>")]

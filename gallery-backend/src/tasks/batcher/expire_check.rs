@@ -32,7 +32,7 @@ fn expire_check_task() {
         .unwrap()
         .par_bridge()
         .for_each(|table_handle| {
-            if let Ok(timestamp) = table_handle.name().parse::<u64>()
+            if let Ok(timestamp) = table_handle.name().parse::<i64>()
                 && VERSION_COUNT_TIMESTAMP.load(Ordering::Relaxed) > timestamp
                 && EXPIRE.expired_check(timestamp)
             {

@@ -7,11 +7,11 @@ use mini_executor::Task;
 use redb::TableDefinition;
 use tokio::task::spawn_blocking;
 pub struct RemoveTask {
-    pub timestamp: u128,
+    pub timestamp: i64,
 }
 
 impl RemoveTask {
-    pub fn new(timestamp: u128) -> Self {
+    pub fn new(timestamp: i64) -> Self {
         Self { timestamp }
     }
 }
@@ -29,7 +29,7 @@ impl Task for RemoveTask {
     }
 }
 /// Removes a tree cache table by its timestamp.
-fn remove_task(timestamp: u128) -> Result<()> {
+fn remove_task(timestamp: i64) -> Result<()> {
     let write_txn = TREE_SNAPSHOT.in_disk.begin_write().unwrap();
     let binding = timestamp.to_string();
     let table_definition: TableDefinition<u64, ReducedData> = TableDefinition::new(&binding);

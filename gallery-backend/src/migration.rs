@@ -189,7 +189,7 @@ fn transform_database_to_abstract_data(old_data: OldDatabase) -> AbstractData {
     let timestamp = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
-        .as_millis();
+        .as_millis() as i64;
 
     // Legacy Business Logic:
     // Tags starting with "_" (e.g., _favorite) were previously used as boolean flags.
@@ -204,8 +204,8 @@ fn transform_database_to_abstract_data(old_data: OldDatabase) -> AbstractData {
         .iter()
         .map(|a| FileModify {
             file: a.file.clone(),
-            modified: a.modified,
-            scan_time: a.scan_time,
+            modified: a.modified as i64,
+            scan_time: a.scan_time as i64,
         })
         .collect();
 
@@ -313,7 +313,7 @@ fn transform_album_to_abstract_data(old_album: OldAlbum) -> AbstractData {
                     show_metadata: old_share.show_metadata,
                     show_download: old_share.show_download,
                     show_upload: old_share.show_upload,
-                    exp: old_share.exp,
+                    exp: old_share.exp as i64,
                 },
             )
         })
@@ -329,7 +329,7 @@ fn transform_album_to_abstract_data(old_album: OldAlbum) -> AbstractData {
         is_favorite,
         is_archived,
         is_trashed,
-        update_at: old_album.last_modified_time as u128,
+        update_at: old_album.last_modified_time as i64,
     };
 
     let metadata = AlbumMetadata {
@@ -354,7 +354,7 @@ fn transform_v30_to_v31(old_data: AbstractDataOld) -> AbstractData {
             let update_at = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
-                .as_millis();
+                .as_millis() as i64;
             let object = ObjectSchema {
                 id: img.object.id,
                 obj_type: ObjectType::Image,
@@ -382,8 +382,8 @@ fn transform_v30_to_v31(old_data: AbstractDataOld) -> AbstractData {
                     .into_iter()
                     .map(|a| FileModify {
                         file: a.file,
-                        modified: a.modified,
-                        scan_time: a.scan_time,
+                        modified: a.modified as i64,
+                        scan_time: a.scan_time as i64,
                     })
                     .collect(),
             };
@@ -393,7 +393,7 @@ fn transform_v30_to_v31(old_data: AbstractDataOld) -> AbstractData {
             let update_at = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
-                .as_millis();
+                .as_millis() as i64;
             let object = ObjectSchema {
                 id: vid.object.id,
                 obj_type: ObjectType::Video,
@@ -421,8 +421,8 @@ fn transform_v30_to_v31(old_data: AbstractDataOld) -> AbstractData {
                     .into_iter()
                     .map(|a| FileModify {
                         file: a.file,
-                        modified: a.modified,
-                        scan_time: a.scan_time,
+                        modified: a.modified as i64,
+                        scan_time: a.scan_time as i64,
                     })
                     .collect(),
             };
@@ -439,7 +439,7 @@ fn transform_v30_to_v31(old_data: AbstractDataOld) -> AbstractData {
                 is_favorite: alb.object.is_favorite,
                 is_archived: alb.object.is_archived,
                 is_trashed: alb.object.is_trashed,
-                update_at: alb.metadata.last_modified_time as u128,
+                update_at: alb.metadata.last_modified_time as i64,
             };
             let metadata = AlbumMetadata {
                 id: alb.metadata.id,
@@ -465,7 +465,7 @@ fn transform_v30_to_v31(old_data: AbstractDataOld) -> AbstractData {
                                 show_metadata: v.show_metadata,
                                 show_download: v.show_download,
                                 show_upload: v.show_upload,
-                                exp: v.exp,
+                                exp: v.exp as i64,
                             },
                         )
                     })

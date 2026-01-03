@@ -1,5 +1,5 @@
 // src/router/claims/claims_timestamp.rs
-use jsonwebtoken::{EncodingKey, Header, encode};
+use jsonwebtoken::{encode, EncodingKey, Header};
 use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -10,12 +10,12 @@ use crate::public::structure::config::APP_CONFIG;
 #[serde(rename_all = "camelCase")]
 pub struct ClaimsTimestamp {
     pub resolved_share_opt: Option<ResolvedShare>,
-    pub timestamp: u128,
+    pub timestamp: i64,
     pub exp: u64,
 }
 
 impl ClaimsTimestamp {
-    pub fn new(resolved_share_opt: Option<ResolvedShare>, timestamp: u128) -> Self {
+    pub fn new(resolved_share_opt: Option<ResolvedShare>, timestamp: i64) -> Self {
         let exp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .expect("Time went backwards")
@@ -30,7 +30,12 @@ impl ClaimsTimestamp {
     }
 
     pub fn encode(&self) -> String {
-        let secret_key = APP_CONFIG.get().unwrap().read().unwrap().get_jwt_secret_key();
+        let secret_key = APP_CONFIG
+            .get()
+            .unwrap()
+            .read()
+            .unwrap()
+            .get_jwt_secret_key();
         encode(
             &Header::default(),
             &self,

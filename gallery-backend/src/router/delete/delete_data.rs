@@ -17,7 +17,7 @@ use rocket::serde::{Deserialize, json::Json};
 #[serde(rename_all = "camelCase")]
 pub struct DeleteList {
     delete_list: Vec<usize>,
-    timestamp: u128,
+    timestamp: i64,
 }
 #[delete("/delete/delete-data", format = "json", data = "<json_data>")]
 pub async fn delete_data(
@@ -57,7 +57,7 @@ pub async fn delete_data(
 
 fn process_deletes(
     delete_list: Vec<usize>,
-    timestamp: u128,
+    timestamp: i64,
 ) -> Result<(Vec<AbstractData>, Vec<ArrayString<64>>)> {
     let data_table = open_data_table();
     let tree_snapshot = open_tree_snapshot_table(timestamp)?;

@@ -2,7 +2,7 @@ use crate::public::{
     constant::redb::DATA_TABLE,
     db::{
         tree::TREE,
-        tree_snapshot::{TREE_SNAPSHOT, read_tree_snapshot::MyCow},
+        tree_snapshot::{read_tree_snapshot::MyCow, TREE_SNAPSHOT},
     },
     structure::abstract_data::AbstractData,
 };
@@ -15,7 +15,7 @@ pub fn open_data_table() -> ReadOnlyTable<&'static str, AbstractData> {
     read_txn.open_table(DATA_TABLE).unwrap()
 }
 
-pub fn open_tree_snapshot_table(timestamp: u128) -> Result<MyCow> {
+pub fn open_tree_snapshot_table(timestamp: i64) -> Result<MyCow> {
     TREE_SNAPSHOT
         .read_tree_snapshot(&timestamp)
         .context(format!(

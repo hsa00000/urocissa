@@ -24,7 +24,7 @@ struct MediaItemInfo {
     hash: ArrayString<64>,
     size: u64,
     thumbhash: Option<Vec<u8>>,
-    timestamp: u128,
+    timestamp: i64,
 }
 
 impl AlbumCombined {
@@ -93,8 +93,8 @@ impl AlbumCombined {
         data_in_album.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
 
         // Set metadata from the sorted list
-        self.metadata.start_time = data_in_album.last().map(|info| info.timestamp as i64);
-        self.metadata.end_time = data_in_album.first().map(|info| info.timestamp as i64);
+        self.metadata.start_time = data_in_album.last().map(|info| info.timestamp);
+        self.metadata.end_time = data_in_album.first().map(|info| info.timestamp);
         self.metadata.item_count = data_in_album.len();
         self.metadata.item_size = data_in_album.iter().map(|info| info.size).sum();
 

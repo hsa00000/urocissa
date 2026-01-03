@@ -17,7 +17,7 @@ use std::collections::HashSet;
 #[serde(rename_all = "camelCase")]
 pub struct EditFlagsData {
     index_array: Vec<usize>,
-    timestamp: u128,
+    timestamp: i64,
     #[serde(default)]
     is_favorite: Option<bool>,
     #[serde(default)]

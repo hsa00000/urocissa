@@ -7,5 +7,5 @@ pub struct ReducedData {
     pub hash: ArrayString<64>,
     pub width: u32,
     pub height: u32,
-    pub date: u128,
+    pub date: i64,
 }
