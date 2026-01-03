@@ -121,19 +121,21 @@ export function extractHashFromPath(path: string): string | null {
   return lastSegment?.split('.').shift() ?? null
 }
 
-export function getSrc(hash: string, original: boolean, ext: string) {
-  const compressedOrImported = original ? 'imported' : 'compressed'
-  return `/object/${compressedOrImported}/${hash.slice(0, 2)}/${hash}.${ext}`
-}
-
-export function getSrcOriginal(hash: string, original: boolean, ext: string) {
-  const shareStore = useShareStore('mainId')
+export function getSrc(hash: string, original: boolean, ext: string, updatedAt: number) {
   const compressedOrImported = original ? 'imported' : 'compressed'
   const basePath = `/object/${compressedOrImported}/${hash.slice(0, 2)}/${hash}.${ext}`
+  
+  return `${basePath}?updated_at=${updatedAt}`
+}
+
+export function getSrcOriginal(hash: string, original: boolean, ext: string, updatedAt: number) {
+  const shareStore = useShareStore('mainId')
+  const baseSrc = getSrc(hash, original, ext, updatedAt)
 
   if (typeof shareStore.albumId === 'string' && typeof shareStore.shareId === 'string') {
-    return `${basePath}?albumId=${shareStore.albumId}&shareId=${shareStore.shareId}`
+    const separator = baseSrc.includes('?') ? '&' : '?'
+    return `${baseSrc}${separator}albumId=${shareStore.albumId}&shareId=${shareStore.shareId}`
   } else {
-    return basePath
+    return baseSrc
   }
 }

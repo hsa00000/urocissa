@@ -66,7 +66,8 @@ export async function refreshAlbumMetadata(albumId: string) {
         shareId: shareStore.shareId,
         password: shareStore.password,
         timestampToken,
-        hashToken
+        hashToken,
+        updatedAt: data.updateAt
       })
 
       postToWorker.processSmallImage({
@@ -80,7 +81,8 @@ export async function refreshAlbumMetadata(albumId: string) {
         shareId: shareStore.shareId,
         password: shareStore.password,
         timestampToken,
-        hashToken
+        hashToken,
+        updatedAt: data.updateAt
       })
 
       messageStore.success(`Album cover updated successfully`)

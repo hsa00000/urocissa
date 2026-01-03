@@ -9,16 +9,13 @@ import { useRoute } from 'vue-router'
 import axios from 'axios'
 import { getIsolationIdByRoute } from '@utils/getter'
 import { useCurrentFrameStore } from '@/store/currentFrameStore'
-import { getSrc } from '@utils/getter'
 import { useMessageStore } from '@/store/messageStore'
-import { useTokenStore } from '@/store/tokenStore'
 import { tryWithMessageStore } from '@/script/utils/try_catch'
 
 const route = useRoute()
 const isolationId = getIsolationIdByRoute(route)
 const currentFrameStore = useCurrentFrameStore(isolationId)
 const messageStore = useMessageStore('mainId')
-const tokenStore = useTokenStore(isolationId)
 
 const regenerateThumbnailByFrame = async () => {
   await tryWithMessageStore(isolationId, async () => {
@@ -41,18 +38,18 @@ const regenerateThumbnailByFrame = async () => {
       })
 
       // Refresh hash token and fetch with bearer token to bust cache
-      await tokenStore.refreshHashTokenIfExpired(hash)
+      /*       await tokenStore.refreshHashTokenIfExpired(hash)
       const hashToken = tokenStore.hashTokenMap.get(hash)
       if (hashToken) {
-        await fetch(getSrc(hash, false, 'jpg'), {
+        await fetch(getSrc(hash, false, 'jpg', Date.now()), {
           method: 'GET',
           cache: 'reload',
           headers: {
             Authorization: `Bearer ${hashToken}`
           }
         })
-      }
-      
+      } */
+
       messageStore.success('Regenerating thumbnail successfully')
       console.log('Response:', response.data)
     }

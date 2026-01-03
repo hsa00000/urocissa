@@ -47,7 +47,10 @@ const handler = createHandler<typeof toImgWorker>({
         timestampToken: event.timestampToken
       }
 
-      const response = await workerAxios.get<Blob>(getSrc(event.hash, false, 'jpg'), config)
+      const response = await workerAxios.get<Blob>(
+        getSrc(event.hash, false, 'jpg', event.updatedAt),
+        config
+      )
 
       controllerMap.delete(event.index)
       const blob = response.data
@@ -91,7 +94,10 @@ const handler = createHandler<typeof toImgWorker>({
         timestampToken: event.timestampToken
       }
 
-      const response = await workerAxios.get<Blob>(getSrc(event.hash, false, 'jpg'), config)
+      const response = await workerAxios.get<Blob>(
+        getSrc(event.hash, false, 'jpg', event.updatedAt),
+        config
+      )
       const blob = response.data
       const img = await createImageBitmap(blob)
 

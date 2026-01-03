@@ -75,6 +75,7 @@ pub async fn regenerate_thumbnail_with_frame(
 
         abstract_data.set_thumbhash(generate_thumbhash(&dyn_img));
         abstract_data.set_phash(generate_phash(&dyn_img));
+        abstract_data.update_update_at();
 
         Ok(abstract_data)
     })

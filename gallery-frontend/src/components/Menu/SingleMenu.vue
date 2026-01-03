@@ -5,7 +5,7 @@
     </template>
     <v-list>
       <ItemViewOriginalFile
-        :src="getSrc(database.id, true, database.ext)"
+        :src="getSrc(database.id, true, database.ext, database.updateAt)"
         :isolation-id="props.isolationId"
         :hash="database.id"
       />

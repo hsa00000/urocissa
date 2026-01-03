@@ -51,8 +51,10 @@ pub async fn rotate_image(
 
         // Load the compressed image (not the original)
         let compressed_path = abstract_data.compressed_path();
-        let mut dyn_img = image::open(&compressed_path)
-            .context(format!("Failed to load compressed image: {:?}", compressed_path))?;
+        let mut dyn_img = image::open(&compressed_path).context(format!(
+            "Failed to load compressed image: {:?}",
+            compressed_path
+        ))?;
 
         // Rotate counter-clockwise (270 degrees clockwise = 90 degrees counter-clockwise)
         dyn_img = dyn_img.rotate270();
@@ -67,6 +69,7 @@ pub async fn rotate_image(
         // Update thumbhash and phash with the rotated image
         abstract_data.set_thumbhash(generate_thumbhash(&dyn_img));
         abstract_data.set_phash(generate_phash(&dyn_img));
+        abstract_data.update_update_at();
 
         Ok(abstract_data)
     })

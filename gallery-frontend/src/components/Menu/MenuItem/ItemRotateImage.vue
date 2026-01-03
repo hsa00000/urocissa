@@ -8,15 +8,12 @@
 import { useRoute } from 'vue-router'
 import axios from 'axios'
 import { getIsolationIdByRoute } from '@utils/getter'
-import { getSrc } from '@utils/getter'
 import { useMessageStore } from '@/store/messageStore'
-import { useTokenStore } from '@/store/tokenStore'
 import { tryWithMessageStore } from '@/script/utils/try_catch'
 
 const route = useRoute()
 const isolationId = getIsolationIdByRoute(route)
 const messageStore = useMessageStore('mainId')
-const tokenStore = useTokenStore(isolationId)
 
 const rotateImage = async () => {
   await tryWithMessageStore(isolationId, async () => {
@@ -27,18 +24,18 @@ const rotateImage = async () => {
       await axios.put('/put/rotate-image', { hash })
 
       // Refresh hash token and fetch with bearer token to bust cache
-      await tokenStore.refreshHashTokenIfExpired(hash)
+      /*       await tokenStore.refreshHashTokenIfExpired(hash)
       const hashToken = tokenStore.hashTokenMap.get(hash)
       if (hashToken) {
-        await fetch(getSrc(hash, false, 'jpg'), {
+        await fetch(getSrc(hash, false, 'jpg', Date.now()), {
           method: 'GET',
           cache: 'reload',
           headers: {
             Authorization: `Bearer ${hashToken}`
           }
         })
-      }
-      
+      } */
+
       messageStore.success('Image rotated successfully')
     }
   })

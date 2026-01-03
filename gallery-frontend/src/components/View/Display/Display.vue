@@ -58,7 +58,6 @@ import { useConfigStore } from '@/store/configStore'
 import { useShareStore } from '@/store/shareStore'
 import { useTokenStore } from '@/store/tokenStore'
 import axios from 'axios'
-import { getSrc } from '@utils/getter'
 import { useMessageStore } from '@/store/messageStore'
 import { tryWithMessageStore } from '@/script/utils/try_catch'
 
@@ -169,7 +168,8 @@ async function checkAndFetch(index: number): Promise<boolean> {
     shareId: shareStore.shareId,
     password: shareStore.password,
     timestampToken,
-    hashToken
+    hashToken,
+    updatedAt: abstractData.updateAt
   })
 
   return false
@@ -220,18 +220,18 @@ const rotateImageHandler = async () => {
       await axios.put('/put/rotate-image', { hash })
 
       // Refresh hash token and fetch with bearer token to bust cache
-      await tokenStore.refreshHashTokenIfExpired(hash)
+      /*       await tokenStore.refreshHashTokenIfExpired(hash)
       const hashToken = tokenStore.hashTokenMap.get(hash)
       if (hashToken) {
-        await fetch(getSrc(hash, false, 'jpg'), {
+        await fetch(getSrc(hash, false, 'jpg', Date.now()), {
           method: 'GET',
           cache: 'reload',
           headers: {
             Authorization: `Bearer ${hashToken}`
           }
         })
-      }
-      
+      } */
+
       messageStore.success('Image rotated successfully')
     }
   })

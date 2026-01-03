@@ -151,7 +151,8 @@ async function checkAndFetch(
       shareId: shareStore.shareId,
       password: shareStore.password,
       timestampToken,
-      hashToken
+      hashToken,
+      updatedAt: abstractData.updateAt
     })
   } else if (abstractData.type === 'album' && abstractData.cover != null) {
     const hash = abstractData.cover
@@ -172,7 +173,8 @@ async function checkAndFetch(
       shareId: shareStore.shareId,
       password: shareStore.password,
       timestampToken,
-      hashToken
+      hashToken,
+      updatedAt: abstractData.updateAt
     })
   }
 }
