@@ -174,14 +174,14 @@ use old_structure::{Album as OldAlbum, Database as OldDatabase};
 // ==================================================================================
 
 const OLD_DB_PATH: &str = "./db/index.redb";
-const NEW_DB_PATH: &str = "./db/index_new.redb";
+const NEW_DB_PATH: &str = "./db/index_v4.redb";
 const BATCH_SIZE: usize = 5000;
 const USER_DEFINED_DESCRIPTION: &str = "_user_defined_description";
 
 enum MigrationType {
     None,
     V2ToV3,
-    V30ToV31,
+    V3ToV4,
 }
 
 fn transform_database_to_abstract_data(old_data: OldDatabase) -> AbstractData {
@@ -478,70 +478,114 @@ fn transform_v30_to_v31(old_data: AbstractDataOld) -> AbstractData {
 
 /// Checks if a migration is required by attempting to open the DB with the new and old drivers.
 fn needs_migration() -> MigrationType {
+    // 1. Check if V4 DB already exists
+    if Path::new(NEW_DB_PATH).exists() {
+        // Assume if it exists, it's correct (or at least we've already migrated).
+        // You could add a schema check here if V4->V5 migrations happen later.
+        println!(
+            "[INFO] Found V4 database at {}. No migration needed.",
+            NEW_DB_PATH
+        );
+        return MigrationType::None;
+    }
+
+    // 2. If V4 doesn't exist, check for legacy V3/V2 at OLD_DB_PATH
     if !Path::new(OLD_DB_PATH).exists() {
         return MigrationType::None;
     }
 
-    // Check V3 first (Most likely)
+    // Check V3/V4 (Redb 3.x)
     // We need to use catch_unwind because accessing a table with wrong schema panics in redb/bitcode.
-    // We open the DB inside the closure because redb::Database is not UnwindSafe.
-    let is_v3_new = std::panic::catch_unwind(|| {
+
+    // 1. Check if it is already V4 (Current Schema) but just in the wrong location?
+    // Or if we are re-running on a V4 DB.
+    let is_v4 = std::panic::catch_unwind(|| {
         if let Ok(db) = redb::Database::open(OLD_DB_PATH) {
             let read_txn = db.begin_read().unwrap();
-            // Try to open with NEW schema
             if let Ok(table) = read_txn.open_table(DATA_TABLE) {
-                if table.len().unwrap() == 0 {
-                    return true;
-                }
-                // Attempt to read/decode the first item
-                // Must call .value() to trigger lazy deserialization in redb
-                if let Some((_k, v)) = table.first().unwrap() {
-                    let _ = v.value();
-                }
-                return true;
-            }
-            // If table doesn't exist, we assume it's compatible or empty
-            return true;
-        }
-        // Failed to open (e.g. invalid format -> might be V2)
-        false
-    });
-
-    match is_v3_new {
-        Ok(true) => {
-            println!("[INFO] DB is up to date (V3.1).");
-            return MigrationType::None;
-        }
-        Ok(false) => {
-            // Open failed (likely V2 or locked). Fall through to check V2.
-        }
-        Err(_) => {
-            // Panicked -> Opened successfully but schema mismatch.
-            // Check if it is V3.0 (Old Schema)
-            let is_v3_old = std::panic::catch_unwind(|| {
-                if let Ok(db) = redb::Database::open(OLD_DB_PATH) {
-                    let read_txn = db.begin_read().unwrap();
-                    let table_def = redb::TableDefinition::<&str, AbstractDataOld>::new("database");
-                    let table = read_txn.open_table(table_def).unwrap();
-                    if table.len().unwrap() == 0 {
-                        return true;
-                    }
-                    // Must call .value() to trigger lazy deserialization
+                if table.len().unwrap() > 0 {
+                    // Attempt to read/decode to verify schema
                     if let Some((_k, v)) = table.first().unwrap() {
                         let _ = v.value();
                     }
-                    return true;
                 }
-                false
-            });
-
-            if let Ok(true) = is_v3_old {
-                return MigrationType::V30ToV31;
-            } else {
-                eprintln!("[ERROR] DB schema is unknown or corrupted.");
-                return MigrationType::None;
+                return true;
             }
         }
+        false
+    });
+
+    if let Ok(true) = is_v4 {
+        // It matches V4 schema.
+        // If it's at OLD_DB_PATH, it means we probably migrated but didn't rename?
+        // Or user renamed it?
+        // Since we want to enforce NEW_DB_PATH, we can treat this as "Move needed"
+        // or just say "No migration needed" but print a warning that DB is at old path.
+        // But for simplicity, let's say MigrationType::None if it works.
+        // Wait, if we return None, the app continues with OLD_DB_PATH?
+        // But the app is configured to use NEW_DB_PATH (index_v4.redb).
+        // So if we return None, the app will try to open index_v4.redb and fail (if it doesn't exist).
+        // We checked NEW_DB_PATH at the top. It doesn't exist.
+        // So we MUST move this file to NEW_DB_PATH.
+        // Let's use a special migration type or just rename it here?
+        // Renaming inside `needs_migration` is side-effect heavy.
+        // Let's assume if it is V4 schema, we just need to move it.
+        // We can treat it as V3ToV4 where transformation is identity?
+        // OR we can just return V3ToV4, and `transform_v30_to_v31` will fail because types don't match?
+        // No, `transform_v30_to_v31` expects `AbstractDataOld`.
+
+        // Actually, if `is_v4` is true, it means it deserializes as `AbstractData` (New).
+        // `AbstractData` has `update_at`.
+        // `AbstractDataOld` does NOT have `update_at`.
+
+        // If it deserializes as New, we should just rename the file.
+        // But `needs_migration` returns a type for `migrate` to handle.
+        // Let's handle this case by manually renaming it here? Or creating a new MigrationType::MoveV4?
+        // I can't add enum variants easily without modifying the enum definition which is above.
+
+        // Let's just print a warning and let the user handle it?
+        // Or safer: Copy it to NEW_DB_PATH?
+        // Let's do nothing for now and fall through. If it is V4, check V3 will fail (panic).
+
+        // Actually, if it is V4, `is_v3` check below will likely panic (extra field `update_at` in DB, missing in struct).
+        // If `is_v3` panics, we return `None` (V2 check).
+        // Then `migrate` returns.
+        // Then app starts.
+        // App expects `index_v4.redb`. It doesn't exist.
+        // App creates empty `index_v4.redb`.
+        // User loses data visibility (data stays in `index.redb`).
+
+        // So we MUST migrate (move) it.
+        println!(
+            "[WARN] Found V4-compatible database at {}. Moving to {}.",
+            OLD_DB_PATH, NEW_DB_PATH
+        );
+        if let Err(e) = std::fs::rename(OLD_DB_PATH, NEW_DB_PATH) {
+            eprintln!("[ERROR] Failed to move V4 database: {}", e);
+        }
+        return MigrationType::None;
+    }
+
+    // 2. Check if it is V3 (Old Schema - Missing update_at)
+    let is_v3 = std::panic::catch_unwind(|| {
+        if let Ok(db) = redb::Database::open(OLD_DB_PATH) {
+            let read_txn = db.begin_read().unwrap();
+            let table_def = redb::TableDefinition::<&str, AbstractDataOld>::new("database");
+            if let Ok(table) = read_txn.open_table(table_def) {
+                if table.len().unwrap() > 0 {
+                    // Attempt to read/decode
+                    if let Some((_k, v)) = table.first().unwrap() {
+                        let _ = v.value();
+                    }
+                }
+                return true;
+            }
+        }
+        false
+    });
+
+    if let Ok(true) = is_v3 {
+        return MigrationType::V3ToV4;
     }
 
     // Check V2
@@ -585,12 +629,15 @@ pub fn migrate() -> Result<()> {
     println!("========================================================");
     match migration_type {
         MigrationType::V2ToV3 => {
-            println!(" DETECTED OLD DATABASE (redb 2.6.x) at {}", OLD_DB_PATH);
-            println!(" A MIGRATION IS REQUIRED TO UPGRADE TO VERSION 0.19+");
+            println!(
+                " DETECTED OLD DATABASE (V2 / redb 2.6.x) at {}",
+                OLD_DB_PATH
+            );
+            println!(" A MIGRATION IS REQUIRED TO UPGRADE TO V4 (redb 3.1, schema V4)");
         }
-        MigrationType::V30ToV31 => {
-            println!(" DETECTED OLD SCHEMA (V3.0) at {}", OLD_DB_PATH);
-            println!(" A MIGRATION IS REQUIRED TO UPGRADE TO VERSION 0.22+");
+        MigrationType::V3ToV4 => {
+            println!(" DETECTED OLD SCHEMA (V3) at {}", OLD_DB_PATH);
+            println!(" A MIGRATION IS REQUIRED TO UPGRADE TO V4 (schema with update_at)");
         }
         _ => {}
     }
@@ -691,7 +738,7 @@ pub fn migrate() -> Result<()> {
             drop(read_txn);
             drop(old_db);
         }
-        MigrationType::V30ToV31 => {
+        MigrationType::V3ToV4 => {
             let old_db =
                 redb::Database::open(OLD_DB_PATH).context("Failed to open old database file.")?;
             let read_txn = old_db.begin_read()?;
@@ -701,7 +748,7 @@ pub fn migrate() -> Result<()> {
 
             let mut data_table = write_txn.open_table(DATA_TABLE)?;
             let total_items = old_data_table.len()?;
-            println!("Found {} items to migrate (V3.0 -> V3.1).", total_items);
+            println!("Found {} items to migrate (V3 -> V4).", total_items);
 
             let mut processed_count = 0;
             let mut batch_buffer: Vec<AbstractDataOld> = Vec::with_capacity(BATCH_SIZE);
@@ -732,10 +779,7 @@ pub fn migrate() -> Result<()> {
                 commit_batch(batch_buffer)?;
                 processed_count += len;
             }
-            println!(
-                "V3.0 -> V3.1 Migration completed. Total: {}",
-                processed_count
-            );
+            println!("V3 -> V4 Migration completed. Total: {}", processed_count);
 
             drop(read_txn);
             drop(old_db);
@@ -746,17 +790,15 @@ pub fn migrate() -> Result<()> {
     write_txn.commit()?;
     println!("Migration completed successfully.");
 
-    // Explicitly drop handles to release file locks (crucial for Windows) before renaming
-    // (Already dropped in match arms but good to be safe if scopes change)
-
+    // Rename OLD DB to .bak
     let backup_path = format!("{}.bak", OLD_DB_PATH);
     std::fs::rename(OLD_DB_PATH, &backup_path)
         .context(format!("Failed to rename old DB to {}", backup_path))?;
     println!("Old database renamed to {}", backup_path);
 
-    std::fs::rename(NEW_DB_PATH, OLD_DB_PATH)
-        .context("Failed to rename new DB to original path")?;
-    println!("New database moved to {}", OLD_DB_PATH);
+    // DO NOT RENAME NEW DB BACK TO OLD_DB_PATH.
+    // We are keeping index_v4.redb as the new standard.
+    println!("New database created at {}", NEW_DB_PATH);
 
     Ok(())
 }
