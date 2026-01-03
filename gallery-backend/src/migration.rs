@@ -516,46 +516,6 @@ fn needs_migration() -> MigrationType {
     });
 
     if let Ok(true) = is_v4 {
-        // It matches V4 schema.
-        // If it's at OLD_DB_PATH, it means we probably migrated but didn't rename?
-        // Or user renamed it?
-        // Since we want to enforce NEW_DB_PATH, we can treat this as "Move needed"
-        // or just say "No migration needed" but print a warning that DB is at old path.
-        // But for simplicity, let's say MigrationType::None if it works.
-        // Wait, if we return None, the app continues with OLD_DB_PATH?
-        // But the app is configured to use NEW_DB_PATH (index_v4.redb).
-        // So if we return None, the app will try to open index_v4.redb and fail (if it doesn't exist).
-        // We checked NEW_DB_PATH at the top. It doesn't exist.
-        // So we MUST move this file to NEW_DB_PATH.
-        // Let's use a special migration type or just rename it here?
-        // Renaming inside `needs_migration` is side-effect heavy.
-        // Let's assume if it is V4 schema, we just need to move it.
-        // We can treat it as V3ToV4 where transformation is identity?
-        // OR we can just return V3ToV4, and `transform_v30_to_v31` will fail because types don't match?
-        // No, `transform_v30_to_v31` expects `AbstractDataOld`.
-
-        // Actually, if `is_v4` is true, it means it deserializes as `AbstractData` (New).
-        // `AbstractData` has `update_at`.
-        // `AbstractDataOld` does NOT have `update_at`.
-
-        // If it deserializes as New, we should just rename the file.
-        // But `needs_migration` returns a type for `migrate` to handle.
-        // Let's handle this case by manually renaming it here? Or creating a new MigrationType::MoveV4?
-        // I can't add enum variants easily without modifying the enum definition which is above.
-
-        // Let's just print a warning and let the user handle it?
-        // Or safer: Copy it to NEW_DB_PATH?
-        // Let's do nothing for now and fall through. If it is V4, check V3 will fail (panic).
-
-        // Actually, if it is V4, `is_v3` check below will likely panic (extra field `update_at` in DB, missing in struct).
-        // If `is_v3` panics, we return `None` (V2 check).
-        // Then `migrate` returns.
-        // Then app starts.
-        // App expects `index_v4.redb`. It doesn't exist.
-        // App creates empty `index_v4.redb`.
-        // User loses data visibility (data stays in `index.redb`).
-
-        // So we MUST migrate (move) it.
         println!(
             "[WARN] Found V4-compatible database at {}. Moving to {}.",
             OLD_DB_PATH, NEW_DB_PATH
