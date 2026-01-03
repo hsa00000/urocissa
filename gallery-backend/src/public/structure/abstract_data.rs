@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, HashSet};
 use std::fs::metadata;
 use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
-use std::time::UNIX_EPOCH;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::{Context, Result};
 use arrayvec::ArrayString;
@@ -79,6 +79,19 @@ impl AbstractData {
             AbstractData::Image(img) => &mut img.object.tags,
             AbstractData::Video(vid) => &mut vid.object.tags,
             AbstractData::Album(alb) => &mut alb.object.tags,
+        }
+    }
+
+    /// Update the update_at timestamp
+    pub fn update_update_at(&mut self) {
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_millis();
+        match self {
+            AbstractData::Image(img) => img.object.update_at = timestamp,
+            AbstractData::Video(vid) => vid.object.update_at = timestamp,
+            AbstractData::Album(alb) => alb.object.update_at = timestamp,
         }
     }
 
@@ -272,19 +285,13 @@ impl AbstractData {
                 let object = ObjectSchema::new(hash, ObjectType::Image);
                 let mut metadata = ImageMetadata::new(hash, size, 0, 0, ext);
                 metadata.alias = vec![file_modify];
-                Ok(AbstractData::Image(ImageCombined {
-                    object,
-                    metadata,
-                }))
+                Ok(AbstractData::Image(ImageCombined { object, metadata }))
             }
             ObjectType::Video => {
                 let object = ObjectSchema::new(hash, ObjectType::Video);
                 let mut metadata = VideoMetadata::new(hash, size, 0, 0, ext);
                 metadata.alias = vec![file_modify];
-                Ok(AbstractData::Video(VideoCombined {
-                    object,
-                    metadata,
-                }))
+                Ok(AbstractData::Video(VideoCombined { object, metadata }))
             }
             ObjectType::Album => Err(anyhow::anyhow!("Cannot create Album from file path")),
         }
@@ -317,6 +324,10 @@ impl AbstractData {
             is_favorite: false,
             is_archived: false,
             is_trashed: false,
+            update_at: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_millis(),
         };
 
         let metadata = ImageMetadata {
@@ -335,10 +346,7 @@ impl AbstractData {
             }],
         };
 
-        AbstractData::Image(ImageCombined {
-            object,
-            metadata,
-        })
+        AbstractData::Image(ImageCombined { object, metadata })
     }
 
     // Path helper methods
@@ -521,6 +529,10 @@ impl AbstractData {
                 is_favorite: vid.object.is_favorite,
                 is_archived: vid.object.is_archived,
                 is_trashed: vid.object.is_trashed,
+                update_at: SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis(),
             };
             let metadata = ImageMetadata {
                 id: vid.metadata.id,
@@ -533,10 +545,7 @@ impl AbstractData {
                 exif_vec: vid.metadata.exif_vec.clone(),
                 alias: vid.metadata.alias.clone(),
             };
-            *self = AbstractData::Image(ImageCombined {
-                object,
-                metadata,
-            });
+            *self = AbstractData::Image(ImageCombined { object, metadata });
         }
     }
 }

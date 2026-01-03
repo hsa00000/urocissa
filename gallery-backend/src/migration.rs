@@ -13,8 +13,18 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fs::{self, File};
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
 
-use redb_old::{ReadableTable as OldReadableTable, ReadableTableMetadata};
+use redb::{
+    ReadableDatabase, ReadableTable as NewReadableTable,
+    ReadableTableMetadata as NewReadableTableMetadata,
+};
+use redb_old::{
+    ReadableTable as OldReadableTable, ReadableTableMetadata as OldReadableTableMetadata,
+};
+
+pub mod v3_0_schema;
+use v3_0_schema::AbstractData as AbstractDataOld;
 
 use crate::public::constant::redb::DATA_TABLE;
 use crate::public::structure::abstract_data::AbstractData;
@@ -168,8 +178,18 @@ const NEW_DB_PATH: &str = "./db/index_new.redb";
 const BATCH_SIZE: usize = 5000;
 const USER_DEFINED_DESCRIPTION: &str = "_user_defined_description";
 
+enum MigrationType {
+    None,
+    V2ToV3,
+    V30ToV31,
+}
+
 fn transform_database_to_abstract_data(old_data: OldDatabase) -> AbstractData {
     let description = old_data.exif_vec.get(USER_DEFINED_DESCRIPTION).cloned();
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_millis();
 
     // Legacy Business Logic:
     // Tags starting with "_" (e.g., _favorite) were previously used as boolean flags.
@@ -215,6 +235,7 @@ fn transform_database_to_abstract_data(old_data: OldDatabase) -> AbstractData {
             is_favorite,
             is_archived,
             is_trashed,
+            update_at: timestamp,
         };
 
         let metadata = VideoMetadata {
@@ -247,6 +268,7 @@ fn transform_database_to_abstract_data(old_data: OldDatabase) -> AbstractData {
             is_favorite,
             is_archived,
             is_trashed,
+            update_at: timestamp,
         };
 
         let metadata = ImageMetadata {
@@ -307,6 +329,7 @@ fn transform_album_to_abstract_data(old_album: OldAlbum) -> AbstractData {
         is_favorite,
         is_archived,
         is_trashed,
+        update_at: old_album.last_modified_time as u128,
     };
 
     let metadata = AlbumMetadata {
@@ -325,19 +348,204 @@ fn transform_album_to_abstract_data(old_album: OldAlbum) -> AbstractData {
     AbstractData::Album(AlbumCombined { object, metadata })
 }
 
+fn transform_v30_to_v31(old_data: AbstractDataOld) -> AbstractData {
+    match old_data {
+        AbstractDataOld::Image(img) => {
+            let update_at = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_millis();
+            let object = ObjectSchema {
+                id: img.object.id,
+                obj_type: ObjectType::Image,
+                pending: img.object.pending,
+                thumbhash: img.object.thumbhash,
+                description: img.object.description,
+                tags: img.object.tags,
+                is_favorite: img.object.is_favorite,
+                is_archived: img.object.is_archived,
+                is_trashed: img.object.is_trashed,
+                update_at,
+            };
+            let metadata = ImageMetadata {
+                id: img.metadata.id,
+                size: img.metadata.size,
+                width: img.metadata.width,
+                height: img.metadata.height,
+                ext: img.metadata.ext,
+                phash: img.metadata.phash,
+                albums: img.metadata.albums,
+                exif_vec: img.metadata.exif_vec,
+                alias: img
+                    .metadata
+                    .alias
+                    .into_iter()
+                    .map(|a| FileModify {
+                        file: a.file,
+                        modified: a.modified,
+                        scan_time: a.scan_time,
+                    })
+                    .collect(),
+            };
+            AbstractData::Image(ImageCombined { object, metadata })
+        }
+        AbstractDataOld::Video(vid) => {
+            let update_at = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_millis();
+            let object = ObjectSchema {
+                id: vid.object.id,
+                obj_type: ObjectType::Video,
+                pending: vid.object.pending,
+                thumbhash: vid.object.thumbhash,
+                description: vid.object.description,
+                tags: vid.object.tags,
+                is_favorite: vid.object.is_favorite,
+                is_archived: vid.object.is_archived,
+                is_trashed: vid.object.is_trashed,
+                update_at,
+            };
+            let metadata = VideoMetadata {
+                id: vid.metadata.id,
+                size: vid.metadata.size,
+                width: vid.metadata.width,
+                height: vid.metadata.height,
+                ext: vid.metadata.ext,
+                duration: vid.metadata.duration,
+                albums: vid.metadata.albums,
+                exif_vec: vid.metadata.exif_vec,
+                alias: vid
+                    .metadata
+                    .alias
+                    .into_iter()
+                    .map(|a| FileModify {
+                        file: a.file,
+                        modified: a.modified,
+                        scan_time: a.scan_time,
+                    })
+                    .collect(),
+            };
+            AbstractData::Video(VideoCombined { object, metadata })
+        }
+        AbstractDataOld::Album(alb) => {
+            let object = ObjectSchema {
+                id: alb.object.id,
+                obj_type: ObjectType::Album,
+                pending: alb.object.pending,
+                thumbhash: alb.object.thumbhash,
+                description: alb.object.description,
+                tags: alb.object.tags,
+                is_favorite: alb.object.is_favorite,
+                is_archived: alb.object.is_archived,
+                is_trashed: alb.object.is_trashed,
+                update_at: alb.metadata.last_modified_time as u128,
+            };
+            let metadata = AlbumMetadata {
+                id: alb.metadata.id,
+                title: alb.metadata.title,
+                created_time: alb.metadata.created_time,
+                start_time: alb.metadata.start_time,
+                end_time: alb.metadata.end_time,
+                last_modified_time: alb.metadata.last_modified_time,
+                cover: alb.metadata.cover,
+                item_count: alb.metadata.item_count,
+                item_size: alb.metadata.item_size,
+                share_list: alb
+                    .metadata
+                    .share_list
+                    .into_iter()
+                    .map(|(k, v)| {
+                        (
+                            k,
+                            crate::public::structure::album::share::Share {
+                                url: v.url,
+                                description: v.description,
+                                password: v.password,
+                                show_metadata: v.show_metadata,
+                                show_download: v.show_download,
+                                show_upload: v.show_upload,
+                                exp: v.exp,
+                            },
+                        )
+                    })
+                    .collect(),
+            };
+            AbstractData::Album(AlbumCombined { object, metadata })
+        }
+    }
+}
+
 /// Checks if a migration is required by attempting to open the DB with the new and old drivers.
-fn needs_migration() -> bool {
+fn needs_migration() -> MigrationType {
     if !Path::new(OLD_DB_PATH).exists() {
-        return false;
+        return MigrationType::None;
     }
 
-    if redb::Database::open(OLD_DB_PATH).is_ok() {
-        println!("[INFO] DB is compatible with current driver. No migration needed.");
-        return false;
+    // Check V3 first (Most likely)
+    // We need to use catch_unwind because accessing a table with wrong schema panics in redb/bitcode.
+    // We open the DB inside the closure because redb::Database is not UnwindSafe.
+    let is_v3_new = std::panic::catch_unwind(|| {
+        if let Ok(db) = redb::Database::open(OLD_DB_PATH) {
+            let read_txn = db.begin_read().unwrap();
+            // Try to open with NEW schema
+            if let Ok(table) = read_txn.open_table(DATA_TABLE) {
+                if table.len().unwrap() == 0 {
+                    return true;
+                }
+                // Attempt to read/decode the first item
+                // Must call .value() to trigger lazy deserialization in redb
+                if let Some((_k, v)) = table.first().unwrap() {
+                    let _ = v.value();
+                }
+                return true;
+            }
+            // If table doesn't exist, we assume it's compatible or empty
+            return true;
+        }
+        // Failed to open (e.g. invalid format -> might be V2)
+        false
+    });
+
+    match is_v3_new {
+        Ok(true) => {
+            println!("[INFO] DB is up to date (V3.1).");
+            return MigrationType::None;
+        }
+        Ok(false) => {
+            // Open failed (likely V2 or locked). Fall through to check V2.
+        }
+        Err(_) => {
+            // Panicked -> Opened successfully but schema mismatch.
+            // Check if it is V3.0 (Old Schema)
+            let is_v3_old = std::panic::catch_unwind(|| {
+                if let Ok(db) = redb::Database::open(OLD_DB_PATH) {
+                    let read_txn = db.begin_read().unwrap();
+                    let table_def = redb::TableDefinition::<&str, AbstractDataOld>::new("database");
+                    let table = read_txn.open_table(table_def).unwrap();
+                    if table.len().unwrap() == 0 {
+                        return true;
+                    }
+                    // Must call .value() to trigger lazy deserialization
+                    if let Some((_k, v)) = table.first().unwrap() {
+                        let _ = v.value();
+                    }
+                    return true;
+                }
+                false
+            });
+
+            if let Ok(true) = is_v3_old {
+                return MigrationType::V30ToV31;
+            } else {
+                eprintln!("[ERROR] DB schema is unknown or corrupted.");
+                return MigrationType::None;
+            }
+        }
     }
 
-    // Defensive: Use catch_unwind as a safety net. The old driver might panic if it
-    // encounters a corrupted header or a completely unknown format.
+    // Check V2
+    // Defensive: Use catch_unwind as a safety net.
     let result = std::panic::catch_unwind(|| redb_old::Database::open(OLD_DB_PATH));
 
     match result {
@@ -352,12 +560,15 @@ fn needs_migration() -> bool {
                     .open_table(redb_old::TableDefinition::<&str, OldAlbum>::new("album"))
                     .is_ok();
 
-                has_db_table || has_album_table
+                if has_db_table || has_album_table {
+                    return MigrationType::V2ToV3;
+                }
+                MigrationType::None
             } else {
-                false
+                MigrationType::None
             }
         }
-        _ => false,
+        _ => MigrationType::None,
     }
 }
 
@@ -366,13 +577,23 @@ fn needs_migration() -> bool {
 /// This requires user confirmation via stdin. It backs up the old database to `.bak`,
 /// transforms all records, and creates a new database at the original path.
 pub fn migrate() -> Result<()> {
-    if !needs_migration() {
+    let migration_type = needs_migration();
+    if let MigrationType::None = migration_type {
         return Ok(());
     }
 
     println!("========================================================");
-    println!(" DETECTED OLD DATABASE (redb 2.6.x) at {}", OLD_DB_PATH);
-    println!(" A MIGRATION IS REQUIRED TO UPGRADE TO VERSION 0.19+");
+    match migration_type {
+        MigrationType::V2ToV3 => {
+            println!(" DETECTED OLD DATABASE (redb 2.6.x) at {}", OLD_DB_PATH);
+            println!(" A MIGRATION IS REQUIRED TO UPGRADE TO VERSION 0.19+");
+        }
+        MigrationType::V30ToV31 => {
+            println!(" DETECTED OLD SCHEMA (V3.0) at {}", OLD_DB_PATH);
+            println!(" A MIGRATION IS REQUIRED TO UPGRADE TO VERSION 0.22+");
+        }
+        _ => {}
+    }
     println!("========================================================");
     println!(" Please ensure you have BACKED UP your './db' folder.");
     println!("Type 'yes' to start migration:");
@@ -388,88 +609,145 @@ pub fn migrate() -> Result<()> {
 
     println!("Starting migration...");
 
-    let old_db =
-        redb_old::Database::open(OLD_DB_PATH).context("Failed to open old database file.")?;
-    let read_txn = old_db.begin_read()?;
-
-    let old_data_table = read_txn.open_table(
-        redb_old::TableDefinition::<&str, OldDatabase>::new("database"),
-    )?;
-    let old_album_table =
-        read_txn.open_table(redb_old::TableDefinition::<&str, OldAlbum>::new("album"))?;
-
     let new_db =
         redb::Database::create(NEW_DB_PATH).context("Failed to create new database file.")?;
     let write_txn = new_db.begin_write()?;
 
-    // Migrating DATA (Images/Videos)
-    {
-        let mut data_table = write_txn.open_table(DATA_TABLE)?;
-        let total_items = old_data_table.len()?;
-        println!("Found {} items to migrate.", total_items);
+    match migration_type {
+        MigrationType::V2ToV3 => {
+            let old_db = redb_old::Database::open(OLD_DB_PATH)
+                .context("Failed to open old database file.")?;
+            let read_txn = old_db.begin_read()?;
 
-        let mut processed_count = 0;
-        let mut batch_buffer: Vec<OldDatabase> = Vec::with_capacity(BATCH_SIZE);
+            let old_data_table = read_txn
+                .open_table(redb_old::TableDefinition::<&str, OldDatabase>::new(
+                    "database",
+                ))?;
+            let old_album_table =
+                read_txn.open_table(redb_old::TableDefinition::<&str, OldAlbum>::new("album"))?;
 
-        let mut commit_batch = |batch: Vec<OldDatabase>| -> Result<()> {
-            // Optimization: Struct transformation and bitcode decoding are CPU-bound.
-            let transformed_batch: Vec<AbstractData> = batch
-                .into_par_iter()
-                .map(transform_database_to_abstract_data)
-                .collect();
+            // Migrating DATA (Images/Videos)
+            {
+                let mut data_table = write_txn.open_table(DATA_TABLE)?;
+                let total_items = old_data_table.len()?;
+                println!("Found {} items to migrate.", total_items);
 
-            for abstract_data in transformed_batch {
-                data_table.insert(abstract_data.hash().as_str(), &abstract_data)?;
+                let mut processed_count = 0;
+                let mut batch_buffer: Vec<OldDatabase> = Vec::with_capacity(BATCH_SIZE);
+
+                let mut commit_batch = |batch: Vec<OldDatabase>| -> Result<()> {
+                    // Optimization: Struct transformation and bitcode decoding are CPU-bound.
+                    let transformed_batch: Vec<AbstractData> = batch
+                        .into_par_iter()
+                        .map(transform_database_to_abstract_data)
+                        .collect();
+
+                    for abstract_data in transformed_batch {
+                        data_table.insert(abstract_data.hash().as_str(), &abstract_data)?;
+                    }
+                    Ok(())
+                };
+
+                for result in old_data_table.iter()? {
+                    let (_, value) = result?;
+                    batch_buffer.push(value.value());
+
+                    if batch_buffer.len() >= BATCH_SIZE {
+                        commit_batch(std::mem::take(&mut batch_buffer))?;
+                        processed_count += BATCH_SIZE;
+                        println!("Migrated {} / {} items...", processed_count, total_items);
+                    }
+                }
+
+                if !batch_buffer.is_empty() {
+                    let len = batch_buffer.len();
+                    commit_batch(batch_buffer)?;
+                    processed_count += len;
+                }
+                println!("Data migration completed. Total: {}", processed_count);
             }
-            Ok(())
-        };
 
-        for result in old_data_table.iter()? {
-            let (_, value) = result?;
-            batch_buffer.push(value.value());
+            // Migrating ALBUMS
+            {
+                let mut data_table = write_txn.open_table(DATA_TABLE)?;
+                let total_albums = old_album_table.len()?;
+                println!("Found {} albums to migrate.", total_albums);
 
-            if batch_buffer.len() >= BATCH_SIZE {
-                commit_batch(std::mem::take(&mut batch_buffer))?;
-                processed_count += BATCH_SIZE;
-                println!("Migrated {} / {} items...", processed_count, total_items);
+                let mut processed_count = 0;
+
+                for result in old_album_table.iter()? {
+                    let (_, value) = result?;
+                    let abstract_data = transform_album_to_abstract_data(value.value());
+                    data_table.insert(abstract_data.hash().as_str(), &abstract_data)?;
+
+                    processed_count += 1;
+                    if processed_count % 100 == 0 {
+                        println!("Migrated {} / {} albums...", processed_count, total_albums);
+                    }
+                }
+                println!("Album migration completed. Total: {}", processed_count);
             }
+            // Drop handle for rename
+            drop(read_txn);
+            drop(old_db);
         }
+        MigrationType::V30ToV31 => {
+            let old_db =
+                redb::Database::open(OLD_DB_PATH).context("Failed to open old database file.")?;
+            let read_txn = old_db.begin_read()?;
 
-        if !batch_buffer.is_empty() {
-            let len = batch_buffer.len();
-            commit_batch(batch_buffer)?;
-            processed_count += len;
-        }
-        println!("Data migration completed. Total: {}", processed_count);
-    }
+            let table_def = redb::TableDefinition::<&str, AbstractDataOld>::new("database");
+            let old_data_table = read_txn.open_table(table_def)?;
 
-    // Migrating ALBUMS
-    {
-        let mut data_table = write_txn.open_table(DATA_TABLE)?;
-        let total_albums = old_album_table.len()?;
-        println!("Found {} albums to migrate.", total_albums);
+            let mut data_table = write_txn.open_table(DATA_TABLE)?;
+            let total_items = old_data_table.len()?;
+            println!("Found {} items to migrate (V3.0 -> V3.1).", total_items);
 
-        let mut processed_count = 0;
+            let mut processed_count = 0;
+            let mut batch_buffer: Vec<AbstractDataOld> = Vec::with_capacity(BATCH_SIZE);
 
-        for result in old_album_table.iter()? {
-            let (_, value) = result?;
-            let abstract_data = transform_album_to_abstract_data(value.value());
-            data_table.insert(abstract_data.hash().as_str(), &abstract_data)?;
+            let mut commit_batch = |batch: Vec<AbstractDataOld>| -> Result<()> {
+                let transformed_batch: Vec<AbstractData> =
+                    batch.into_par_iter().map(transform_v30_to_v31).collect();
 
-            processed_count += 1;
-            if processed_count % 100 == 0 {
-                println!("Migrated {} / {} albums...", processed_count, total_albums);
+                for abstract_data in transformed_batch {
+                    data_table.insert(abstract_data.hash().as_str(), &abstract_data)?;
+                }
+                Ok(())
+            };
+
+            for result in old_data_table.iter()? {
+                let (_, value) = result?;
+                batch_buffer.push(value.value());
+
+                if batch_buffer.len() >= BATCH_SIZE {
+                    commit_batch(std::mem::take(&mut batch_buffer))?;
+                    processed_count += BATCH_SIZE;
+                    println!("Migrated {} / {} items...", processed_count, total_items);
+                }
             }
+
+            if !batch_buffer.is_empty() {
+                let len = batch_buffer.len();
+                commit_batch(batch_buffer)?;
+                processed_count += len;
+            }
+            println!(
+                "V3.0 -> V3.1 Migration completed. Total: {}",
+                processed_count
+            );
+
+            drop(read_txn);
+            drop(old_db);
         }
-        println!("Album migration completed. Total: {}", processed_count);
+        MigrationType::None => unreachable!(),
     }
 
     write_txn.commit()?;
     println!("Migration completed successfully.");
 
     // Explicitly drop handles to release file locks (crucial for Windows) before renaming
-    drop(read_txn);
-    drop(old_db);
+    // (Already dropped in match arms but good to be safe if scopes change)
 
     let backup_path = format!("{}.bak", OLD_DB_PATH);
     std::fs::rename(OLD_DB_PATH, &backup_path)

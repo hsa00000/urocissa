@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fmt;
 use std::str::FromStr;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Encode, Decode)]
 #[serde(rename_all = "camelCase")]
@@ -48,6 +49,7 @@ pub struct ObjectSchema {
     pub is_favorite: bool,
     pub is_archived: bool,
     pub is_trashed: bool,
+    pub update_at: u128,
 }
 
 impl ObjectSchema {
@@ -62,6 +64,10 @@ impl ObjectSchema {
             is_favorite: false,
             is_archived: false,
             is_trashed: false,
+            update_at: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_millis(),
         }
     }
 }

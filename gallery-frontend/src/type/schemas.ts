@@ -39,7 +39,8 @@ const BaseObjectRaw = z.object({
   exifVec: z.record(z.string(), z.string()).default({}),
   isFavorite: z.boolean().default(false),
   isArchived: z.boolean().default(false),
-  isTrashed: z.boolean().default(false)
+  isTrashed: z.boolean().default(false),
+  updateAt: z.number().default(0)
 })
 
 // 1. Image Schema
@@ -69,7 +70,8 @@ const ImageSchemaRaw = BaseObjectRaw.extend({
   description: data.description,
   isFavorite: data.isFavorite,
   isArchived: data.isArchived,
-  isTrashed: data.isTrashed
+  isTrashed: data.isTrashed,
+  updateAt: data.updateAt
 }))
 
 // 2. Video Schema
@@ -99,7 +101,8 @@ const VideoSchemaRaw = BaseObjectRaw.extend({
   description: data.description,
   isFavorite: data.isFavorite,
   isArchived: data.isArchived,
-  isTrashed: data.isTrashed
+  isTrashed: data.isTrashed,
+  updateAt: data.updateAt
 }))
 
 // 3. Album Schema
@@ -130,6 +133,7 @@ const AlbumSchemaRaw = BaseObjectRaw.extend({
   isFavorite: data.isFavorite,
   isArchived: data.isArchived,
   isTrashed: data.isTrashed,
+  updateAt: data.updateAt,
   shareList: data.shareList
 }))
 
