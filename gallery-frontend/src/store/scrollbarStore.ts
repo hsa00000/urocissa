@@ -19,13 +19,22 @@ export const useScrollbarStore = (isolationId: IsolationId) =>
       initialize(scrollbarDataArray: ScrollbarData[]) {
         this.scrollbarDataArray = scrollbarDataArray
         this.scrollbarDataArrayYear = []
-        let year: number | null = null
+        let currentYear: number | null = null
+        let lastDataForYear: ScrollbarData | null = null
+
         this.scrollbarDataArray.forEach((scrollbarData) => {
-          if (year !== scrollbarData.year) {
-            year = scrollbarData.year
-            this.scrollbarDataArrayYear.push(scrollbarData)
+          if (currentYear !== scrollbarData.year) {
+            if (lastDataForYear) {
+              this.scrollbarDataArrayYear.push(lastDataForYear)
+            }
+            currentYear = scrollbarData.year
           }
+          lastDataForYear = scrollbarData
         })
+
+        if (lastDataForYear) {
+          this.scrollbarDataArrayYear.push(lastDataForYear)
+        }
 
         this.initialized = true
       }
