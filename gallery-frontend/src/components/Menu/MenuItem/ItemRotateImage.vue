@@ -27,10 +27,8 @@ const rotateImage = async () => {
   try {
     await tryWithMessageStore(isolationId, async () => {
       messageStore.info('Rotating image...')
-
-      await axios.put('/put/rotate-image', { hash })
-
       editStore.incrementRotation(hash)
+      await axios.put('/put/rotate-image', { hash })
 
       messageStore.success('Image rotated successfully')
     })

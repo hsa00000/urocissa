@@ -59,6 +59,7 @@ import { useShareStore } from '@/store/shareStore'
 import { useTokenStore } from '@/store/tokenStore'
 import axios from 'axios'
 import { useMessageStore } from '@/store/messageStore'
+import { useEditStore } from '@/store/editStore'
 import { tryWithMessageStore } from '@/script/utils/try_catch'
 
 const props = defineProps<{
@@ -79,6 +80,7 @@ const modalStore = useModalStore('mainId')
 const constStore = useConstStore('mainId')
 const shareStore = useShareStore('mainId')
 const messageStore = useMessageStore('mainId')
+const editStore = useEditStore('mainId')
 const dataStore = useDataStore(props.isolationId)
 const route = useRoute()
 const router = useRouter()
@@ -218,6 +220,8 @@ const rotateImageHandler = async () => {
       messageStore.info('Rotating image...')
 
       await axios.put('/put/rotate-image', { hash })
+
+      editStore.incrementRotation(hash)
 
       messageStore.success('Image rotated successfully')
     }
