@@ -30,6 +30,8 @@ const rotateImage = async () => {
 
       await axios.put('/put/rotate-image', { hash })
 
+      editStore.incrementRotation(hash)
+
       messageStore.success('Image rotated successfully')
     })
   } finally {
