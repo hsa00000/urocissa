@@ -5,6 +5,7 @@
     variant="flat"
     persistent
     id="edit-album-overlay"
+    max-width="400"
   >
     <v-confirm-edit
       v-model="changedAlbums"
@@ -13,7 +14,7 @@
       @cancel="modalStore.showEditAlbumsModal = false"
     >
       <template #default="{ model: proxyModel, actions }">
-        <v-card class="mx-auto w-100" max-width="400" variant="elevated" retain-focus>
+        <v-card variant="elevated" retain-focus>
           <template #title>Edit&nbsp;Albums</template>
 
           <template #text>

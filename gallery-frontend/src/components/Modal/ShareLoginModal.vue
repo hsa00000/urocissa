@@ -1,6 +1,6 @@
 <template>
   <v-dialog v-model="modalStore.showShareLoginModal" persistent max-width="400">
-    <v-card class="mx-auto w-100" variant="elevated" retain-focus rounded="xl">
+    <v-card variant="elevated" retain-focus rounded="xl">
       <template #title>
         {{ shareStore.isLinkExpired ? 'Link Expired' : 'Password Required' }}
       </template>

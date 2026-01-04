@@ -6,6 +6,7 @@
     persistent
     variant="flat"
     rounded
+    max-width="400"
   >
     <v-confirm-edit
       v-model="dummy"
@@ -14,7 +15,7 @@
       @cancel="modalStore.showDeleteShareModal = false"
     >
       <template #default="{ actions }">
-        <v-card class="mx-auto w-100" max-width="400" variant="elevated" rounded="xl" retain-focus>
+        <v-card variant="elevated" rounded="xl" retain-focus>
           <template #title>Delete&nbsp;Link</template>
 
           <template #text>

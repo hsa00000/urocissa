@@ -5,6 +5,7 @@
     variant="flat"
     persistent
     id="edit-tag-overlay"
+    max-width="400"
   >
     <v-confirm-edit
       v-model="changedTagsArray"
@@ -13,7 +14,7 @@
       @cancel="modalStore.showEditTagsModal = false"
     >
       <template #default="{ model: proxyModel, actions }">
-        <v-card class="mx-auto w-100" max-width="400" variant="elevated" retain-focus>
+        <v-card variant="elevated" retain-focus>
           <template #title> Edit Tags </template>
           <template #text>
             <v-form v-model="formIsValid" @submit.prevent="submit" validate-on="input">

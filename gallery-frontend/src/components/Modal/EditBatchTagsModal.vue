@@ -5,6 +5,7 @@
     variant="flat"
     persistent
     id="batch-edit-tag-overlay"
+    max-width="400"
   >
     <v-confirm-edit
       v-model="changedTags"
@@ -13,7 +14,7 @@
       @cancel="modalStore.showBatchEditTagsModal = false"
     >
       <template #default="{ model: proxyModel, actions }">
-        <v-card class="mx-auto w-100" max-width="400" variant="elevated" retain-focus>
+        <v-card variant="elevated" retain-focus>
           <template #title>Edit&nbsp;Tags</template>
 
           <template #text>
