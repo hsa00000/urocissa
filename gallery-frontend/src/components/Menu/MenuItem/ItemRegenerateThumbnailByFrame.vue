@@ -37,19 +37,6 @@ const regenerateThumbnailByFrame = async () => {
         }
       })
 
-      // Refresh hash token and fetch with bearer token to bust cache
-      /*       await tokenStore.refreshHashTokenIfExpired(hash)
-      const hashToken = tokenStore.hashTokenMap.get(hash)
-      if (hashToken) {
-        await fetch(getSrc(hash, false, 'jpg', Date.now()), {
-          method: 'GET',
-          cache: 'reload',
-          headers: {
-            Authorization: `Bearer ${hashToken}`
-          }
-        })
-      } */
-
       messageStore.success('Regenerating thumbnail successfully')
       console.log('Response:', response.data)
     }
