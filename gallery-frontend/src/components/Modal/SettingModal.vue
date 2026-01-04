@@ -1,6 +1,6 @@
 <template>
-  <v-dialog v-model="modalStore.showSettingModal" id="setting-modal" variant="flat" rounded>
-    <v-card class="mx-auto w-100" max-width="400" variant="elevated" retain-focus>
+  <v-dialog v-model="modalStore.showSettingModal" id="setting-modal" variant="flat" rounded max-width="400">
+    <v-card variant="elevated" retain-focus>
       <v-card-title>Settings</v-card-title>
       <v-card-text class="pa-0">
         <v-table >
@@ -9,7 +9,7 @@
               <td>
                 <v-chip variant="text"> Thumbnail size </v-chip>
               </td>
-              <td style="width: 250px;">
+              <td>
                 <v-slider
                   show-ticks="always"
                   v-model="subRowHeightScaleValue"
@@ -30,7 +30,7 @@
               <td>
                 <v-chip variant="text"> Show Filename Chip </v-chip>
               </td>
-              <td style="width: 250px;">
+              <td>
                 <v-switch
                   :model-value="showFilenameChipValue"
                   @update:model-value="onShowFilenameChipUpdate"
@@ -65,7 +65,7 @@
                 </div>
               </td>
 
-              <td style="width: 250px">
+              <td>
                 <v-switch
                   :model-value="viewBarOverlayValue"
                   @update:model-value="onViewBarOverlayUpdate"
