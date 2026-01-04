@@ -4,23 +4,31 @@ import { defineStore } from 'pinia'
 export const useEditStore = (isolationId: IsolationId) =>
   defineStore('editStore' + isolationId, {
     state: (): {
-      processingRotate: Set<string>
       processingRegenerate: Set<string>
       rotationCounts: Map<string, number>
+      rotationQueue: Map<string, Promise<void>>
     } => ({
-      processingRotate: new Set(),
       processingRegenerate: new Set(),
-      rotationCounts: new Map()
+      rotationCounts: new Map(),
+      rotationQueue: new Map()
     }),
     actions: {
-      addRotate(hash: string) {
-        this.processingRotate.add(hash)
-      },
-      removeRotate(hash: string) {
-        this.processingRotate.delete(hash)
-      },
-      hasRotate(hash: string) {
-        return this.processingRotate.has(hash)
+      async queueRotate(hash: string, task: () => Promise<void>) {
+        // Get the current promise chain for this hash, or start a new one
+        const previousTask = this.rotationQueue.get(hash) || Promise.resolve()
+
+        // Chain the new task to run after the previous one completes
+        const newTask = previousTask
+          .then(() => task())
+          .catch((error) => {
+            console.error(`Rotation task failed for hash ${hash}:`, error)
+          })
+
+        // Update the queue with the new tail of the chain
+        this.rotationQueue.set(hash, newTask)
+
+        // Wait for this specific task to finish (optional, depending on if caller needs to await)
+        await newTask
       },
       addRegenerate(hash: string) {
         this.processingRegenerate.add(hash)

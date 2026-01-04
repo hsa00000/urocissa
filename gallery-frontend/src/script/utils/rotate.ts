@@ -1,5 +1,4 @@
 import axios from 'axios'
-import { useMessageStore } from '@/store/messageStore'
 import { useEditStore } from '@/store/editStore'
 import { tryWithMessageStore } from '@/script/utils/try_catch'
 import { IsolationId } from '@/type/types'
@@ -12,23 +11,21 @@ export const handleRotateImage = async (
   hash: string,
   isolationId: IsolationId
 ): Promise<void> => {
-  const messageStore = useMessageStore('mainId')
   const editStore = useEditStore('mainId')
 
-  if (editStore.hasRotate(hash)) return
+  // 1. Optimistic Update (Immediate visual feedback)
+  editStore.incrementRotation(hash)
 
-  editStore.addRotate(hash)
-  try {
+  // 2. Queue Backend Request (Serialized execution)
+  // We use the queue to ensure requests are processed in order (1 -> 2 -> 3)
+  // even if the user clicks rapidly. This prevents race conditions on the backend.
+  await editStore.queueRotate(hash, async () => {
     await tryWithMessageStore(isolationId, async () => {
-      messageStore.info('Rotating image...')
+      // messageStore.info('Rotating image...') // Optional: Commented out to reduce spam on rapid clicks
 
       await axios.put('/put/rotate-image', { hash })
 
-      editStore.incrementRotation(hash)
-
-      messageStore.success('Image rotated successfully')
+      // messageStore.success('Image rotated successfully') // Optional
     })
-  } finally {
-    editStore.removeRotate(hash)
-  }
+  })
 }
