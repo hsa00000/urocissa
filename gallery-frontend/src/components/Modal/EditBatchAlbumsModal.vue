@@ -106,29 +106,26 @@
 
 <script setup lang="ts">
 import { ref, watch, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { isNavigationFailure, NavigationFailureType } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useModalStore } from '@/store/modalStore'
 import { useCollectionStore } from '@/store/collectionStore'
 import { useAlbumStore } from '@/store/albumStore'
 import { getIsolationIdByRoute } from '@utils/getter'
-import { createNonEmptyAlbum } from '@utils/createAlbums'
-import { navigateToAlbum } from '@/route/navigator'
+import { useCreateAlbumAction } from '@/script/hook/useCreateAlbumAction'
 import type { AlbumInfo } from '@type/types'
 import type { VForm } from 'vuetify/components'
 import { editAlbums } from '@/api/editAlbums'
 
 const route = useRoute()
-const router = useRouter()
 const isolationId = getIsolationIdByRoute(route)
 
 const modalStore = useModalStore('mainId')
 const collectionStore = useCollectionStore(isolationId)
 const albumStore = useAlbumStore(isolationId)
+const { loading, createAndNavigate } = useCreateAlbumAction()
 
 const formRef = ref<VForm | null>(null)
 const formIsValid = ref(false)
-const loading = ref(false)
 
 interface ChangedAlbums {
   add: AlbumInfo[]
@@ -166,34 +163,12 @@ onMounted(() => {
 })
 
 const createNonEmptyAlbumWithLoading = async () => {
-  loading.value = true
-  try {
-    const newAlbumId = await createNonEmptyAlbum(
-      [...collectionStore.editModeCollection],
-      isolationId
-    )
-
-    if (typeof newAlbumId === 'string' && newAlbumId.length > 0) {
-      // Close states that might block navigation first
-      modalStore.showBatchEditAlbumsModal = false
-      collectionStore.editModeOn = false
-
-      try {
-        const failure = await navigateToAlbum(newAlbumId, router)
-
-        if (isNavigationFailure(failure, NavigationFailureType.aborted)) {
-          console.warn('Navigation aborted:', failure)
-        } else if (isNavigationFailure(failure, NavigationFailureType.cancelled)) {
-          console.warn('Navigation cancelled:', failure)
-        }
-      } catch (err) {
-        console.error('navigateToAlbum threw:', err)
-      }
-    }
-  } finally {
-    loading.value = false
-  }
+  await createAndNavigate([...collectionStore.editModeCollection], isolationId, () => {
+    modalStore.showBatchEditAlbumsModal = false
+    collectionStore.editModeOn = false
+  })
 }
+
 
 watch(
   () => [changedAlbums.value.add, changedAlbums.value.remove],

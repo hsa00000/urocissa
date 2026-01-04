@@ -29,7 +29,44 @@
                 variant="outlined"
                 closable-chips
                 return-object
-              />
+              >
+                <template #prepend-item v-if="albumStore.albums.size > 0">
+                  <v-list-item value="" @click.stop.prevent="createNonEmptyAlbumWithLoading">
+                    <template #prepend>
+                      <v-list-item-action>
+                        <v-btn
+                          v-if="!loading"
+                          color="transparent"
+                          icon="mdi-plus"
+                          density="comfortable"
+                          flat
+                        />
+                        <v-btn v-else color="transparent" icon density="comfortable" flat>
+                          <v-progress-circular indeterminate size="24" />
+                        </v-btn>
+                      </v-list-item-action>
+                      <v-list-item-title class="wrap"> Create New Album </v-list-item-title>
+                    </template>
+                  </v-list-item>
+                  <v-divider />
+                </template>
+
+                <template #no-data v-else>
+                  <v-list-item value="" @click.stop.prevent="createNonEmptyAlbumWithLoading">
+                    <template #prepend>
+                      <v-list-item-action>
+                        <v-btn
+                          color="transparent"
+                          icon="mdi-plus"
+                          density="comfortable"
+                          flat
+                        />
+                      </v-list-item-action>
+                      <v-list-item-title class="wrap"> Create New Album </v-list-item-title>
+                    </template>
+                  </v-list-item>
+                </template>
+              </v-select>
             </v-form>
           </template>
 
@@ -53,14 +90,18 @@ import { useAlbumStore } from '@/store/albumStore'
 import type { AlbumInfo } from '@type/types'
 import { getHashIndexDataFromRoute, getIsolationIdByRoute } from '@utils/getter'
 import { editAlbums } from '@/api/editAlbums'
+import { useCreateAlbumAction } from '@/script/hook/useCreateAlbumAction'
 
 const formIsValid = ref(false)
 const changedAlbums = ref<AlbumInfo[]>([])
 const submit = ref<(() => Promise<void>) | undefined>()
+const currentItemIndex = ref<number | undefined>(undefined)
 
 const route = useRoute()
 const modalStore = useModalStore('mainId')
 const albumStore = useAlbumStore('mainId')
+const { loading, createAndNavigate } = useCreateAlbumAction()
+
 
 const albumItems = computed<AlbumInfo[]>(() =>
   [...albumStore.albums.values()].map((a) => structuredClone(toRaw(a)))
@@ -75,6 +116,7 @@ onMounted(() => {
     }
 
     const { index, data } = parsed
+    currentItemIndex.value = index
     if (data.type !== 'image' && data.type !== 'video') {
       console.error("initSubmit: 'data' is not an image or video.")
       return
@@ -107,4 +149,12 @@ onMounted(() => {
 
   submit.value = initSubmit()
 })
+
+const createNonEmptyAlbumWithLoading = async () => {
+  if (currentItemIndex.value === undefined) return
+  const isolationId = getIsolationIdByRoute(route)
+  await createAndNavigate([currentItemIndex.value], isolationId, () => {
+    modalStore.showEditAlbumsModal = false
+  })
+}
 </script>
