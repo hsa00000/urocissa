@@ -39,6 +39,42 @@
                 ></v-switch>
               </td>
             </tr>
+            <tr>
+              <td>
+                <div class="d-flex align-center">
+                  <v-chip variant="text" class="pr-2"> ViewBar Overlay </v-chip>
+
+                  <v-tooltip location="top" max-width="300">
+                    <template v-slot:activator="{ props }">
+                      <v-icon
+                        v-bind="props"
+                        icon="mdi-alert-circle-outline"
+                        size="small"
+                        color="medium-emphasis"
+                        style="cursor: help"
+                      ></v-icon>
+                    </template>
+
+                    <span>
+                      <b>When viewing photos:</b><br />
+                      <b>On:</b> The navigation bar overlays the image.<br />
+                      <b>Off:</b> The image is pushed down to prevent
+                      obstruction.
+                    </span>
+                  </v-tooltip>
+                </div>
+              </td>
+
+              <td style="width: 250px">
+                <v-switch
+                  :model-value="viewBarOverlayValue"
+                  @update:model-value="onViewBarOverlayUpdate"
+                  :disabled="!initializedStore.initialized"
+                  hide-details
+                ></v-switch>
+              </td>
+            </tr>
+
           </tbody>
         </v-table>
       </v-card-text>
@@ -96,5 +132,21 @@ const onShowFilenameChipUpdate = (newValue: boolean | null) => {
     console.error('Failed to update showFilenameChip:', error)
   })
 }
+
+const viewBarOverlayValue = computed<boolean>({
+  get: () => constStore.viewBarOverlay,
+  set: (newVal: boolean | null) => {
+    if (newVal !== null) {
+      constStore.updateViewBarOverlay(newVal)
+    }
+  }
+})
+
+const onViewBarOverlayUpdate = (newValue: boolean | null) => {
+  if (newValue !== null) {
+    constStore.updateViewBarOverlay(newValue)
+  }
+}
+
 
 </script>

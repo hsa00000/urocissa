@@ -1,6 +1,11 @@
 <template>
   <v-toolbar
-    class="position-absolute my-toolbar"
+    :class="[
+      { 'position-absolute': constStore.viewBarOverlay },
+      { 'my-toolbar': constStore.viewBarOverlay },
+      { 'push-mode': !constStore.viewBarOverlay },
+      { 'bg-surface-light': !constStore.viewBarOverlay }
+    ]"
     :style="{
       paddingTop: '2px'
     }"
@@ -66,18 +71,29 @@ import LeaveView from '@Menu/MenuButton/BtnLeaveView.vue'
 import ShowInfo from '@Menu/MenuButton/BtnShowInfo.vue'
 import { useRoute } from 'vue-router'
 import { useShareStore } from '@/store/shareStore'
+import { onMounted } from 'vue'
+import { useConstStore } from '@/store/constStore'
 
 const route = useRoute()
 const shareStore = useShareStore('mainId')
 
-const share = shareStore.resolvedShare?.share ?? null
-
-defineProps<{
+const props = defineProps<{
   isolationId: IsolationId
   hash: string
   index: number
   abstractData: EnrichedUnifiedData | undefined
 }>()
+
+// Use props.isolationId for constStore to support multi-window isolation if needed,
+// though constStore is usually global 'mainId' in other files, but here we can stick to props or mainId.
+// The TODO example used props.isolationId.
+const constStore = useConstStore(props.isolationId)
+
+onMounted(() => {
+  constStore.loadViewBarOverlay()
+})
+
+const share = shareStore.resolvedShare?.share ?? null
 </script>
 <style scoped>
 .my-toolbar {
