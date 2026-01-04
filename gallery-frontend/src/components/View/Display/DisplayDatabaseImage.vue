@@ -9,7 +9,8 @@
       maxWidth: isVertical ? '100cqh' : '100%',
       maxHeight: isVertical ? '100cqw' : '100%',
       objectFit: 'scale-down',
-      transform: `rotate(${-(editStore.rotationCounts.get(abstractData?.id ?? '') ?? 0) * 90}deg)`
+      transform: `rotate(${-(editStore.rotationCounts.get(abstractData?.id ?? '') ?? 0) * 90}deg)`,
+      transition: 'transform 0.3s ease'
     }"
   />
 </template>
