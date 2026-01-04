@@ -17,7 +17,7 @@
     "@vueuse/core": "^14.1.0",
     "axios": "^1.13.2",
     "axios-retry": "^4.5.0",
-    "chevrotain": "^11.0.3",
+    "chevrotain": "^11.1.0",
     "delay": "^7.0.0",
     "file-saver": "^2.0.5",
     "filesize": "^11.0.13",
