@@ -101,15 +101,15 @@ To instantly set up and try Urocissa using Docker on Linux, follow these steps:
    Start by cloning the Urocissa repository from GitHub:
 
    ```bash
-   git clone https://github.com/hsa00000/Urocissa.git
+   git clone https://github.com/hsa00000/urocissa.git
    ```
 
 2. **Navigate to the Project Directory**
 
-   Enter the newly created `Urocissa` directory:
+   Enter the newly created `urocissa` directory:
 
    ```bash
-   cd Urocissa
+   cd urocissa
    ```
 
 3. **Run the Launch Script**

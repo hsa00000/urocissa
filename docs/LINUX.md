@@ -5,10 +5,10 @@ Follow these steps to set up and run the Urocissa app on Linux-based systems. Fo
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/hsa00000/Urocissa.git
+git clone https://github.com/hsa00000/urocissa.git
 ```
 
-This will create a folder called `./Urocissa`.
+This will create a folder called `./urocissa`.
 
 ---
 
@@ -80,7 +80,7 @@ git pull
 1. Navigate to the `gallery-frontend` directory:
 
    ```bash
-   cd ./Urocissa/gallery-frontend
+   cd ./urocissa/gallery-frontend
    ```
 
 2. Build the frontend:
@@ -94,7 +94,7 @@ git pull
 1. Navigate to the `gallery-backend` directory:
 
    ```bash
-   cd ./Urocissa/gallery-backend
+   cd ./urocissa/gallery-backend
    ```
 
 2. Build and run the backend using Cargo:
