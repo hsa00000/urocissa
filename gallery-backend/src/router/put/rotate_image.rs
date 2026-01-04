@@ -1,4 +1,3 @@
-use crate::operations::indexation::generate_dynamic_image::generate_dynamic_image;
 use crate::operations::indexation::generate_image_hash::{generate_phash, generate_thumbhash};
 use crate::operations::indexation::generate_thumbnail::generate_thumbnail_for_image;
 use crate::operations::open_db::open_data_table;
@@ -35,7 +34,7 @@ pub async fn rotate_image(
     let hash = ArrayString::<64>::from(&request.hash)
         .map_err(|_| anyhow!("Invalid hash length or format"))?;
 
-    let abstract_data = tokio::task::spawn_blocking(move || -> Result<AbstractData> {
+    let abstract_data = tokio::task::spawn_blocking(move || -> Result<Vec<AbstractData>> {
         let data_table = open_data_table();
         let access_guard = data_table
             .get(&*hash)
@@ -71,13 +70,28 @@ pub async fn rotate_image(
         abstract_data.set_phash(generate_phash(&dyn_img));
         abstract_data.update_update_at();
 
-        Ok(abstract_data)
+        let album_ids: Vec<_> = abstract_data
+            .albums()
+            .map(|albums| albums.iter().cloned().collect())
+            .unwrap_or_default();
+
+        let mut result_vec = vec![abstract_data];
+
+        for album_id in album_ids {
+            if let Ok(Some(access_guard)) = data_table.get(album_id.as_str()) {
+                let mut album = access_guard.value();
+                album.update_update_at();
+                result_vec.push(album);
+            }
+        }
+
+        Ok(result_vec)
     })
     .await
     .context("Failed to spawn blocking task")??;
 
     INDEX_COORDINATOR
-        .execute_batch_waiting(FlushTreeTask::insert(vec![abstract_data]))
+        .execute_batch_waiting(FlushTreeTask::insert(abstract_data))
         .await
         .context("Failed to execute FlushTreeTask")?;
 
