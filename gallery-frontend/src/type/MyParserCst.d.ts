@@ -76,7 +76,8 @@ export interface TagExpressionCstNode extends CstNode {
 
 export type TagExpressionCstChildren = {
   Tag: IToken[];
-  Identifier: IToken[];
+  Identifier?: IToken[];
+  BooleanValue?: IToken[];
 };
 
 export interface TypeExpressionCstNode extends CstNode {
@@ -106,7 +107,8 @@ export interface MakeExpressionCstNode extends CstNode {
 
 export type MakeExpressionCstChildren = {
   Makel: IToken[];
-  Identifier: IToken[];
+  Identifier?: IToken[];
+  BooleanValue?: IToken[];
 };
 
 export interface ModelExpressionCstNode extends CstNode {
@@ -116,7 +118,8 @@ export interface ModelExpressionCstNode extends CstNode {
 
 export type ModelExpressionCstChildren = {
   Model: IToken[];
-  Identifier: IToken[];
+  Identifier?: IToken[];
+  BooleanValue?: IToken[];
 };
 
 export interface AlbumExpressionCstNode extends CstNode {
@@ -126,7 +129,8 @@ export interface AlbumExpressionCstNode extends CstNode {
 
 export type AlbumExpressionCstChildren = {
   Album: IToken[];
-  Identifier: IToken[];
+  Identifier?: IToken[];
+  BooleanValue?: IToken[];
 };
 
 export interface PathExpressionCstNode extends CstNode {

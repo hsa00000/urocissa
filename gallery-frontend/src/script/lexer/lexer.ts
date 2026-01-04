@@ -146,7 +146,10 @@ export class MyParser extends CstParser {
 
   public tagExpression = this.RULE('tagExpression', () => {
     this.CONSUME1(Tag)
-    this.CONSUME2(Identifier)
+    this.OR([
+      { ALT: () => this.CONSUME(Identifier) },
+      { ALT: () => this.CONSUME(BooleanValue) }
+    ])
   })
 
   public typeExpression = this.RULE('typeExpression', () => {
@@ -159,15 +162,24 @@ export class MyParser extends CstParser {
   })
   public makeExpression = this.RULE('makeExpression', () => {
     this.CONSUME1(Make)
-    this.CONSUME2(Identifier)
+    this.OR([
+      { ALT: () => this.CONSUME(Identifier) },
+      { ALT: () => this.CONSUME(BooleanValue) }
+    ])
   })
   public modelExpression = this.RULE('modelExpression', () => {
     this.CONSUME1(Model)
-    this.CONSUME2(Identifier)
+    this.OR([
+      { ALT: () => this.CONSUME(Identifier) },
+      { ALT: () => this.CONSUME(BooleanValue) }
+    ])
   })
   public albumExpression = this.RULE('albumExpression', () => {
     this.CONSUME1(Album)
-    this.CONSUME2(Identifier)
+    this.OR([
+      { ALT: () => this.CONSUME(Identifier) },
+      { ALT: () => this.CONSUME(BooleanValue) }
+    ])
   })
   public pathExpression = this.RULE('pathExpression', () => {
     this.CONSUME1(Path)
@@ -271,7 +283,12 @@ export class MyVisitor extends BaseVisitor {
 
   // Visit a tagExpression node
   tagExpression(children: TagExpressionCstChildren) {
-    return { Tag: unescapeAndUnwrap(getArrayValue(children.Identifier, 0).image) }
+    if (children.Identifier) {
+      return { Tag: unescapeAndUnwrap(getArrayValue(children.Identifier, 0).image) }
+    }
+    if (children.BooleanValue) {
+      return { Tag: getArrayValue(children.BooleanValue, 0).image === 'true' }
+    }
   }
 
   typeExpression(children: TypeExpressionCstChildren) {
@@ -282,13 +299,28 @@ export class MyVisitor extends BaseVisitor {
     return { Ext: unescapeAndUnwrap(getArrayValue(children.Identifier, 0).image) }
   }
   makeExpression(children: MakeExpressionCstChildren) {
-    return { Make: unescapeAndUnwrap(getArrayValue(children.Identifier, 0).image) }
+    if (children.Identifier) {
+      return { Make: unescapeAndUnwrap(getArrayValue(children.Identifier, 0).image) }
+    }
+    if (children.BooleanValue) {
+      return { Make: getArrayValue(children.BooleanValue, 0).image === 'true' }
+    }
   }
   modelExpression(children: ModelExpressionCstChildren) {
-    return { Model: unescapeAndUnwrap(getArrayValue(children.Identifier, 0).image) }
+    if (children.Identifier) {
+      return { Model: unescapeAndUnwrap(getArrayValue(children.Identifier, 0).image) }
+    }
+    if (children.BooleanValue) {
+      return { Model: getArrayValue(children.BooleanValue, 0).image === 'true' }
+    }
   }
   albumExpression(children: AlbumExpressionCstChildren) {
-    return { Album: unescapeAndUnwrap(getArrayValue(children.Identifier, 0).image) }
+    if (children.Identifier) {
+      return { Album: unescapeAndUnwrap(getArrayValue(children.Identifier, 0).image) }
+    }
+    if (children.BooleanValue) {
+      return { Album: getArrayValue(children.BooleanValue, 0).image === 'true' }
+    }
   }
   pathExpression(children: PathExpressionCstChildren) {
     return { Path: unescapeAndUnwrap(getArrayValue(children.Identifier, 0).image) }

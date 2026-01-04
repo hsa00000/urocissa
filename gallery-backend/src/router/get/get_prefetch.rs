@@ -3,8 +3,8 @@ use crate::public::db::tree::TREE;
 use crate::public::db::tree::VERSION_COUNT_TIMESTAMP;
 use crate::public::db::tree_snapshot::TREE_SNAPSHOT;
 use crate::public::structure::album::ResolvedShare;
+use crate::public::structure::expression::{AlbumFilterValue, Expression};
 use crate::public::structure::response::database_timestamp::DatabaseTimestamp;
-use crate::public::structure::expression::Expression;
 use crate::public::structure::response::reduced_data::ReducedData;
 use crate::router::AppResult;
 use crate::router::GuardResult;
@@ -17,6 +17,7 @@ use crate::tasks::batcher::flush_tree_snapshot::FlushTreeSnapshotTask;
 
 use anyhow::{Result, anyhow};
 use bitcode::{Decode, Encode};
+use chrono::Utc;
 use log::info;
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
 use rocket::serde::json::Json;
@@ -26,7 +27,6 @@ use std::hash::{DefaultHasher, Hash};
 use std::mem;
 use std::sync::atomic::Ordering;
 use std::time::Instant;
-use chrono::Utc;
 
 #[derive(Debug, Clone, Copy, Deserialize, Serialize, Decode, Encode)]
 #[serde(rename_all = "camelCase")]
@@ -290,7 +290,8 @@ pub async fn prefetch(
     let resolved_share_option = auth_guard.claims.get_share();
 
     if let Some(resolved_share) = &resolved_share_option {
-        let album_filter_expression = Expression::Album(resolved_share.album_id);
+        let album_filter_expression =
+            Expression::Album(AlbumFilterValue::Value(resolved_share.album_id));
 
         combined_expression_option = Some(match combined_expression_option {
             Some(client_expression) => {
