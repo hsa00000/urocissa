@@ -1,4 +1,3 @@
-use anyhow::anyhow;
 use jsonwebtoken::{DecodingKey, decode};
 use log::warn;
 use rocket::Request;
@@ -11,10 +10,12 @@ use crate::router::claims::claims_timestamp::ClaimsTimestamp;
 use crate::router::fairing::VALIDATION;
 use crate::public::structure::config::APP_CONFIG;
 use crate::router::{AppResult, GuardError, GuardResult};
+use crate::public::error::{AppError, ErrorKind, ResultExt}; // Import AppError stuff
 
 use super::VALIDATION_ALLOW_EXPIRED;
 use super::auth_utils::{extract_bearer_token, my_decode_token};
 use super::guard_share::GuardShare;
+
 pub struct GuardTimestamp {
     pub claims: ClaimsTimestamp,
 }
@@ -26,12 +27,18 @@ impl<'r> FromRequest<'r> for GuardTimestamp {
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         let token = match extract_bearer_token(req) {
             Ok(token) => token,
-            Err(err) => return Outcome::Error((Status::Unauthorized, err.into())),
+            Err(err) => return Outcome::Error((
+                Status::Unauthorized,
+                AppError::from_err(ErrorKind::Auth, err)
+            )),
         };
 
         let claims: ClaimsTimestamp = match my_decode_token(token, &VALIDATION) {
             Ok(claims) => claims,
-            Err(err) => return Outcome::Error((Status::Unauthorized, err.into())),
+            Err(err) => return Outcome::Error((
+                Status::Unauthorized,
+                AppError::from_err(ErrorKind::Auth, err)
+            )),
         };
 
         let query_timestamp = req.uri().query().and_then(|query| {
@@ -46,7 +53,7 @@ impl<'r> FromRequest<'r> for GuardTimestamp {
             None => {
                 return Outcome::Error((
                     Status::Unauthorized,
-                    anyhow!("No valid 'timestamp' parameter found in the query").into(),
+                    AppError::new(ErrorKind::Auth, "No valid 'timestamp' parameter found in the query"),
                 ));
             }
         };
@@ -56,7 +63,7 @@ impl<'r> FromRequest<'r> for GuardTimestamp {
                 "Timestamp does not match; received: {}; expected: {}",
                 query_timestamp, claims.timestamp
             );
-            return Outcome::Error((Status::Unauthorized, anyhow!("Timestamp mismatch").into()));
+            return Outcome::Error((Status::Unauthorized, AppError::new(ErrorKind::Auth, "Timestamp mismatch")));
         }
 
         Outcome::Success(GuardTimestamp { claims })
@@ -98,7 +105,7 @@ pub async fn renew_timestamp_token(
                     "Token renewal failed: unable to decode token, error: {:#?}",
                     err
                 );
-                return Err(anyhow::anyhow!("Unauthorized: Invalid token").into());
+                return Err(AppError::new(ErrorKind::Auth, "Unauthorized: Invalid token"));
             }
         };
 
@@ -109,5 +116,5 @@ pub async fn renew_timestamp_token(
         Ok(Json(RenewTimestampTokenReturn { token: new_token }))
     })
     .await
-    .unwrap()
+    .or_raise(|| (ErrorKind::Internal, "Failed to join blocking task"))?
 }

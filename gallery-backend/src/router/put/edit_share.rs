@@ -6,6 +6,7 @@ use crate::router::fairing::guard_auth::GuardAuth;
 use crate::router::fairing::guard_read_only_mode::GuardReadOnlyMode;
 use crate::tasks::BATCH_COORDINATOR;
 use crate::tasks::batcher::update_tree::UpdateTreeTask;
+use crate::public::error::{AppError, ErrorKind, ResultExt};
 use crate::{public::constant::redb::DATA_TABLE, router::AppResult};
 
 use arrayvec::ArrayString;
@@ -26,14 +27,14 @@ pub async fn edit_share(
 ) -> AppResult<()> {
     let _ = auth?;
     let _ = read_only_mode?;
-    tokio::task::spawn_blocking(move || {
-        let txn = TREE.in_disk.begin_write().unwrap();
+    tokio::task::spawn_blocking(move || -> Result<(), AppError> {
+        let txn = TREE.in_disk.begin_write().or_raise(|| (ErrorKind::Database, "Failed to begin transaction"))?;
         {
-            let mut data_table = txn.open_table(DATA_TABLE).unwrap();
+            let mut data_table = txn.open_table(DATA_TABLE).or_raise(|| (ErrorKind::Database, "Failed to open data table"))?;
 
             let album_opt = data_table
                 .get(json_data.album_id.as_str())
-                .unwrap()
+                .or_raise(|| (ErrorKind::Database, "Failed to get album"))?
                 .and_then(|guard| {
                     let abstract_data = guard.value();
                     match abstract_data {
@@ -48,17 +49,18 @@ pub async fn edit_share(
                     .insert(json_data.share.url, json_data.share.clone());
                 data_table
                     .insert(json_data.album_id.as_str(), AbstractData::Album(album))
-                    .unwrap();
+                    .or_raise(|| (ErrorKind::Database, "Failed to update album"))?;
             }
         }
-        txn.commit().unwrap();
+        txn.commit().or_raise(|| (ErrorKind::Database, "Failed to commit transaction"))?;
+        Ok(())
     })
     .await
-    .unwrap();
+    .or_raise(|| (ErrorKind::Internal, "Failed to join blocking task"))??;
     BATCH_COORDINATOR
         .execute_batch_waiting(UpdateTreeTask)
         .await
-        .unwrap();
+        .or_raise(|| (ErrorKind::Internal, "Failed to update tree"))?;
     Ok(())
 }
 
@@ -77,14 +79,14 @@ pub async fn delete_share(
 ) -> AppResult<()> {
     let _ = auth?;
     let _ = read_only_mode?;
-    tokio::task::spawn_blocking(move || {
-        let txn = TREE.in_disk.begin_write().unwrap();
+    tokio::task::spawn_blocking(move || -> Result<(), AppError> {
+        let txn = TREE.in_disk.begin_write().or_raise(|| (ErrorKind::Database, "Failed to begin transaction"))?;
         {
-            let mut data_table = txn.open_table(DATA_TABLE).unwrap();
+            let mut data_table = txn.open_table(DATA_TABLE).or_raise(|| (ErrorKind::Database, "Failed to open data table"))?;
 
             let album_opt = data_table
                 .get(json_data.album_id.as_str())
-                .unwrap()
+                .or_raise(|| (ErrorKind::Database, "Failed to get album"))?
                 .and_then(|guard| {
                     let abstract_data = guard.value();
                     match abstract_data {
@@ -97,16 +99,18 @@ pub async fn delete_share(
                 album.metadata.share_list.remove(&json_data.share_id);
                 data_table
                     .insert(json_data.album_id.as_str(), AbstractData::Album(album))
-                    .unwrap();
+                    .or_raise(|| (ErrorKind::Database, "Failed to update album"))?;
             }
         }
-        txn.commit().unwrap();
+        txn.commit().or_raise(|| (ErrorKind::Database, "Failed to commit transaction"))?;
+        Ok(())
     })
     .await
-    .unwrap();
+    .or_raise(|| (ErrorKind::Internal, "Failed to join blocking task"))??;
     BATCH_COORDINATOR
         .execute_batch_waiting(UpdateTreeTask)
         .await
-        .unwrap();
+        .or_raise(|| (ErrorKind::Internal, "Failed to update tree"))?;
     Ok(())
 }
+

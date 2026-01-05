@@ -4,10 +4,11 @@ use rocket::request::{FromRequest, Outcome};
 
 use super::VALIDATION;
 use super::auth_utils::{
-    ShareError, try_jwt_cookie_auth, try_resolve_share_from_headers, try_resolve_share_from_query,
+    try_jwt_cookie_auth, try_resolve_share_from_headers, try_resolve_share_from_query,
 };
 use crate::router::GuardError;
 use crate::router::claims::claims::Claims;
+use crate::public::error::{AppError, ErrorKind};
 
 pub struct GuardShare {
     pub claims: Claims,
@@ -23,24 +24,8 @@ impl<'r> FromRequest<'r> for GuardShare {
             Ok(Some(claims)) => return Outcome::Success(GuardShare { claims }),
             Ok(None) => {} // No share headers, continue
             Err(err) => {
-                let status = match err {
-                    ShareError::Unauthorized => Status::Unauthorized,
-                    ShareError::Expired => Status::Forbidden,
-                    ShareError::Internal(_) => Status::InternalServerError,
-                };
-
-                let err_msg = match err {
-                    ShareError::Internal(e) => e,
-                    _ => anyhow::anyhow!("Share authentication failed: {:?}", err),
-                };
-
-                return Outcome::Error((
-                    status,
-                    GuardError {
-                        status,
-                        error: err_msg,
-                    },
-                ));
+                let status = err.http_status();
+                return Outcome::Error((status, err));
             }
         }
 
@@ -49,24 +34,8 @@ impl<'r> FromRequest<'r> for GuardShare {
             Ok(Some(claims)) => return Outcome::Success(GuardShare { claims }),
             Ok(None) => {}
             Err(err) => {
-                let status = match err {
-                    ShareError::Unauthorized => Status::Unauthorized,
-                    ShareError::Expired => Status::Forbidden,
-                    ShareError::Internal(_) => Status::InternalServerError,
-                };
-
-                let err_msg = match err {
-                    ShareError::Internal(e) => e,
-                    _ => anyhow::anyhow!("Share authentication failed: {:?}", err),
-                };
-
-                return Outcome::Error((
-                    status,
-                    GuardError {
-                        status,
-                        error: err_msg,
-                    },
-                ));
+                let status = err.http_status();
+                return Outcome::Error((status, err));
             }
         }
 
@@ -76,12 +45,11 @@ impl<'r> FromRequest<'r> for GuardShare {
             Err(err) => {
                 return Outcome::Error((
                     Status::Unauthorized,
-                    GuardError {
-                        status: Status::Unauthorized,
-                        error: err.context("Authentication error"),
-                    },
+                    AppError::from_err(ErrorKind::Auth, err)
+                        .context("Authentication error")
                 ));
             }
         }
     }
 }
+

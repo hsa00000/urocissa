@@ -10,8 +10,8 @@ use crate::router::claims::claims_hash::ClaimsHash;
 use crate::router::claims::claims_timestamp::ClaimsTimestamp;
 use crate::router::fairing::VALIDATION;
 use crate::public::structure::config::APP_CONFIG;
-use crate::router::{AppResult, GuardError};
-use anyhow::anyhow;
+use crate::router::GuardError;
+use crate::public::error::{AppError, ErrorKind, ResultExt}; // Import AppError stuff
 use serde::{Deserialize, Serialize};
 
 use super::VALIDATION_ALLOW_EXPIRED;
@@ -29,7 +29,8 @@ impl<'r> FromRequest<'r> for GuardHash {
             Err(err) => {
                 return Outcome::Error((
                     Status::Unauthorized,
-                    err.context("Bearer token extraction failed").into(),
+                    AppError::from_err(ErrorKind::Auth, err)
+                        .context("Bearer token extraction failed"),
                 ));
             }
         };
@@ -39,7 +40,8 @@ impl<'r> FromRequest<'r> for GuardHash {
             Err(err) => {
                 return Outcome::Error((
                     Status::Unauthorized,
-                    err.context("JWT decoding failed").into(),
+                    AppError::from_err(ErrorKind::Auth, err)
+                        .context("JWT decoding failed"),
                 ));
             }
         };
@@ -49,7 +51,8 @@ impl<'r> FromRequest<'r> for GuardHash {
             Err(err) => {
                 return Outcome::Error((
                     Status::Unauthorized,
-                    err.context("Hash extraction failed").into(),
+                    AppError::from_err(ErrorKind::Auth, err)
+                        .context("Hash extraction failed"),
                 ));
             }
         };
@@ -60,7 +63,10 @@ impl<'r> FromRequest<'r> for GuardHash {
                 "Hash does not match. Received: {}, Expected: {}.",
                 data_hash, claims.hash
             );
-            return Outcome::Error((Status::Unauthorized, anyhow!("Hash does not match").into()));
+            return Outcome::Error((
+                Status::Unauthorized, 
+                AppError::new(ErrorKind::Auth, "Hash does not match")
+            ));
         }
         Outcome::Success(GuardHash)
     }
@@ -78,7 +84,8 @@ impl<'r> FromRequest<'r> for GuardHashOriginal {
             Err(err) => {
                 return Outcome::Error((
                     Status::Unauthorized,
-                    err.context("Bearer token extraction failed").into(),
+                    AppError::from_err(ErrorKind::Auth, err)
+                        .context("Bearer token extraction failed"),
                 ));
             }
         };
@@ -88,7 +95,8 @@ impl<'r> FromRequest<'r> for GuardHashOriginal {
             Err(err) => {
                 return Outcome::Error((
                     Status::Unauthorized,
-                    err.context("JWT decoding failed").into(),
+                    AppError::from_err(ErrorKind::Auth, err)
+                        .context("JWT decoding failed"),
                 ));
             }
         };
@@ -103,7 +111,8 @@ impl<'r> FromRequest<'r> for GuardHashOriginal {
             Err(err) => {
                 return Outcome::Error((
                     Status::Unauthorized,
-                    err.context("Hash extraction failed").into(),
+                    AppError::from_err(ErrorKind::Auth, err)
+                        .context("Hash extraction failed"),
                 ));
             }
         };
@@ -114,7 +123,10 @@ impl<'r> FromRequest<'r> for GuardHashOriginal {
                 "Hash does not match. Received: {}, Expected: {}.",
                 data_hash, claims.hash
             );
-            return Outcome::Error((Status::Unauthorized, anyhow!("Hash does not match").into()));
+             return Outcome::Error((
+                Status::Unauthorized, 
+                AppError::new(ErrorKind::Auth, "Hash does not match")
+            ));
         }
         Outcome::Success(GuardHashOriginal)
     }
@@ -131,6 +143,8 @@ pub struct RenewHashToken {
 pub struct RenewHashTokenReturn {
     pub token: String,
 }
+
+use crate::router::AppResult;
 
 #[post("/post/renew-hash-token", format = "json", data = "<token_request>")]
 pub async fn renew_hash_token(
@@ -150,7 +164,7 @@ pub async fn renew_hash_token(
                     "Token renewal failed: unable to decode token. Error: {:#?}",
                     err
                 );
-                return Err(anyhow::anyhow!("Unauthorized: Invalid token").into());
+                return Err(AppError::new(ErrorKind::Auth, "Unauthorized: Invalid token"));
             }
         };
 
@@ -159,7 +173,7 @@ pub async fn renew_hash_token(
                 "Timestamp does not match. Received: {}, Expected: {}",
                 token_data.claims.timestamp, auth.timestamp_decoded
             );
-            return Err(anyhow::anyhow!("Unauthorized: Timestamp mismatch").into());
+            return Err(AppError::new(ErrorKind::Auth, "Unauthorized: Timestamp mismatch"));
         }
 
         let claims = token_data.claims;
@@ -171,8 +185,9 @@ pub async fn renew_hash_token(
         }))
     })
     .await
-    .unwrap()
+    .or_raise(|| (ErrorKind::Internal, "Failed to join blocking task"))?
 }
+
 
 pub struct TimestampGuardModified {
     pub timestamp_decoded: i64,

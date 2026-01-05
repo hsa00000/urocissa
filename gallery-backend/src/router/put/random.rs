@@ -1,6 +1,7 @@
 use crate::router::fairing::guard_auth::GuardAuth;
 use crate::router::fairing::guard_read_only_mode::GuardReadOnlyMode;
 use crate::router::{AppResult, GuardResult};
+use crate::public::error::{AppError, ErrorKind};
 use crate::tasks::BATCH_COORDINATOR;
 use crate::tasks::batcher::update_tree::UpdateTreeTask;
 use crate::{
@@ -8,6 +9,8 @@ use crate::{
 };
 
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use log::info;
+
 #[get("/put/generate_random_data?<number>")]
 pub async fn generate_random_data(
     auth: GuardResult<GuardAuth>,
@@ -24,7 +27,8 @@ pub async fn generate_random_data(
     BATCH_COORDINATOR
         .execute_batch_waiting(UpdateTreeTask)
         .await
-        .map_err(|e| anyhow::anyhow!("Failed to update tree: {}", e))?;
+        .map_err(|e| AppError::new(ErrorKind::Internal, format!("Failed to update tree: {}", e)))?;
     info!("Insert random data complete");
     Ok(())
 }
+

@@ -11,11 +11,12 @@ use crate::router::GuardResult;
 use crate::router::claims::claims_timestamp::ClaimsTimestamp;
 use crate::router::fairing::guard_share::GuardShare;
 use crate::tasks::BATCH_COORDINATOR;
+use crate::public::error::{AppError, ErrorKind, ResultExt};
 
 use crate::tasks::batcher::flush_query_snapshot::FlushQuerySnapshotTask;
 use crate::tasks::batcher::flush_tree_snapshot::FlushTreeSnapshotTask;
 
-use anyhow::{Result, anyhow};
+use anyhow::Result;
 use bitcode::{Decode, Encode};
 use chrono::Utc;
 use log::info;
@@ -108,10 +109,10 @@ fn check_query_cache(
 fn filter_items(
     expression_option: Option<Expression>,
     resolved_share_option: &Option<ResolvedShare>,
-) -> Result<Vec<ReducedData>> {
+) -> Result<Vec<ReducedData>, AppError> {
     let filter_items_start_time = Instant::now();
 
-    let tree_guard = TREE.in_memory.read().map_err(|err| anyhow!("{:?}", err))?;
+    let tree_guard = TREE.in_memory.read().map_err(|err| AppError::new(ErrorKind::Internal, format!("Failed to read tree in memory: {:?}", err)))?;
     let reduced_data_vector: Vec<ReducedData> = match (expression_option, &resolved_share_option) {
         // If we have a resolved share then it must have a filter expression
         (Some(expr), Some(resolved_share)) => {
@@ -182,7 +183,7 @@ fn build_cache_key(expression_option: &Option<Expression>, locate_option: &Optio
     query_hash
 }
 
-fn insert_data_into_tree_snapshot(reduced_data_vector: Vec<ReducedData>) -> Result<(i64, usize)> {
+fn insert_data_into_tree_snapshot(reduced_data_vector: Vec<ReducedData>) -> Result<(i64, usize), AppError> {
     let db_start_time = Instant::now();
 
     // Persist to snapshot
@@ -240,7 +241,7 @@ fn execute_prefetch_logic(
     expression_option: Option<Expression>,
     locate_option: Option<String>,
     mut resolved_share_option: Option<ResolvedShare>,
-) -> Result<Json<PrefetchReturn>> {
+) -> Result<Json<PrefetchReturn>, AppError> {
     // Start timer
     let start_time = Instant::now();
 
@@ -305,7 +306,9 @@ pub async fn prefetch(
     let job_handle = tokio::task::spawn_blocking(move || {
         execute_prefetch_logic(combined_expression_option, locate, resolved_share_option)
     })
-    .await??;
+    .await
+    .or_raise(|| (ErrorKind::Internal, "Failed to join blocking task"))??;
 
     Ok(job_handle)
 }
+

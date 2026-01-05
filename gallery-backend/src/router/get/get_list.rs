@@ -3,7 +3,7 @@ use crate::public::db::tree::read_tags::TagInfo;
 use crate::public::structure::album::Share;
 use crate::router::fairing::guard_auth::GuardAuth;
 use crate::router::{AppResult, GuardResult};
-use anyhow::Context;
+use crate::public::error::AppError; // Import AppError
 use arrayvec::ArrayString;
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
@@ -16,7 +16,8 @@ pub async fn get_tags(auth: GuardResult<GuardAuth>) -> AppResult<Json<Vec<TagInf
         let vec_tags_info = TREE.read_tags();
         Ok(Json(vec_tags_info))
     })
-    .await?
+    .await
+    .map_err(|e| AppError::from(anyhow::Error::from(e)))? // Handle JoinError
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
@@ -31,7 +32,7 @@ pub struct AlbumInfo {
 pub async fn get_albums(auth: GuardResult<GuardAuth>) -> AppResult<Json<Vec<AlbumInfo>>> {
     let _ = auth?;
     tokio::task::spawn_blocking(move || {
-        let album_list = TREE.read_albums().context("Failed to read albums")?;
+        let album_list = TREE.read_albums().map_err(|e| e.context("Failed to read albums"))?;
         let album_info_list = album_list
             .into_iter()
             .map(|album| AlbumInfo {
@@ -42,5 +43,7 @@ pub async fn get_albums(auth: GuardResult<GuardAuth>) -> AppResult<Json<Vec<Albu
             .collect();
         Ok(Json(album_info_list))
     })
-    .await?
+    .await
+    .map_err(|e| AppError::from(anyhow::Error::from(e)))?
 }
+

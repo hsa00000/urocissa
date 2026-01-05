@@ -6,6 +6,7 @@ use crate::public::structure::abstract_data::AbstractData;
 use crate::router::fairing::guard_auth::GuardAuth;
 use crate::router::fairing::guard_read_only_mode::GuardReadOnlyMode;
 use crate::router::{AppResult, GuardResult};
+use crate::public::error::{AppError, ErrorKind, ResultExt};
 use crate::tasks::BATCH_COORDINATOR;
 use crate::tasks::batcher::flush_tree::FlushTreeTask;
 use crate::tasks::batcher::update_tree::UpdateTreeTask;
@@ -30,16 +31,18 @@ pub async fn edit_tag(
     let _ = auth?;
     let _ = read_only_mode?;
 
-    let vec_tags_info = tokio::task::spawn_blocking(move || -> Result<Vec<TagInfo>> {
+    let vec_tags_info = tokio::task::spawn_blocking(move || -> Result<Vec<TagInfo>, AppError> {
         let data_table = open_data_table();
-        let tree_snapshot = open_tree_snapshot_table(json_data.timestamp)?;
+        let tree_snapshot = open_tree_snapshot_table(json_data.timestamp)
+            .or_raise(|| (ErrorKind::Database, "Failed to open tree snapshot"))?;
 
         let mut data_to_flush: Vec<AbstractData> = Vec::new();
 
         for &index in &json_data.index_array {
-            let hash = index_to_hash(&tree_snapshot, index)?;
+            let hash = index_to_hash(&tree_snapshot, index)
+                .or_raise(|| (ErrorKind::Database, format!("Failed to get hash for index {}", index)))?;
 
-            if let Some(guard) = data_table.get(&*hash).unwrap() {
+            if let Some(guard) = data_table.get(&*hash).or_raise(|| (ErrorKind::Database, "Failed to get data"))? {
                 let mut abstract_data = guard.value();
 
                 // Apply tag additions and removals (only regular tags)
@@ -61,16 +64,17 @@ pub async fn edit_tag(
         }
 
         // Return TagInfo
-        Ok(TREE_SNAPSHOT.read_tags()?)
+        Ok(TREE_SNAPSHOT.read_tags().map_err(|e| AppError::from(anyhow::Error::from(e)))?)
     })
     .await
-    .unwrap()?;
+    .or_raise(|| (ErrorKind::Internal, "Failed to join blocking task"))??;
 
     // Wait for the in-memory Tree to be updated
     BATCH_COORDINATOR
         .execute_batch_waiting(UpdateTreeTask)
         .await
-        .unwrap();
+        .or_raise(|| (ErrorKind::Internal, "Failed to update tree"))?;
 
     Ok(Json(vec_tags_info))
 }
+

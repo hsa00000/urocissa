@@ -5,9 +5,7 @@ use crate::public::structure::abstract_data::AbstractData;
 use crate::public::structure::album::{ResolvedShare, Share};
 use crate::public::structure::config::APP_CONFIG;
 use crate::router::claims::claims::Claims;
-use anyhow::Error;
-use anyhow::Result;
-use anyhow::anyhow;
+use anyhow::{Error, Result, anyhow};
 use arrayvec::ArrayString;
 use jsonwebtoken::{DecodingKey, Validation, decode};
 use log::info;
@@ -15,14 +13,9 @@ use redb::ReadableDatabase;
 use rocket::Request;
 use serde::de::DeserializeOwned;
 use chrono::Utc;
+use crate::public::error::{AppError, ErrorKind};
 
-// Error types for share validation
-#[derive(Debug)]
-pub enum ShareError {
-    Expired,
-    Unauthorized,
-    Internal(anyhow::Error),
-}
+// Error types for share validation are now handled by AppError
 
 /// Extract and validate Authorization header Bearer token
 pub fn extract_bearer_token<'a>(req: &'a Request<'_>) -> Result<&'a str> {
@@ -95,13 +88,13 @@ pub fn extract_hash_from_path(req: &Request<'_>) -> Result<String> {
 }
 
 /// Validate share access: check expiration and password
-fn validate_share_access(share: &Share, req: &Request<'_>) -> Result<(), ShareError> {
+fn validate_share_access(share: &Share, req: &Request<'_>) -> Result<(), AppError> {
     // 1. Check expiration
     if share.exp > 0 {
         let now = Utc::now().timestamp_millis() / 1000;
 
         if now > share.exp {
-            return Err(ShareError::Expired);
+            return Err(AppError::new(ErrorKind::PermissionDenied, "Share link expired"));
         }
     }
 
@@ -114,7 +107,7 @@ fn validate_share_access(share: &Share, req: &Request<'_>) -> Result<(), ShareEr
             }
         }
 
-        return Err(ShareError::Unauthorized);
+        return Err(AppError::new(ErrorKind::Auth, "Share password required or incorrect"));
     }
 
     Ok(())
@@ -124,37 +117,31 @@ fn resolve_share_internal(
     album_id: &str,
     share_id: &str,
     req: &Request<'_>,
-) -> Result<Option<Claims>, ShareError> {
+) -> Result<Option<Claims>, AppError> {
     let read_txn = TREE.in_disk.begin_read().map_err(|e| {
-        ShareError::Internal(anyhow!("Failed to begin read transaction: {}", e))
+        AppError::from_err(ErrorKind::Database, e.into())
+            .context("Failed to begin read transaction")
     })?;
 
     let table = read_txn
         .open_table(DATA_TABLE)
-        .map_err(|e| ShareError::Internal(anyhow!("Failed to open data table: {}", e)))?;
+        .map_err(|e| AppError::from_err(ErrorKind::Database, e.into()).context("Failed to open data table"))?;
 
     let data_guard = table
         .get(album_id)
-        .map_err(|e| ShareError::Internal(anyhow!("Failed to get data from table: {}", e)))?
-        .ok_or_else(|| ShareError::Internal(anyhow!("Album not found for id '{}'", album_id)))?;
+        .map_err(|e| AppError::from_err(ErrorKind::Database, e.into()).context("Failed to get data from table"))?
+        .ok_or_else(|| AppError::new(ErrorKind::NotFound, format!("Album not found for id '{}'", album_id)))?;
 
     let abstract_data = data_guard.value();
     let mut album = match abstract_data {
         AbstractData::Album(album) => album,
         _ => {
-            return Err(ShareError::Internal(anyhow!(
-                "Data with id '{}' is not an album",
-                album_id
-            )));
+            return Err(AppError::new(ErrorKind::InvalidInput, format!("Data with id '{}' is not an album", album_id)));
         }
     };
 
     let share = album.metadata.share_list.remove(share_id).ok_or_else(|| {
-        ShareError::Internal(anyhow!(
-            "Share '{}' not found in album '{}'",
-            share_id,
-            album_id
-        ))
+        AppError::new(ErrorKind::NotFound, format!("Share '{}' not found in album '{}'", share_id, album_id))
     })?;
 
     // Validate share access (password and expiration)
@@ -162,7 +149,7 @@ fn resolve_share_internal(
 
     let resolved_share = ResolvedShare::new(
         ArrayString::<64>::from(album_id)
-            .map_err(|_| ShareError::Internal(anyhow!("Failed to parse album_id")))?,
+            .map_err(|_| AppError::new(ErrorKind::Internal, "Failed to parse album_id"))?,
         album.metadata.title,
         share,
     );
@@ -171,36 +158,37 @@ fn resolve_share_internal(
 }
 
 /// Try to resolve album and share from headers
-pub fn try_resolve_share_from_headers(req: &Request<'_>) -> Result<Option<Claims>, ShareError> {
+pub fn try_resolve_share_from_headers(req: &Request<'_>) -> Result<Option<Claims>, AppError> {
     let album_id = req.headers().get_one("x-album-id");
     let share_id = req.headers().get_one("x-share-id");
 
     match (album_id, share_id) {
         (None, None) => Ok(None),
 
-        (Some(_), None) | (None, Some(_)) => Err(ShareError::Internal(anyhow!(
+        (Some(_), None) | (None, Some(_)) => Err(AppError::new(ErrorKind::InvalidInput, 
             "Both x-album-id and x-share-id must be provided together"
-        ))),
+        )),
 
         (Some(album_id), Some(share_id)) => resolve_share_internal(album_id, share_id, req),
     }
 }
 
 /// Try to resolve album and share from query parameters
-pub fn try_resolve_share_from_query(req: &Request<'_>) -> Result<Option<Claims>, ShareError> {
+pub fn try_resolve_share_from_query(req: &Request<'_>) -> Result<Option<Claims>, AppError> {
     let album_id = req.query_value::<&str>("albumId").and_then(Result::ok);
     let share_id = req.query_value::<&str>("shareId").and_then(Result::ok);
 
     match (album_id, share_id) {
         (None, None) => Ok(None),
 
-        (Some(_), None) | (None, Some(_)) => Err(ShareError::Internal(anyhow!(
+        (Some(_), None) | (None, Some(_)) => Err(AppError::new(ErrorKind::InvalidInput,
             "Both albumId and shareId must be provided together"
-        ))),
+        )),
 
         (Some(album_id), Some(share_id)) => resolve_share_internal(album_id, share_id, req),
     }
 }
+
 
 /// Try to authorize upload via share headers with upload permission
 pub fn try_authorize_upload_via_share(req: &Request<'_>) -> bool {

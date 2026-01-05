@@ -12,6 +12,7 @@ use crate::public::structure::response::row::{Row, ScrollBarData};
 
 use crate::router::fairing::guard_timestamp::GuardTimestamp;
 use crate::router::{AppResult, GuardResult};
+use crate::public::error::{AppError, ErrorKind, ResultExt};
 use anyhow::Result;
 use log::info;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
@@ -33,19 +34,23 @@ pub async fn get_data(
         let (show_download, show_metadata) = resolve_show_download_and_metadata(resolved_share_opt);
 
         let data_table = open_data_table();
-        let tree_snapshot = open_tree_snapshot_table(timestamp)?;
+        let tree_snapshot = open_tree_snapshot_table(timestamp)
+            .or_raise(|| (ErrorKind::Database, "Failed to open tree snapshot table"))?;
+        
         end = end.min(tree_snapshot.len());
 
         if start >= end {
             return Ok(Json(vec![]));
         }
 
-        let database_timestamp_return_list: Result<_> = (start..end)
+        let database_timestamp_return_list: Result<Vec<_>, AppError> = (start..end)
             .into_par_iter()
             .map(|index| {
-                let hash = index_to_hash(&tree_snapshot, index)?;
+                let hash = index_to_hash(&tree_snapshot, index)
+                    .or_raise(|| (ErrorKind::Database, format!("Failed to map index {} to hash", index)))?;
 
-                let abstract_data = hash_to_abstract_data(&data_table, hash)?;
+                let abstract_data = hash_to_abstract_data(&data_table, hash)
+                     .or_raise(|| (ErrorKind::Database, format!("Failed to retrieve data for hash {}", hash)))?;
 
                 let database_timestamp_return = abstract_data_to_database_timestamp_return(
                     abstract_data,
@@ -61,7 +66,8 @@ pub async fn get_data(
         info!(duration = &*duration; "Get data: {} ~ {}", start, end);
         Ok(Json(database_timestamp_return_list?))
     })
-    .await?
+    .await
+    .or_raise(|| (ErrorKind::Internal, "Failed to join blocking task"))?
 }
 
 #[get("/get/get-rows?<index>&<timestamp>")]
@@ -73,12 +79,14 @@ pub async fn get_rows(
     let _ = auth;
     tokio::task::spawn_blocking(move || {
         let start_time = Instant::now();
-        let filtered_rows = TREE_SNAPSHOT.read_row(index, timestamp)?;
+        let filtered_rows = TREE_SNAPSHOT.read_row(index, timestamp)
+            .or_raise(|| (ErrorKind::Database, "Failed to read row from snapshot"))?;
         let duration = format!("{:?}", start_time.elapsed());
         info!(duration = &*duration; "Read rows: index = {}", index);
         Ok(Json(filtered_rows))
     })
-    .await?
+    .await
+    .or_raise(|| (ErrorKind::Internal, "Failed to join blocking task"))?
 }
 
 #[get("/get/get-scroll-bar?<timestamp>")]
@@ -90,3 +98,4 @@ pub async fn get_scroll_bar(
     let scrollbar_data = TREE_SNAPSHOT.read_scrollbar(timestamp);
     Json(scrollbar_data)
 }
+

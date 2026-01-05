@@ -10,6 +10,7 @@ use crate::router::fairing::guard_auth::GuardAuth;
 use crate::router::fairing::guard_share::GuardShare;
 
 use crate::router::{AppResult, GuardResult};
+// use crate::public::error::{AppError, ErrorKind, ResultExt};
 
 #[get("/get/config")]
 pub fn get_config_handler(auth: GuardResult<GuardShare>) -> AppResult<Json<PublicConfig>> {

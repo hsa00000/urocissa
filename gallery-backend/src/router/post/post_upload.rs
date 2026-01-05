@@ -2,8 +2,9 @@ use crate::public::constant::{VALID_IMAGE_EXTENSIONS, VALID_VIDEO_EXTENSIONS};
 use crate::router::fairing::guard_read_only_mode::GuardReadOnlyMode;
 use crate::router::fairing::guard_upload::GuardUpload;
 use crate::router::{AppResult, GuardResult};
+use crate::public::error::{AppError, ErrorKind, ResultExt};
 use crate::workflow::index_for_watch;
-use anyhow::{Result, anyhow};
+use anyhow::Result;
 use arrayvec::ArrayString;
 use rocket::form::{Errors, Form};
 use rocket::fs::TempFile;
@@ -46,18 +47,18 @@ pub async fn upload(
                 .fold(String::from("Form parsing failed: "), |acc, e| {
                     format!("{}; {}", acc, e)
                 });
-            return Err(anyhow!(error_msg).into());
+            return Err(AppError::new(ErrorKind::InvalidInput, error_msg));
         }
     };
 
     let album_id: Option<ArrayString<64>> = match presigned_album_id_opt {
-        Some(s) => Some(ArrayString::from(&s).map_err(|_| anyhow!("Album ID exceeds 64 bytes"))?),
+        Some(s) => Some(ArrayString::from(&s).map_err(|_| AppError::new(ErrorKind::InvalidInput, "Album ID exceeds 64 bytes"))?),
         None => None,
     };
 
     // Ensure strict 1:1 mapping between files and metadata
     if inner_form.files.len() != inner_form.last_modified.len() {
-        return Err(anyhow!("Mismatch between file count and timestamp count.").into());
+        return Err(AppError::new(ErrorKind::InvalidInput, "Mismatch between file count and timestamp count."));
     }
 
     for (i, file) in inner_form.files.iter_mut().enumerate() {
@@ -69,10 +70,12 @@ pub async fn upload(
             || VALID_VIDEO_EXTENSIONS.contains(&extension.as_str())
         {
             let final_path = save_file(file, filename, extension, last_modified).await?;
-            index_for_watch(PathBuf::from(final_path), album_id).await?;
+            index_for_watch(PathBuf::from(final_path), album_id)
+                .await
+                .or_raise(|| (ErrorKind::Internal, "Failed to index file"))?;
         } else {
             error!("Rejected invalid file type: {}", extension);
-            return Err(anyhow!("Invalid file type: {}", extension).into());
+            return Err(AppError::new(ErrorKind::InvalidInput, format!("Invalid file type: {}", extension)));
         }
     }
 
@@ -87,12 +90,14 @@ async fn save_file(
     filename: String,
     extension: String,
     last_modified_ms: u64,
-) -> Result<String> {
+) -> Result<String, AppError> {
     let unique_id = Uuid::new_v4();
     let tmp_path = format!("./upload/{}-{}.tmp", filename, unique_id);
 
     // Move to a temp location first to avoid blocking the async runtime with IO
-    file.move_copy_to(&tmp_path).await?;
+    file.move_copy_to(&tmp_path)
+        .await
+        .or_raise(|| (ErrorKind::IO, "Failed to move temporary file"))?;
 
     let filename_owned = filename.clone();
 
@@ -100,31 +105,35 @@ async fn save_file(
     // 1. Set mtime on the .tmp file.
     // 2. Atomic rename to .ext (final state).
     // This ensures the file watcher (workflow) only picks up the file once it is fully written and has the correct timestamp.
-    let final_path = spawn_blocking(move || -> Result<String> {
+    let final_path = spawn_blocking(move || -> Result<String, AppError> {
         let final_path = format!("./upload/{}-{}.{}", filename_owned, unique_id, extension);
 
         set_last_modified_time(&tmp_path, last_modified_ms)?;
-        std::fs::rename(&tmp_path, &final_path)?;
+        std::fs::rename(&tmp_path, &final_path)
+            .or_raise(|| (ErrorKind::IO, "Failed to rename file"))?;
 
         Ok(final_path)
     })
-    .await??;
+    .await
+    .or_raise(|| (ErrorKind::Internal, "Failed to join blocking task"))??;
 
     Ok(final_path)
 }
 
-fn set_last_modified_time(path: &str, last_modified_ms: u64) -> Result<()> {
+fn set_last_modified_time(path: &str, last_modified_ms: u64) -> Result<(), AppError> {
     let mtime = filetime::FileTime::from_unix_time((last_modified_ms / 1000) as i64, 0);
-    filetime::set_file_mtime(path, mtime)?;
+    filetime::set_file_mtime(path, mtime)
+        .or_raise(|| (ErrorKind::IO, "Failed to set file modification time"))?;
     Ok(())
 }
 
-fn get_extension(file: &TempFile<'_>) -> Result<String> {
+fn get_extension(file: &TempFile<'_>) -> Result<String, AppError> {
     file.content_type()
         .and_then(|ct| ct.extension())
         .map(|ext| ext.as_str().to_lowercase())
         .ok_or_else(|| {
             error!("Failed to determine file extension from Content-Type");
-            anyhow!("Missing or unknown file extension")
+            AppError::new(ErrorKind::InvalidInput, "Missing or unknown file extension")
         })
 }
+

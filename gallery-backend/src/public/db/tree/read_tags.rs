@@ -3,8 +3,10 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use crate::{
     public::constant::redb::DATA_TABLE,
     public::structure::{abstract_data::AbstractData, album::AlbumCombined},
+    public::error::{AppError, ErrorKind, ResultExt}, // Import AppError stuff
 };
-use anyhow::{Context, Result};
+use anyhow::Result; // Use standard Result or alias? Standard Result<T, E> is fine.
+// But we want to return Result<Vec<...>, AppError>
 use dashmap::DashMap;
 use rayon::iter::{IntoParallelRefIterator, ParallelBridge, ParallelIterator};
 use redb::{ReadableDatabase, ReadableTable};
@@ -20,6 +22,7 @@ pub struct TagInfo {
 
 impl Tree {
     pub fn read_tags(&'static self) -> Vec<TagInfo> {
+        // ... (unchanged)
         let tag_counts: DashMap<String, AtomicUsize> = DashMap::new();
 
         self.in_memory
@@ -50,15 +53,15 @@ impl Tree {
         tag_infos
     }
 
-    pub fn read_albums(&self) -> Result<Vec<AlbumCombined>> {
+    pub fn read_albums(&self) -> Result<Vec<AlbumCombined>, AppError> {
         Ok(self
             .in_disk
             .begin_read()
-            .context("Failed to begin read transaction")?
+            .or_raise(|| (ErrorKind::Database, "Failed to begin read transaction"))?
             .open_table(DATA_TABLE)
-            .context("Failed to open DATA_TABLE")?
+            .or_raise(|| (ErrorKind::Database, "Failed to open DATA_TABLE"))?
             .iter()
-            .context("Failed to create iterator over DATA_TABLE")?
+            .or_raise(|| (ErrorKind::Database, "Failed to create iterator over DATA_TABLE"))?
             .par_bridge()
             .filter_map(|entry| {
                 entry
@@ -72,6 +75,7 @@ impl Tree {
                     .transpose()
             })
             .collect::<Result<Vec<_>, _>>()
-            .context("Failed to collect album records in parallel")?)
+            .or_raise(|| (ErrorKind::Database, "Failed to collect album records in parallel"))?)
     }
 }
+

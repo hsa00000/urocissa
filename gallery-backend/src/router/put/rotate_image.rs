@@ -4,15 +4,16 @@ use crate::operations::open_db::open_data_table;
 use crate::public::structure::abstract_data::AbstractData;
 use crate::router::{AppResult, GuardResult};
 use crate::tasks::batcher::flush_tree::FlushTreeTask;
+use crate::public::error::{AppError, ErrorKind, ResultExt};
 
 use crate::router::fairing::guard_auth::GuardAuth;
 use crate::router::fairing::guard_read_only_mode::GuardReadOnlyMode;
 use crate::tasks::INDEX_COORDINATOR;
-use anyhow::Context;
 use anyhow::Result;
-use anyhow::anyhow;
+// use anyhow::anyhow;
 use arrayvec::ArrayString;
 use rocket::serde::{Deserialize, json::Json};
+use log::info;
 
 #[derive(Deserialize, Debug)]
 #[serde(crate = "rocket::serde")]
@@ -32,28 +33,28 @@ pub async fn rotate_image(
 
     // Convert hash string to ArrayString
     let hash = ArrayString::<64>::from(&request.hash)
-        .map_err(|_| anyhow!("Invalid hash length or format"))?;
+        .map_err(|_| AppError::new(ErrorKind::InvalidInput, "Invalid hash length or format"))?;
 
-    let abstract_data = tokio::task::spawn_blocking(move || -> Result<Vec<AbstractData>> {
+    let abstract_data = tokio::task::spawn_blocking(move || -> Result<Vec<AbstractData>, AppError> {
         let data_table = open_data_table();
         let access_guard = data_table
             .get(&*hash)
-            .context("Failed to fetch DB record")?
-            .ok_or_else(|| anyhow!("Hash not found"))?;
+            .or_raise(|| (ErrorKind::Database, "Failed to fetch DB record"))?
+            .ok_or_else(|| AppError::new(ErrorKind::NotFound, "Hash not found"))?;
 
         let mut abstract_data = access_guard.value();
 
         // Only rotate images, not videos or albums
         if !matches!(abstract_data, AbstractData::Image(_)) {
-            return Err(anyhow!("Only images can be rotated"));
+            return Err(AppError::new(ErrorKind::InvalidInput, "Only images can be rotated"));
         }
 
         // Load the compressed image (not the original)
         let compressed_path = abstract_data.compressed_path();
-        let mut dyn_img = image::open(&compressed_path).context(format!(
-            "Failed to load compressed image: {:?}",
-            compressed_path
-        ))?;
+        let mut dyn_img = image::open(&compressed_path).map_err(|e| AppError::new(ErrorKind::IO, format!(
+            "Failed to load compressed image: {:?} ({})",
+            compressed_path, e
+        )))?;
 
         // Rotate counter-clockwise (270 degrees clockwise = 90 degrees counter-clockwise)
         dyn_img = dyn_img.rotate270();
@@ -63,7 +64,7 @@ pub async fn rotate_image(
 
         // Generate and save the rotated thumbnail
         generate_thumbnail_for_image(&mut abstract_data, dyn_img.clone())
-            .context("Failed to generate thumbnail for rotated image")?;
+            .or_raise(|| (ErrorKind::Internal, "Failed to generate thumbnail for rotated image"))?;
 
         // Update thumbhash and phash with the rotated image
         abstract_data.set_thumbhash(generate_thumbhash(&dyn_img));
@@ -88,13 +89,14 @@ pub async fn rotate_image(
         Ok(result_vec)
     })
     .await
-    .context("Failed to spawn blocking task")??;
+    .or_raise(|| (ErrorKind::Internal, "Failed to spawn blocking task"))??;
 
     INDEX_COORDINATOR
         .execute_batch_waiting(FlushTreeTask::insert(abstract_data))
         .await
-        .context("Failed to execute FlushTreeTask")?;
+        .or_raise(|| (ErrorKind::Internal, "Failed to execute FlushTreeTask"))?;
 
     info!("Image rotated successfully");
     Ok(())
 }
+

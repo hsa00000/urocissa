@@ -3,6 +3,7 @@ use rocket::http::Status;
 use rocket::request::{FromRequest, Outcome};
 
 use crate::router::GuardError;
+use crate::public::error::{AppError, ErrorKind};
 
 use super::VALIDATION;
 use super::auth_utils::{try_authorize_upload_via_share, try_jwt_cookie_auth};
@@ -23,9 +24,11 @@ impl<'r> FromRequest<'r> for GuardUpload {
         match try_jwt_cookie_auth(req, &VALIDATION) {
             Ok(_) => return Outcome::Success(GuardUpload),
             Err(err) => {
-                let full_err = err.context("Authentication error").into();
+                let full_err = AppError::from_err(ErrorKind::Auth, err)
+                    .context("Authentication error");
                 Outcome::Error((Status::Unauthorized, full_err))
             }
         }
     }
 }
+

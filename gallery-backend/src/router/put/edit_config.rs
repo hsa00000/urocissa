@@ -4,7 +4,6 @@ use log::error;
 use rocket::http::Status;
 use rocket::put;
 use rocket::serde::json::Json;
-use serde::Deserialize;
 use tokio::task::spawn_blocking;
 
 // Import PublicConfig
@@ -12,6 +11,8 @@ use crate::public::structure::config::{AppConfig, PublicConfig, APP_CONFIG};
 use crate::router::fairing::guard_auth::GuardAuth;
 use crate::router::fairing::guard_read_only_mode::GuardReadOnlyMode;
 use crate::router::{AppResult, GuardResult};
+use crate::public::error::{AppError, ErrorKind, ResultExt};
+use serde::Deserialize;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -33,7 +34,7 @@ pub async fn update_config_handler(
     let _ = read_only?;
     let req_data = req.into_inner();
 
-    spawn_blocking(move || {
+    spawn_blocking(move || -> Result<Status, AppError> {
         // 1. Get the current private config to preserve fields not being updated
         let mut current_private = {
             let read_lock = APP_CONFIG.get().unwrap().read().unwrap();
@@ -44,7 +45,7 @@ pub async fn update_config_handler(
         if let Some(pwd) = req_data.password {
             // Verify old password if changing password
             if req_data.old_password.as_ref() != Some(&current_private.password) {
-                return Err(anyhow::anyhow!("Incorrect current password").into());
+                return Err(AppError::new(ErrorKind::Auth, "Incorrect current password"));
             }
             current_private.password = pwd;
         }
@@ -61,11 +62,12 @@ pub async fn update_config_handler(
         // 4. Update using the full config
         AppConfig::update(new_full_config).map_err(|e| {
             error!("Failed to update config: {}", e);
-            e
+            AppError::from_err(ErrorKind::Internal, e)
         })?;
 
         Ok(Status::Ok)
     })
     .await
-    .map_err(|e| anyhow::anyhow!("Task join error: {}", e))?
+    .or_raise(|| (ErrorKind::Internal, "Task join error"))?
 }
+

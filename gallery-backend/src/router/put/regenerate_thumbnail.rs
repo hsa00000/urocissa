@@ -4,16 +4,16 @@ use crate::operations::open_db::open_data_table;
 use crate::public::structure::abstract_data::AbstractData;
 use crate::router::{AppResult, GuardResult};
 use crate::tasks::batcher::flush_tree::FlushTreeTask;
+use crate::public::error::{AppError, ErrorKind, ResultExt};
 
 use crate::router::fairing::guard_auth::GuardAuth;
 use crate::router::fairing::guard_read_only_mode::GuardReadOnlyMode;
 use crate::tasks::INDEX_COORDINATOR;
-use anyhow::Context;
 use anyhow::Result;
-use anyhow::anyhow;
 use arrayvec::ArrayString;
 use rocket::form::{Errors, Form};
 use rocket::fs::TempFile;
+use log::info;
 
 #[derive(FromForm, Debug)]
 pub struct RegenerateThumbnailForm<'r> {
@@ -37,21 +37,18 @@ pub async fn regenerate_thumbnail_with_frame(
     let mut inner_form = match form {
         Ok(form) => form.into_inner(),
         Err(errors) => {
-            let error_chain = errors
+            let error_msg = errors
                 .iter()
-                .map(|e| anyhow!(e.to_string()))
-                .reduce(|acc, e| acc.context(e.to_string()));
-
-            return match error_chain {
-                Some(chain) => Err(chain.context("Failed to parse form").into()),
-                None => Err(anyhow!("Failed to parse form with unknown error").into()),
-            };
+                .fold(String::from("Form parsing failed: "), |acc, e| {
+                    format!("{}; {}", acc, e)
+                });
+            return Err(AppError::new(ErrorKind::InvalidInput, error_msg));
         }
     };
 
     // Convert hash string to ArrayString
     let hash = ArrayString::<64>::from(&inner_form.hash)
-        .map_err(|_| anyhow!("Invalid hash length or format"))?;
+        .map_err(|_| AppError::new(ErrorKind::InvalidInput, "Invalid hash length or format"))?;
 
     let file_path = format!("./object/compressed/{}/{}.jpg", &hash[0..2], hash.as_str());
 
@@ -59,19 +56,19 @@ pub async fn regenerate_thumbnail_with_frame(
         .frame
         .move_copy_to(&file_path)
         .await
-        .context("Failed to copy frame file")?;
+        .or_raise(|| (ErrorKind::IO, "Failed to copy frame file"))?;
 
-    let abstract_data = tokio::task::spawn_blocking(move || -> Result<AbstractData> {
+    let abstract_data = tokio::task::spawn_blocking(move || -> Result<AbstractData, AppError> {
         let data_table = open_data_table();
         let access_guard = data_table
             .get(&*hash)
-            .context("Failed to fetch DB record")?
-            .ok_or_else(|| anyhow!("Hash not found"))?;
+            .or_raise(|| (ErrorKind::Database, "Failed to fetch DB record"))?
+            .ok_or_else(|| AppError::new(ErrorKind::NotFound, "Hash not found"))?;
 
         let mut abstract_data = access_guard.value();
 
         let dyn_img =
-            generate_dynamic_image(&abstract_data).context("Failed to decode DynamicImage")?;
+            generate_dynamic_image(&abstract_data).or_raise(|| (ErrorKind::Internal, "Failed to decode DynamicImage"))?;
 
         abstract_data.set_thumbhash(generate_thumbhash(&dyn_img));
         abstract_data.set_phash(generate_phash(&dyn_img));
@@ -80,13 +77,14 @@ pub async fn regenerate_thumbnail_with_frame(
         Ok(abstract_data)
     })
     .await
-    .context("Failed to spawn blocking task")??;
+    .or_raise(|| (ErrorKind::Internal, "Failed to spawn blocking task"))??;
 
     INDEX_COORDINATOR
         .execute_batch_waiting(FlushTreeTask::insert(vec![abstract_data]))
         .await
-        .context("Failed to execute FlushTreeTask")?;
+        .or_raise(|| (ErrorKind::Internal, "Failed to execute FlushTreeTask"))?;
 
     info!("Regenerating thumbnail successfully");
     Ok(())
 }
+

@@ -1,5 +1,6 @@
 use crate::operations::open_db::open_data_table;
 use crate::router::{AppResult, GuardResult};
+// use crate::public::error::AppError;
 use crate::{
     public::structure::abstract_data::AbstractData,
     router::fairing::guard_auth::GuardAuth,
@@ -71,3 +72,4 @@ pub async fn get_export(auth: GuardResult<GuardAuth>) -> AppResult<ByteStream![V
     };
     Ok(byte_stream)
 }
+

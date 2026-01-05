@@ -2,7 +2,7 @@ use rocket::post;
 use rocket::serde::json::Json;
 
 use crate::public::structure::config::APP_CONFIG;
-use crate::router::AppResult;
+use crate::router::{AppResult, AppError, ErrorKind};
 use crate::router::claims::claims::Claims;
 
 #[post("/post/authenticate", data = "<password>")]
@@ -15,8 +15,9 @@ pub async fn authenticate(password: Json<String>) -> AppResult<Json<String>> {
         let token = Claims::new_admin().encode();
         Ok(Json(token))
     } else {
-        Err(anyhow::anyhow!("Invalid password")
+        Err(AppError::new(ErrorKind::Auth, "Invalid password")
             .context("Authentication failed")
-            .into())
+        )
     }
 }
+

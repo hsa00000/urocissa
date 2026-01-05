@@ -1,6 +1,7 @@
 use anyhow::Context;
 use anyhow::Result;
 use anyhow::anyhow;
+use log::debug;
 use tokio_rayon::AsyncThreadPool;
 
 use crate::public::constant::runtime::WORKER_RAYON_POOL;
@@ -79,15 +80,23 @@ fn index_task(mut abstract_data: AbstractData) -> Result<AbstractData> {
     // Branch processing based on file type
     let is_image = abstract_data.is_image();
     if is_image {
-        process_image_info(&mut abstract_data).context(format!(
-            "failed to process image metadata pipeline:\n{:#?}",
-            abstract_data
-        ))?;
+        if let Err(e) = process_image_info(&mut abstract_data) {
+            debug!("Failed image data dump: {:#?}", abstract_data);
+            return Err(e).context(format!(
+                "failed to process image metadata pipeline. Hash: {}, Path: {}",
+                abstract_data.hash(),
+                newest_path
+            ));
+        }
     } else {
-        process_video_info(&mut abstract_data).context(format!(
-            "failed to process video metadata pipeline:\n{:#?}",
-            abstract_data
-        ))?;
+        if let Err(e) = process_video_info(&mut abstract_data) {
+            debug!("Failed video data dump: {:#?}", abstract_data);
+            return Err(e).context(format!(
+                "failed to process video metadata pipeline. Hash: {}, Path: {}",
+                abstract_data.hash(),
+                newest_path
+            ));
+        }
         abstract_data.set_pending(true);
     }
 

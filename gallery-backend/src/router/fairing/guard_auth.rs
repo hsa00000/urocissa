@@ -3,7 +3,7 @@ use rocket::Request;
 use rocket::http::Status;
 use rocket::request::{FromRequest, Outcome};
 
-use crate::router::GuardError;
+use crate::router::{GuardError, AppError, ErrorKind};
 
 use super::VALIDATION;
 use super::auth_utils::try_jwt_cookie_auth;
@@ -19,8 +19,10 @@ impl<'r> FromRequest<'r> for GuardAuth {
             Ok(_) => Outcome::Success(GuardAuth),
             Err(err) => Outcome::Error((
                 Status::Unauthorized,
-                err.context("Authentication error").into(),
+                AppError::from_err(ErrorKind::Auth, err)
+                    .context("Authentication error")
             )),
         }
     }
 }
+

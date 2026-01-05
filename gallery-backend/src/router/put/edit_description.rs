@@ -5,6 +5,7 @@ use crate::public::structure::abstract_data::AbstractData;
 use crate::router::fairing::guard_read_only_mode::GuardReadOnlyMode;
 use crate::router::fairing::guard_share::GuardShare;
 use crate::router::{AppResult, GuardResult};
+use crate::public::error::{AppError, ErrorKind, ResultExt};
 use crate::tasks::BATCH_COORDINATOR;
 use crate::tasks::batcher::flush_tree::FlushTreeTask;
 use crate::tasks::batcher::update_tree::UpdateTreeTask;
@@ -31,13 +32,15 @@ pub async fn set_user_defined_description(
 ) -> AppResult<()> {
     let _ = auth?;
     let _ = read_only_mode?;
-    tokio::task::spawn_blocking(move || -> Result<()> {
+    tokio::task::spawn_blocking(move || -> Result<(), AppError> {
         let data_table = open_data_table();
-        let tree_snapshot = open_tree_snapshot_table(set_user_defined_description.timestamp)?;
+        let tree_snapshot = open_tree_snapshot_table(set_user_defined_description.timestamp)
+            .or_raise(|| (ErrorKind::Database, "Failed to open tree snapshot"))?;
 
-        let hash = index_to_hash(&tree_snapshot, set_user_defined_description.index)?;
+        let hash = index_to_hash(&tree_snapshot, set_user_defined_description.index)
+            .or_raise(|| (ErrorKind::Database, format!("Failed to get hash for index {}", set_user_defined_description.index)))?;
 
-        if let Some(guard) = data_table.get(&*hash).unwrap() {
+        if let Some(guard) = data_table.get(&*hash).or_raise(|| (ErrorKind::Database, "Failed to get data from table"))? {
             let mut abstract_data = guard.value();
 
             match &mut abstract_data {
@@ -58,11 +61,12 @@ pub async fn set_user_defined_description(
         Ok(())
     })
     .await
-    .unwrap()?;
+    .or_raise(|| (ErrorKind::Internal, "Failed to join blocking task"))??;
     BATCH_COORDINATOR
         .execute_batch_waiting(UpdateTreeTask)
         .await
-        .unwrap();
+        .or_raise(|| (ErrorKind::Internal, "Failed to update tree"))?;
 
     Ok(())
 }
+

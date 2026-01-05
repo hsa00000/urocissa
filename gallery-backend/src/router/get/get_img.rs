@@ -1,3 +1,4 @@
+use crate::public::error::{AppError, ErrorKind, ResultExt};
 use crate::router::{
     AppResult, GuardResult,
     fairing::{
@@ -5,11 +6,11 @@ use crate::router::{
         guard_share::GuardShare,
     },
 };
-use anyhow::Context;
 use rocket::fs::NamedFile;
 use rocket::response::Responder;
 use rocket_seek_stream::SeekStream;
 use std::path::{Path, PathBuf};
+
 #[derive(Responder)]
 pub enum CompressedFileResponse<'a> {
     SeekStream(SeekStream<'a>),
@@ -32,28 +33,26 @@ pub async fn compressed_file(
     {
         Some("mp4") => SeekStream::from_path(&compressed_file_path)
             .map(CompressedFileResponse::SeekStream)
-            .context(format!(
+            .or_raise(|| (ErrorKind::IO, format!(
                 "Failed to open MP4 file: {}",
                 compressed_file_path.display()
-            ))?,
+            )))?,
         Some("jpg") => {
             let named_file = NamedFile::open(&compressed_file_path)
                 .await
-                .context(format!(
+                .or_raise(|| (ErrorKind::IO, format!(
                     "Failed to open JPG file: {}",
                     compressed_file_path.display()
-                ))?;
+                )))?;
             CompressedFileResponse::NamedFile(named_file)
         }
         Some(ext) => {
-            return Err(anyhow::anyhow!("Unsupported file extension: {}", ext)
-                .context(format!("File path: {}", compressed_file_path.display()))
-                .into());
+            return Err(AppError::new(ErrorKind::InvalidInput, format!("Unsupported file extension: {}", ext))
+                .context(format!("File path: {}", compressed_file_path.display())));
         }
         None => {
-            return Err(anyhow::anyhow!("File has no extension")
-                .context(format!("File path: {}", compressed_file_path.display()))
-                .into());
+            return Err(AppError::new(ErrorKind::InvalidInput, "File has no extension")
+                .context(format!("File path: {}", compressed_file_path.display())));
         }
     };
 
@@ -69,11 +68,9 @@ pub async fn imported_file(
     let _ = auth?;
     let _ = hash_guard?;
     let imported_file_path = Path::new("./object/imported").join(&file_path);
-    NamedFile::open(imported_file_path)
+    NamedFile::open(&imported_file_path)
         .await
         .map(CompressedFileResponse::NamedFile)
-        .map_err(|error| {
-            error!("Error opening imported file: {:#?}", error);
-            anyhow::anyhow!("Error opening imported file: {:#?}", error).into()
-        })
+        .or_raise(|| (ErrorKind::IO, format!("Error opening imported file: {}", imported_file_path.display())))
 }
+

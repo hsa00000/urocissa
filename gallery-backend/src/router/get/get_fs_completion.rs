@@ -1,6 +1,6 @@
-use crate::router::{fairing::guard_auth::GuardAuth, AppResult, AppError};
+use crate::router::{fairing::guard_auth::GuardAuth, AppResult, AppError, ErrorKind};
 use rocket::get;
-use rocket::http::Status;
+// use rocket::http::Status;
 use rocket::serde::json::Json;
 use serde::Serialize;
 use std::fs;
@@ -93,10 +93,7 @@ pub fn get_fs_completion(_auth: GuardAuth, path: Option<String>) -> AppResult<Js
                 matches.truncate(50);
                 
                 if matches.is_empty() {
-                    return Err(AppError {
-                        status: Status::NotFound,
-                        error: anyhow::anyhow!("Directory not found"),
-                    });
+                    return Err(AppError::new(ErrorKind::NotFound, "Directory not found"));
                 }
                 
                 // We return everything in 'children' because 'roots' is specifically for 
@@ -113,15 +110,9 @@ pub fn get_fs_completion(_auth: GuardAuth, path: Option<String>) -> AppResult<Js
 
     let entries = fs::read_dir(dir_to_read).map_err(|e| {
         if e.kind() == std::io::ErrorKind::NotFound {
-             AppError {
-                status: Status::NotFound,
-                error: anyhow::anyhow!("Directory not found"),
-            }
+             AppError::new(ErrorKind::NotFound, "Directory not found")
         } else {
-             AppError {
-                status: Status::InternalServerError,
-                error: anyhow::Error::from(e),
-            }
+             AppError::from_err(ErrorKind::IO, e.into())
         }
     })?;
 
@@ -150,10 +141,7 @@ pub fn get_fs_completion(_auth: GuardAuth, path: Option<String>) -> AppResult<Js
     // If we were searching (prefix is not empty) and found nothing, return 404.
     // This handles the case where the user typed a path that doesn't exist.
     if suggestions.is_empty() && !prefix.is_empty() {
-        return Err(AppError {
-            status: Status::NotFound,
-            error: anyhow::anyhow!("Directory not found"),
-        });
+        return Err(AppError::new(ErrorKind::NotFound, "Directory not found"));
     }
 
     Ok(Json(FsCompletion {
@@ -178,3 +166,4 @@ fn get_roots() -> Vec<String> {
         vec!["/".to_string()]
     }
 }
+
