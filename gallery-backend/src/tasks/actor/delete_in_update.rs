@@ -1,3 +1,4 @@
+use crate::public::constant::storage::get_data_path;
 use crate::public::constant::MAX_DELETE_ATTEMPTS;
 use crate::public::error_data::handle_error;
 use anyhow::Context;
@@ -12,8 +13,14 @@ use std::{
 };
 use tokio::task::spawn_blocking;
 
-static UPLOAD_PATH: LazyLock<PathBuf> =
-    LazyLock::new(|| fs::canonicalize("./upload").expect("`./upload` directory must exist"));
+static UPLOAD_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
+    let root = get_data_path();
+    let upload_dir = root.join("upload");
+    if !upload_dir.exists() {
+        fs::create_dir_all(&upload_dir).expect("Failed to create upload dir");
+    }
+    fs::canonicalize(&upload_dir).expect("Failed to canonicalize upload dir")
+});
 
 pub struct DeleteTask {
     pub path: PathBuf,
