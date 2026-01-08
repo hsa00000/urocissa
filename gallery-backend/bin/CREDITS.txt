@@ -1,0 +1,7 @@
+This software uses libraries from the FFmpeg project under the GPLv3.
+The source code for this version of FFmpeg can be downloaded from:
+https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-8.0.1-essentials_build.zip (or similar version)
+Project URL: https://ffmpeg.org/
+
+FFmpeg is a trademark of Fabrice Bellard, originator of the FFmpeg project.
+This software is not associated with or endorsed by the FFmpeg project.

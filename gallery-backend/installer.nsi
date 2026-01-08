@@ -56,10 +56,17 @@ Section "Urocissa Core" SecCore
   ; Copy backend executable
   File "target\static-release\urocissa.exe"
   
+  ; Copy Urocissa License
+  File "..\LICENSE"
+  
   ; Copy FFmpeg binaries
   SetOutPath "$INSTDIR\bin"
   File "bin\ffmpeg.exe"
   File "bin\ffprobe.exe"
+  
+  ; Copy FFmpeg License and Credits
+  File "/oname=FFMPEG_LICENSE.txt" "bin\LICENSE.txt"
+  File "bin\CREDITS.txt"
 
   SetOutPath "$INSTDIR"
   
