@@ -20,7 +20,9 @@ mod tasks;
 mod workflow;
 
 use crate::process::initialization::initialize;
+use crate::operations::initialization::logger::initialize_logger;
 use crate::public::constant::runtime::{INDEX_RUNTIME, ROCKET_RUNTIME};
+
 use crate::public::error_data::handle_error;
 use crate::public::structure::config::AppConfig;
 use crate::public::tui::{DASHBOARD, tui_task};
@@ -136,20 +138,24 @@ fn parse_limit(s: &str) -> ByteUnit {
 }
 
 fn main() -> Result<()> {
+    // Initialize logger first thing
+    let tui_events_rx = initialize_logger();
+
     if let Err(e) = migration::migrate() {
-        eprintln!("Migration failed: {:?}\nCheck logs above.", e);
+        error!("Migration failed: {:?}\nCheck logs above.", e);
         std::process::exit(1);
     }
 
-    // Initialize before spawning threads to avoid race condition with Rocket config loading
-    let tui_events_rx = initialize();
+    // Initialize core subsystems (Config, DB, FFmpeg checks)
+    initialize();
 
     #[cfg(feature = "embed-frontend")]
-    println!("Frontend Configuration: EMBEDDED (Assets compiled into binary)");
+    info!("Frontend Configuration: EMBEDDED (Assets compiled into binary)");
     #[cfg(not(feature = "embed-frontend"))]
-    println!("Frontend Configuration: EXTERNAL (Loading from file system)");
+    info!("Frontend Configuration: EXTERNAL (Loading from file system)");
 
     // Architecture: Isolate the Indexing/TUI runtime from the Rocket server runtime.
+
 
     // This prevents heavy blocking operations in the indexer from stalling web requests.
     let worker_handle = thread::spawn(move || {

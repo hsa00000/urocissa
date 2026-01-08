@@ -9,8 +9,10 @@ use std::fs::{self, File};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::{OnceLock, RwLock};
+use log::{info, warn, error};
 
 const CONFIG_FILE: &str = "config.json";
+
 
 pub static FALLBACK_SECRET_KEY: OnceLock<String> = OnceLock::new();
 
@@ -98,23 +100,24 @@ impl AppConfig {
         };
 
         let mut config = if should_migrate {
-            println!("Legacy configuration or missing file detected. Starting migration...");
+            info!("Legacy configuration or missing file detected. Starting migration...");
             let cfg = crate::migration::construct_migrated_config();
 
             if let Err(e) = Self::save_update(&cfg) {
-                eprintln!("Warning: Failed to save migrated config: {}", e);
+                warn!("Warning: Failed to save migrated config: {}", e);
             } else {
                 crate::migration::cleanup_legacy_config_files();
             }
-            println!(
+            info!(
                 "Migration completed. New configuration saved to {}",
                 CONFIG_FILE
             );
             cfg
         } else {
-            println!("Loading configuration from {}", CONFIG_FILE);
+            info!("Loading configuration from {}", CONFIG_FILE);
             Self::load_from_file()
         };
+
 
         if config
             .private
@@ -134,7 +137,7 @@ impl AppConfig {
 
     fn load_from_file() -> AppConfig {
         let file_content = fs::read_to_string(CONFIG_FILE).unwrap_or_else(|e| {
-            println!(
+            warn!(
                 "Failed to read config file {}: {}, using defaults",
                 CONFIG_FILE, e
             );
@@ -143,11 +146,11 @@ impl AppConfig {
 
         match serde_json::from_str::<AppConfig>(&file_content) {
             Ok(config) => {
-                println!("Successfully loaded configuration from {}", CONFIG_FILE);
+                info!("Successfully loaded configuration from {}", CONFIG_FILE);
                 config
             }
             Err(e) => {
-                println!(
+                warn!(
                     "Failed to deserialize config from {}: {:?}, using defaults",
                     CONFIG_FILE, e
                 );
@@ -159,7 +162,7 @@ impl AppConfig {
     pub fn update(mut new_config: AppConfig) -> anyhow::Result<()> {
         use crate::tasks::batcher::start_watcher::reload_watcher;
 
-        println!("Updating configuration...");
+        info!("Updating configuration...");
 
         // Sanitize paths: only remove quotes and spaces, do not resolve paths
         let sanitized_paths: HashSet<PathBuf> = new_config
@@ -192,9 +195,10 @@ impl AppConfig {
         }
 
         reload_watcher();
-        println!("Configuration updated successfully");
+        info!("Configuration updated successfully");
         Ok(())
     }
+
 
     fn save_update(config: &AppConfig) -> anyhow::Result<()> {
         let mut file = File::create(CONFIG_FILE)

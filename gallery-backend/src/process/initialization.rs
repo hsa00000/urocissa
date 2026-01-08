@@ -7,12 +7,7 @@ use crate::public::structure::config::AppConfig;
 use tokio::sync::mpsc::UnboundedReceiver;
 
 /// Initializes all core application subsystems.
-///
-/// # Returns
-/// An `UnboundedReceiver` capturing early log events, intended for TUI dashboard visualization.
-pub fn initialize() -> UnboundedReceiver<String> {
-    let log_receiver = initialize_logger();
-
+pub fn initialize() {
     // Config must be initialized first to ensure 'config.json' exists for subsequent subsystems.
     AppConfig::init();
 
@@ -22,6 +17,5 @@ pub fn initialize() -> UnboundedReceiver<String> {
 
     check_ffmpeg_and_ffprobe();
     initialize_file();
-
-    log_receiver
 }
+

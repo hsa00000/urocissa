@@ -2,6 +2,7 @@ use std::path::PathBuf;
 use std::sync::OnceLock;
 use directories::ProjectDirs;
 use std::path::Path;
+use log::{info, error};
 
 pub static DATA_PATH: OnceLock<PathBuf> = OnceLock::new();
 
@@ -15,7 +16,7 @@ pub fn get_data_path() -> &'static PathBuf {
         
         // If "db" or "object" folder exists in current directory, assume portable mode
         if portable_db.exists() || portable_object.exists() {
-            println!("Portable mode detected (found ./db or ./object)");
+            info!("Portable mode detected (found ./db or ./object)");
             return PathBuf::from(".");
         }
 
@@ -26,18 +27,19 @@ pub fn get_data_path() -> &'static PathBuf {
             // Create the directory if it doesn't exist
             if !data_dir.exists() {
                  if let Err(e) = std::fs::create_dir_all(&data_dir) {
-                     eprintln!("Failed to create data directory {:?}: {}", data_dir, e);
+                     error!("Failed to create data directory {:?}: {}", data_dir, e);
                      // Fallback to local if we can't write to AppData
                      return PathBuf::from(".");
                  }
             }
             
-            println!("Installed mode detected. Using data directory: {:?}", data_dir);
+            info!("Installed mode detected. Using data directory: {:?}", data_dir);
             return data_dir;
         }
 
         // 3. Fallback to current directory if ProjectDirs fails
-        println!("Could not determine system data directory. Defaulting to portable mode.");
+        info!("Could not determine system data directory. Defaulting to portable mode.");
         PathBuf::from(".")
     })
 }
+
