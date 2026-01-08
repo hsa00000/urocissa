@@ -57,35 +57,17 @@ Section "Urocissa Core" SecCore
   File "target\static-release\urocissa.exe"
   
   ; Copy FFmpeg binaries
-
   SetOutPath "$INSTDIR\bin"
   File "bin\ffmpeg.exe"
   File "bin\ffprobe.exe"
 
   SetOutPath "$INSTDIR"
   
-  ; Copy frontend root files
-  File "..\gallery-frontend\dist\index.html"
-  File "..\gallery-frontend\dist\favicon.ico"
-  File "..\gallery-frontend\dist\registerSW.js"
-  File "..\gallery-frontend\dist\serviceWorker.js"
-  
-  ; Copy frontend assets
-  SetOutPath "$INSTDIR\assets"
-
-  File /r "..\gallery-frontend\dist\assets\*"
-  
-  ; Copy index.html (if needed by your server logic, but assets usually suffice if served correctly)
-  ; Note: Rocket FileServer usually serves index.html if mapped to root, but here we mapped /assets.
-  ; If you need the root index.html to be served, we might need to copy it too.
-  ; Assuming your backend handles the SPA routing or serves index.html from somewhere.
-  
-  SetOutPath "$INSTDIR"
-  
-  ; Create uninstaller
+  ; Copy uninstaller
   WriteUninstaller "$INSTDIR\Uninstall.exe"
 
   ; Store installation folder
+
   WriteRegStr HKCU "Software\Urocissa" "" $INSTDIR
 
   ; Create Start Menu Shortcuts

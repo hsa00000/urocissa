@@ -38,6 +38,24 @@ use router::{
     put::generate_put_routes,
 }; // Add import for existing AppConfig
 
+#[cfg(feature = "embed-frontend")]
+#[get("/assets/<file..>")]
+async fn assets(
+    file: std::path::PathBuf,
+) -> Option<(rocket::http::ContentType, std::borrow::Cow<'static, [u8]>)> {
+    use crate::public::embedded::FrontendAssets;
+
+    let filename = format!("assets/{}", file.display());
+    let asset = FrontendAssets::get(&filename)?;
+    let mime = mime_guess::from_path(&filename).first_or_octet_stream();
+
+    // Fix: Convert mime_guess::Mime to Rocket ContentType
+    let content_type = rocket::http::ContentType::parse_flexible(mime.as_ref())
+        .unwrap_or(rocket::http::ContentType::Binary);
+
+    Some((content_type, asset.data))
+}
+
 /// Configures the Rocket instance with routes, fairings, and file servers.
 async fn build_rocket() -> rocket::Rocket<rocket::Build> {
     // Modified: Load config.json into Figment for extraction
@@ -70,25 +88,35 @@ async fn build_rocket() -> rocket::Rocket<rocket::Build> {
         .merge(("port", app_config.public.port))
         .merge(("limits", limits));
 
-    // Modified: Use custom config and manage AppConfig as state
-    // Determine asset path: local "./assets" (prod) or "../gallery-frontend/dist/assets" (dev)
-    let prod_assets = std::path::Path::new("assets");
-    let asset_path = if prod_assets.exists() {
-        prod_assets.to_path_buf()
-    } else {
-        std::path::PathBuf::from("../gallery-frontend/dist/assets")
+    #[cfg(not(feature = "embed-frontend"))]
+    let app = {
+        // Modified: Use custom config and manage AppConfig as state
+        // Determine asset path: local "./assets" (prod) or "../gallery-frontend/dist/assets" (dev)
+        let prod_assets = std::path::Path::new("assets");
+        let asset_path = if prod_assets.exists() {
+            prod_assets.to_path_buf()
+        } else {
+            std::path::PathBuf::from("../gallery-frontend/dist/assets")
+        };
+
+        info!("Serving assets from: {:?}", asset_path);
+
+        rocket::custom(rocket_config)
+            .manage(app_config)
+            .attach(cache_control_fairing())
+            .mount("/assets", FileServer::from(asset_path))
     };
 
-    info!("Serving assets from: {:?}", asset_path);
+    #[cfg(feature = "embed-frontend")]
+    let app = {
+        info!("Serving assets from embedded binary");
+        rocket::custom(rocket_config)
+            .manage(app_config)
+            .attach(cache_control_fairing())
+            .mount("/", routes![assets])
+    };
 
-    rocket::custom(rocket_config)
-        .manage(app_config)
-        .attach(cache_control_fairing())
-        .mount(
-            "/assets",
-            FileServer::from(asset_path),
-        )
-        .mount("/", generate_get_routes())
+    app.mount("/", generate_get_routes())
         .mount("/", generate_post_routes())
         .mount("/", generate_put_routes())
         .mount("/", generate_delete_routes())
@@ -116,7 +144,13 @@ fn main() -> Result<()> {
     // Initialize before spawning threads to avoid race condition with Rocket config loading
     let tui_events_rx = initialize();
 
+    #[cfg(feature = "embed-frontend")]
+    println!("Frontend Configuration: EMBEDDED (Assets compiled into binary)");
+    #[cfg(not(feature = "embed-frontend"))]
+    println!("Frontend Configuration: EXTERNAL (Loading from file system)");
+
     // Architecture: Isolate the Indexing/TUI runtime from the Rocket server runtime.
+
     // This prevents heavy blocking operations in the indexer from stalling web requests.
     let worker_handle = thread::spawn(move || {
         INDEX_RUNTIME.block_on(async {

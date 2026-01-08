@@ -8,10 +8,10 @@ if (-not (Test-Path $nsisPath)) {
     $nsisPath = "makensis.exe"
 }
 
-# 1. Build Backend with Static Linking
-Write-Host "Compiling Rust Backend (Static Linking)..."
+# 1. Build Backend with Static Linking AND Embedded Frontend
+Write-Host "Compiling Rust Backend (Static Linking + Embedded Frontend)..."
 $env:RUSTFLAGS="-C target-feature=+crt-static"
-cargo build --manifest-path "gallery-backend/Cargo.toml" --profile static-release
+cargo build --manifest-path "gallery-backend/Cargo.toml" --profile static-release --features embed-frontend
 
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Cargo build failed!"

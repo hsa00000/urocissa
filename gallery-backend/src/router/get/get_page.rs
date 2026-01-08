@@ -7,7 +7,21 @@ use std::sync::LazyLock;
 use crate::router::AppResult;
 use crate::public::error::{AppError, ErrorKind, ResultExt};
 
+#[cfg(feature = "embed-frontend")]
+use rocket::http::ContentType;
+#[cfg(feature = "embed-frontend")]
+use std::borrow::Cow;
+#[cfg(feature = "embed-frontend")]
+use crate::public::embedded::FrontendAssets;
+
 pub static INDEX_HTML: LazyLock<String> = LazyLock::new(|| {
+    #[cfg(feature = "embed-frontend")]
+    {
+        if let Some(file) = FrontendAssets::get("index.html") {
+            return std::str::from_utf8(&file.data).expect("index.html is not valid UTF-8").to_string();
+        }
+    }
+    
     let prod_path = Path::new("index.html");
     if prod_path.exists() {
         fs::read_to_string(prod_path).expect("Unable to read index.html from current directory")
@@ -16,6 +30,7 @@ pub static INDEX_HTML: LazyLock<String> = LazyLock::new(|| {
     }
 });
 
+#[cfg(not(feature = "embed-frontend"))]
 fn resolve_path(filename: &str) -> PathBuf {
     let prod_path = Path::new(filename);
     if prod_path.exists() {
@@ -25,16 +40,60 @@ fn resolve_path(filename: &str) -> PathBuf {
     }
 }
 
+// Custom responder that can return either a NamedFile or embedded content
+pub enum FrontendResponse {
+    File(NamedFile),
+    #[cfg(feature = "embed-frontend")]
+    Embedded(ContentType, Cow<'static, [u8]>),
+}
+
+impl<'r> rocket::response::Responder<'r, 'static> for FrontendResponse {
+    fn respond_to(self, request: &'r rocket::Request<'_>) -> rocket::response::Result<'static> {
+        match self {
+            FrontendResponse::File(f) => f.respond_to(request),
+            #[cfg(feature = "embed-frontend")]
+            FrontendResponse::Embedded(ct, data) => {
+                rocket::response::Response::build()
+                    .header(ct)
+                    .sized_body(data.len(), std::io::Cursor::new(data))
+                    .ok()
+            }
+        }
+    }
+}
+
+// Helper to serve file (either from disk or embedded)
+async fn serve_file(filename: &str) -> AppResult<FrontendResponse> {
+    #[cfg(feature = "embed-frontend")]
+    {
+        if let Some(asset) = FrontendAssets::get(filename) {
+            let mime = mime_guess::from_path(filename).first_or_octet_stream();
+            let ct = ContentType::parse_flexible(mime.as_ref()).unwrap_or(ContentType::Binary);
+            return Ok(FrontendResponse::Embedded(ct, asset.data));
+        }
+        // If not found in embedded, fallback to error (or disk if you want mixed mode)
+        return Err(AppError::new(ErrorKind::NotFound, format!("Embedded file not found: {}", filename)));
+    }
+
+    #[cfg(not(feature = "embed-frontend"))]
+    {
+        let path = resolve_path(filename);
+        NamedFile::open(path)
+            .await
+            .map(FrontendResponse::File)
+            .or_raise(|| (ErrorKind::IO, format!("Failed to open {}", filename)))
+    }
+}
+
+
 #[get("/")]
 pub fn redirect_to_photo() -> content::RawHtml<String> {
     content::RawHtml(INDEX_HTML.to_string())
 }
 
 #[get("/login")]
-pub async fn login() -> AppResult<NamedFile> {
-    NamedFile::open(resolve_path("index.html"))
-        .await
-        .or_raise(|| (ErrorKind::IO, "Failed to open login page"))
+pub async fn login() -> AppResult<FrontendResponse> {
+    serve_file("index.html").await
 }
 
 #[get("/redirect-to-login")]
@@ -48,168 +107,123 @@ pub async fn unauthorized() -> Status {
 }
 
 #[get("/home")]
-pub async fn home() -> AppResult<NamedFile> {
-    NamedFile::open(resolve_path("index.html"))
-        .await
-        .or_raise(|| (ErrorKind::IO, "Failed to open home page"))
+pub async fn home() -> AppResult<FrontendResponse> {
+    serve_file("index.html").await
 }
 
 #[get("/home/view/<_path..>")]
-pub async fn home_view(_path: PathBuf) -> AppResult<NamedFile> {
-    NamedFile::open(resolve_path("index.html"))
-        .await
-        .or_raise(|| (ErrorKind::IO, "Failed to open home view page"))
+pub async fn home_view(_path: PathBuf) -> AppResult<FrontendResponse> {
+    serve_file("index.html").await
 }
 
 #[get("/favorite")]
-pub async fn favorite() -> AppResult<NamedFile> {
-    NamedFile::open(resolve_path("index.html"))
-        .await
-        .or_raise(|| (ErrorKind::IO, "Failed to open favorite page"))
+pub async fn favorite() -> AppResult<FrontendResponse> {
+    serve_file("index.html").await
 }
 
 #[get("/favorite/view/<_path..>")]
-pub async fn favorite_view(_path: PathBuf) -> AppResult<NamedFile> {
-    NamedFile::open(resolve_path("index.html"))
-        .await
-        .or_raise(|| (ErrorKind::IO, "Failed to open favorite view page"))
+pub async fn favorite_view(_path: PathBuf) -> AppResult<FrontendResponse> {
+    serve_file("index.html").await
 }
 
 #[get("/albums")]
-pub async fn albums() -> AppResult<NamedFile> {
-    NamedFile::open(resolve_path("index.html"))
-        .await
-        .or_raise(|| (ErrorKind::IO, "Failed to open albums page"))
+pub async fn albums() -> AppResult<FrontendResponse> {
+    serve_file("index.html").await
 }
 
 #[get("/albums/view/<_path..>")]
-pub async fn albums_view(_path: PathBuf) -> AppResult<NamedFile> {
-    NamedFile::open(resolve_path("index.html"))
-        .await
-        .or_raise(|| (ErrorKind::IO, "Failed to open albums view page"))
+pub async fn albums_view(_path: PathBuf) -> AppResult<FrontendResponse> {
+    serve_file("index.html").await
 }
 
 #[get("/<dynamic_album_id>")]
-pub async fn album_page(dynamic_album_id: String) -> AppResult<NamedFile> {
+pub async fn album_page(dynamic_album_id: String) -> AppResult<FrontendResponse> {
     if dynamic_album_id.starts_with("album-") {
-        NamedFile::open(resolve_path("index.html"))
-            .await
-            .or_raise(|| (ErrorKind::IO, "Failed to open album page"))
+        serve_file("index.html").await
     } else {
         Err(AppError::new(ErrorKind::NotFound, "Page not found"))
     }
 }
 
 #[get("/share/<_path..>")]
-pub async fn share(_path: PathBuf) -> AppResult<NamedFile> {
-    NamedFile::open(resolve_path("index.html"))
-        .await
-        .or_raise(|| (ErrorKind::IO, "Failed to open share page"))
+pub async fn share(_path: PathBuf) -> AppResult<FrontendResponse> {
+    serve_file("index.html").await
 }
 
 #[get("/archived")]
-pub async fn archived() -> AppResult<NamedFile> {
-    NamedFile::open(resolve_path("index.html"))
-        .await
-        .or_raise(|| (ErrorKind::IO, "Failed to open archived page"))
+pub async fn archived() -> AppResult<FrontendResponse> {
+    serve_file("index.html").await
 }
 
 #[get("/archived/view/<_path..>")]
-pub async fn archived_view(_path: PathBuf) -> AppResult<NamedFile> {
-    NamedFile::open(resolve_path("index.html"))
-        .await
-        .or_raise(|| (ErrorKind::IO, "Failed to open archived view page"))
+pub async fn archived_view(_path: PathBuf) -> AppResult<FrontendResponse> {
+    serve_file("index.html").await
 }
 
 #[get("/trashed")]
-pub async fn trashed() -> AppResult<NamedFile> {
-    NamedFile::open(resolve_path("index.html"))
-        .await
-        .or_raise(|| (ErrorKind::IO, "Failed to open trashed page"))
+pub async fn trashed() -> AppResult<FrontendResponse> {
+    serve_file("index.html").await
 }
 
 #[get("/trashed/view/<_path..>")]
-pub async fn trashed_view(_path: PathBuf) -> AppResult<NamedFile> {
-    NamedFile::open(resolve_path("index.html"))
-        .await
-        .or_raise(|| (ErrorKind::IO, "Failed to open trashed view page"))
+pub async fn trashed_view(_path: PathBuf) -> AppResult<FrontendResponse> {
+    serve_file("index.html").await
 }
 
 #[get("/all")]
-pub async fn all() -> AppResult<NamedFile> {
-    NamedFile::open(resolve_path("index.html"))
-        .await
-        .or_raise(|| (ErrorKind::IO, "Failed to open all page"))
+pub async fn all() -> AppResult<FrontendResponse> {
+    serve_file("index.html").await
 }
 
 #[get("/all/view/<_path..>")]
-pub async fn all_view(_path: PathBuf) -> AppResult<NamedFile> {
-    NamedFile::open(resolve_path("index.html"))
-        .await
-        .or_raise(|| (ErrorKind::IO, "Failed to open all view page"))
+pub async fn all_view(_path: PathBuf) -> AppResult<FrontendResponse> {
+    serve_file("index.html").await
 }
 
 #[get("/videos")]
-pub async fn videos() -> AppResult<NamedFile> {
-    NamedFile::open(resolve_path("index.html"))
-        .await
-        .or_raise(|| (ErrorKind::IO, "Failed to open videos page"))
+pub async fn videos() -> AppResult<FrontendResponse> {
+    serve_file("index.html").await
 }
 
 #[get("/videos/view/<_path..>")]
-pub async fn videos_view(_path: PathBuf) -> AppResult<NamedFile> {
-    NamedFile::open(resolve_path("index.html"))
-        .await
-        .or_raise(|| (ErrorKind::IO, "Failed to open videos view page"))
+pub async fn videos_view(_path: PathBuf) -> AppResult<FrontendResponse> {
+    serve_file("index.html").await
 }
 
 #[get("/tags")]
-pub async fn tags() -> AppResult<NamedFile> {
-    NamedFile::open(resolve_path("index.html"))
-        .await
-        .or_raise(|| (ErrorKind::IO, "Failed to open tags page"))
+pub async fn tags() -> AppResult<FrontendResponse> {
+    serve_file("index.html").await
 }
 
 #[get("/links")]
-pub async fn links() -> AppResult<NamedFile> {
-    NamedFile::open(resolve_path("index.html"))
-        .await
-        .or_raise(|| (ErrorKind::IO, "Failed to open links page"))
+pub async fn links() -> AppResult<FrontendResponse> {
+    serve_file("index.html").await
 }
 
 #[get("/config")]
-pub async fn config() -> AppResult<NamedFile> {
-    NamedFile::open(resolve_path("index.html"))
-        .await
-        .or_raise(|| (ErrorKind::IO, "Failed to open config page"))
+pub async fn config() -> AppResult<FrontendResponse> {
+    serve_file("index.html").await
 }
 
 #[get("/setting")]
-pub async fn setting() -> AppResult<NamedFile> {
-    NamedFile::open(resolve_path("index.html"))
-        .await
-        .or_raise(|| (ErrorKind::IO, "Failed to open setting page"))
+pub async fn setting() -> AppResult<FrontendResponse> {
+    serve_file("index.html").await
 }
 
 #[get("/favicon.ico")]
-pub async fn favicon() -> AppResult<NamedFile> {
-    NamedFile::open(resolve_path("favicon.ico"))
-        .await
-        .or_raise(|| (ErrorKind::IO, "Failed to open favicon.ico"))
+pub async fn favicon() -> AppResult<FrontendResponse> {
+    serve_file("favicon.ico").await
 }
 
 #[get("/registerSW.js")]
-pub async fn sregister_sw() -> AppResult<NamedFile> {
-    NamedFile::open(resolve_path("registerSW.js"))
-        .await
-        .or_raise(|| (ErrorKind::IO, "Failed to open registerSW.js"))
+pub async fn sregister_sw() -> AppResult<FrontendResponse> {
+    serve_file("registerSW.js").await
 }
 
 #[get("/serviceWorker.js")]
-pub async fn service_worker() -> AppResult<NamedFile> {
-    NamedFile::open(resolve_path("serviceWorker.js"))
-        .await
-        .or_raise(|| (ErrorKind::IO, "Failed to open serviceWorker.js"))
+pub async fn service_worker() -> AppResult<FrontendResponse> {
+    serve_file("serviceWorker.js").await
 }
+
 
 
