@@ -54,9 +54,10 @@ Section "Urocissa Core" SecCore
   SetOutPath "$INSTDIR"
   
   ; Copy backend executable
-  File "target\dev-release\urocissa.exe"
+  File "target\static-release\urocissa.exe"
   
   ; Copy FFmpeg binaries
+
   SetOutPath "$INSTDIR\bin"
   File "bin\ffmpeg.exe"
   File "bin\ffprobe.exe"

@@ -12,6 +12,12 @@ lto = true
 inherits = "release"
 lto = false
 
+[profile.static-release]
+inherits = "release"
+lto = false
+
+
+
 [dependencies]
 anyhow = "1.0.100"
 arrayvec = { version = "0.7.6", features = ["serde"] }
