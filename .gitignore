@@ -22,5 +22,9 @@ gallery-backend/object
 
 docker/docker-compose.override.yml
 
+# Ignore installer executables
+*.exe
+gallery-backend/urocissa-install-*.exe
+
 # gallery-backend/upload: A user-specific folder for media uploads, should not be tracked
 gallery-backend/upload

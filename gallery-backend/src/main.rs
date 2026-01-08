@@ -71,12 +71,22 @@ async fn build_rocket() -> rocket::Rocket<rocket::Build> {
         .merge(("limits", limits));
 
     // Modified: Use custom config and manage AppConfig as state
+    // Determine asset path: local "./assets" (prod) or "../gallery-frontend/dist/assets" (dev)
+    let prod_assets = std::path::Path::new("assets");
+    let asset_path = if prod_assets.exists() {
+        prod_assets.to_path_buf()
+    } else {
+        std::path::PathBuf::from("../gallery-frontend/dist/assets")
+    };
+
+    info!("Serving assets from: {:?}", asset_path);
+
     rocket::custom(rocket_config)
         .manage(app_config)
         .attach(cache_control_fairing())
         .mount(
             "/assets",
-            FileServer::from("../gallery-frontend/dist/assets"),
+            FileServer::from(asset_path),
         )
         .mount("/", generate_get_routes())
         .mount("/", generate_post_routes())
@@ -165,6 +175,7 @@ fn main() -> Result<()> {
         info!("Rocket thread starting.");
         if let Err(e) = ROCKET_RUNTIME.block_on(async {
             let rocket = build_rocket().await.ignite().await?;
+            let port = rocket.config().port;
             let shutdown_handle = rocket.shutdown();
 
             // Manually handle Ctrl-C to trigger graceful shutdown
@@ -175,7 +186,10 @@ fn main() -> Result<()> {
                 shutdown_handle.notify();
             });
 
-            rocket.launch().await.map_err(anyhow::Error::from)
+            // Open browser after server starts listening
+            let launch_future = rocket.launch();
+            open_browser(port);
+            launch_future.await.map_err(anyhow::Error::from)
         }) {
             error!("Rocket thread exited with an error: {}", e);
         }
@@ -185,4 +199,12 @@ fn main() -> Result<()> {
     rocket_handle.join().expect("Rocket thread panicked");
 
     Ok(())
+}
+
+fn open_browser(port: u16) {
+    let url = format!("http://localhost:{}", port);
+    info!("Opening browser at {}", url);
+    if let Err(e) = webbrowser::open(&url) {
+        error!("Failed to open browser: {}", e);
+    }
 }

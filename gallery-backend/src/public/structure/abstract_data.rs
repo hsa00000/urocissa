@@ -364,26 +364,38 @@ impl AbstractData {
     pub fn imported_path_string(&self) -> String {
         let hash = self.hash();
         let ext = self.ext();
-        format!(
-            "./object/imported/{}/{}.{}",
-            &hash.as_str()[0..2],
-            hash,
-            ext
-        )
+        crate::public::constant::storage::get_data_path()
+            .join(format!(
+                "object/imported/{}/{}.{}",
+                &hash.as_str()[0..2],
+                hash,
+                ext
+            ))
+            .to_string_lossy()
+            .into_owned()
     }
 
     /// Get the compressed path string
     pub fn compressed_path_string(&self) -> String {
         let hash = self.hash();
-        match self {
+        let relative_path = match self {
             AbstractData::Image(_) => {
-                format!("./object/compressed/{}/{}.jpg", &hash.as_str()[0..2], hash)
+                format!("object/compressed/{}/{}.jpg", &hash.as_str()[0..2], hash)
             }
             AbstractData::Video(_) => {
-                format!("./object/compressed/{}/{}.mp4", &hash.as_str()[0..2], hash)
+                format!("object/compressed/{}/{}.mp4", &hash.as_str()[0..2], hash)
             }
             AbstractData::Album(_) => String::new(),
+        };
+        
+        if relative_path.is_empty() {
+             return String::new();
         }
+
+        crate::public::constant::storage::get_data_path()
+            .join(relative_path)
+            .to_string_lossy()
+            .into_owned()
     }
 
     /// Get the imported path
@@ -399,7 +411,10 @@ impl AbstractData {
     /// Get the thumbnail path
     pub fn thumbnail_path(&self) -> String {
         let hash = self.hash();
-        format!("./object/compressed/{}/{}.jpg", &hash.as_str()[0..2], hash)
+        crate::public::constant::storage::get_data_path()
+            .join(format!("object/compressed/{}/{}.jpg", &hash.as_str()[0..2], hash))
+            .to_string_lossy()
+            .into_owned()
     }
 
     /// Get the parent directory of the compressed path

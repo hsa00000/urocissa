@@ -1,7 +1,8 @@
 use crate::operations::initialization::{
-    ffmpeg::check_ffmpeg_and_ffprobe, folder::initialize_folder, logger::initialize_logger,
-    redb::initialize_file,
+    ffmpeg::check_ffmpeg_and_ffprobe, folder::initialize_folder,
+    logger::initialize_logger, redb::initialize_file,
 };
+
 use crate::public::structure::config::AppConfig;
 use tokio::sync::mpsc::UnboundedReceiver;
 
@@ -15,8 +16,11 @@ pub fn initialize() -> UnboundedReceiver<String> {
     // Config must be initialized first to ensure 'config.json' exists for subsequent subsystems.
     AppConfig::init();
 
-    check_ffmpeg_and_ffprobe();
+    // Ensure storage folders exist before trying to download FFmpeg into them
     initialize_folder();
+
+
+    check_ffmpeg_and_ffprobe();
     initialize_file();
 
     log_receiver

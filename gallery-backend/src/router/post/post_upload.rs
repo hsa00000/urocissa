@@ -1,3 +1,4 @@
+use crate::public::constant::storage::get_data_path;
 use crate::public::constant::{VALID_IMAGE_EXTENSIONS, VALID_VIDEO_EXTENSIONS};
 use crate::router::fairing::guard_read_only_mode::GuardReadOnlyMode;
 use crate::router::fairing::guard_upload::GuardUpload;
@@ -8,7 +9,7 @@ use anyhow::Result;
 use arrayvec::ArrayString;
 use rocket::form::{Errors, Form};
 use rocket::fs::TempFile;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tokio::task::spawn_blocking;
 use uuid::Uuid;
 
@@ -92,7 +93,15 @@ async fn save_file(
     last_modified_ms: u64,
 ) -> Result<String, AppError> {
     let unique_id = Uuid::new_v4();
-    let tmp_path = format!("./upload/{}-{}.tmp", filename, unique_id);
+    let root = get_data_path();
+    let upload_dir = root.join("upload");
+    
+    // Ensure upload directory exists (though it should be created at init)
+    if !upload_dir.exists() {
+         std::fs::create_dir_all(&upload_dir).map_err(|e| AppError::new(ErrorKind::IO, format!("Failed to create upload dir: {}", e)))?;
+    }
+    
+    let tmp_path = upload_dir.join(format!("{}-{}.tmp", filename, unique_id));
 
     // Move to a temp location first to avoid blocking the async runtime with IO
     file.move_copy_to(&tmp_path)
@@ -100,19 +109,20 @@ async fn save_file(
         .or_raise(|| (ErrorKind::IO, "Failed to move temporary file"))?;
 
     let filename_owned = filename.clone();
+    let tmp_path_owned = tmp_path.clone();
 
     // Perform metadata operations and rename in a blocking thread.
     // 1. Set mtime on the .tmp file.
     // 2. Atomic rename to .ext (final state).
     // This ensures the file watcher (workflow) only picks up the file once it is fully written and has the correct timestamp.
     let final_path = spawn_blocking(move || -> Result<String, AppError> {
-        let final_path = format!("./upload/{}-{}.{}", filename_owned, unique_id, extension);
+        let final_path = upload_dir.join(format!("{}-{}.{}", filename_owned, unique_id, extension));
 
-        set_last_modified_time(&tmp_path, last_modified_ms)?;
-        std::fs::rename(&tmp_path, &final_path)
+        set_last_modified_time(&tmp_path_owned, last_modified_ms)?;
+        std::fs::rename(&tmp_path_owned, &final_path)
             .or_raise(|| (ErrorKind::IO, "Failed to rename file"))?;
 
-        Ok(final_path)
+        Ok(final_path.to_string_lossy().into_owned())
     })
     .await
     .or_raise(|| (ErrorKind::Internal, "Failed to join blocking task"))??;
@@ -120,7 +130,7 @@ async fn save_file(
     Ok(final_path)
 }
 
-fn set_last_modified_time(path: &str, last_modified_ms: u64) -> Result<(), AppError> {
+fn set_last_modified_time(path: &Path, last_modified_ms: u64) -> Result<(), AppError> {
     let mtime = filetime::FileTime::from_unix_time((last_modified_ms / 1000) as i64, 0);
     filetime::set_file_mtime(path, mtime)
         .or_raise(|| (ErrorKind::IO, "Failed to set file modification time"))?;
@@ -136,4 +146,5 @@ fn get_extension(file: &TempFile<'_>) -> Result<String, AppError> {
             AppError::new(ErrorKind::InvalidInput, "Missing or unknown file extension")
         })
 }
+
 

@@ -50,7 +50,8 @@ pub async fn regenerate_thumbnail_with_frame(
     let hash = ArrayString::<64>::from(&inner_form.hash)
         .map_err(|_| AppError::new(ErrorKind::InvalidInput, "Invalid hash length or format"))?;
 
-    let file_path = format!("./object/compressed/{}/{}.jpg", &hash[0..2], hash.as_str());
+    let root = crate::public::constant::storage::get_data_path();
+    let file_path = root.join(format!("object/compressed/{}/{}.jpg", &hash[0..2], hash.as_str()));
 
     inner_form
         .frame

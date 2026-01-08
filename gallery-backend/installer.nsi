@@ -1,0 +1,139 @@
+; Urocissa Installer Script
+; Requires NSIS 3.0+
+
+;--------------------------------
+;General
+
+  ;Name and file
+  Name "Urocissa"
+  OutFile "urocissa-install-1.0.exe"
+  Unicode True
+
+  ;Default installation folder
+  InstallDir "$PROGRAMFILES64\Urocissa"
+  
+  ;Get installation folder from registry if available
+  InstallDirRegKey HKCU "Software\Urocissa" ""
+
+  ;Request application privileges for Windows Vista/7/8/10
+  RequestExecutionLevel admin
+
+;--------------------------------
+;Interface Settings
+
+  !include "MUI2.nsh"
+
+  !define MUI_ABORTWARNING
+  !define MUI_ICON "${NSISDIR}\Contrib\Graphics\Icons\modern-install.ico"
+  !define MUI_UNICON "${NSISDIR}\Contrib\Graphics\Icons\modern-uninstall.ico"
+
+;--------------------------------
+;Pages
+
+  !insertmacro MUI_PAGE_WELCOME
+  !insertmacro MUI_PAGE_LICENSE "..\LICENSE"
+  !insertmacro MUI_PAGE_DIRECTORY
+  !insertmacro MUI_PAGE_INSTFILES
+  !insertmacro MUI_PAGE_FINISH
+
+  !insertmacro MUI_UNPAGE_WELCOME
+  !insertmacro MUI_UNPAGE_CONFIRM
+  !insertmacro MUI_UNPAGE_INSTFILES
+  !insertmacro MUI_UNPAGE_FINISH
+
+;--------------------------------
+;Languages
+ 
+  !insertmacro MUI_LANGUAGE "English"
+
+;--------------------------------
+;Installer Sections
+
+Section "Urocissa Core" SecCore
+
+  SetOutPath "$INSTDIR"
+  
+  ; Copy backend executable
+  File "target\dev-release\urocissa.exe"
+  
+  ; Copy FFmpeg binaries
+  SetOutPath "$INSTDIR\bin"
+  File "bin\ffmpeg.exe"
+  File "bin\ffprobe.exe"
+
+  SetOutPath "$INSTDIR"
+  
+  ; Copy frontend root files
+  File "..\gallery-frontend\dist\index.html"
+  File "..\gallery-frontend\dist\favicon.ico"
+  File "..\gallery-frontend\dist\registerSW.js"
+  File "..\gallery-frontend\dist\serviceWorker.js"
+  
+  ; Copy frontend assets
+  SetOutPath "$INSTDIR\assets"
+
+  File /r "..\gallery-frontend\dist\assets\*"
+  
+  ; Copy index.html (if needed by your server logic, but assets usually suffice if served correctly)
+  ; Note: Rocket FileServer usually serves index.html if mapped to root, but here we mapped /assets.
+  ; If you need the root index.html to be served, we might need to copy it too.
+  ; Assuming your backend handles the SPA routing or serves index.html from somewhere.
+  
+  SetOutPath "$INSTDIR"
+  
+  ; Create uninstaller
+  WriteUninstaller "$INSTDIR\Uninstall.exe"
+
+  ; Store installation folder
+  WriteRegStr HKCU "Software\Urocissa" "" $INSTDIR
+
+  ; Create Start Menu Shortcuts
+  CreateDirectory "$SMPROGRAMS\Urocissa"
+  CreateShortcut "$SMPROGRAMS\Urocissa\Urocissa.lnk" "$INSTDIR\urocissa.exe" "" "$INSTDIR\urocissa.exe" 0
+  CreateShortcut "$SMPROGRAMS\Urocissa\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
+
+  ; Create Desktop Shortcut
+  CreateShortcut "$DESKTOP\Urocissa.lnk" "$INSTDIR\urocissa.exe" "" "$INSTDIR\urocissa.exe" 0
+
+  ; Pin to Taskbar (Windows 10/11)
+  ; Note: This requires the shortcut to exist first
+  DetailPrint "Creating taskbar shortcut..."
+  CreateShortcut "$APPDATA\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\Urocissa.lnk" "$INSTDIR\urocissa.exe" "" "$INSTDIR\urocissa.exe" 0
+
+SectionEnd
+
+;--------------------------------
+;Uninstaller Section
+
+Section "Uninstall"
+
+  ; Remove files
+  Delete "$INSTDIR\urocissa.exe"
+  Delete "$INSTDIR\config.json"
+  Delete "$INSTDIR\Uninstall.exe"
+  
+  ; Remove assets
+  RMDir /r "$INSTDIR\assets"
+  RMDir /r "$INSTDIR\bin" ; Remove auto-downloaded ffmpeg binaries
+  
+  ; Note: We intentionally DO NOT delete the User Data (AppData) here
+  ; to preserve user photos/database upon uninstall.
+  
+  ; Remove shortcuts
+  Delete "$SMPROGRAMS\Urocissa\Urocissa.lnk"
+  Delete "$SMPROGRAMS\Urocissa\Uninstall.lnk"
+  RMDir "$SMPROGRAMS\Urocissa"
+
+  ; Remove desktop shortcut
+  Delete "$DESKTOP\Urocissa.lnk"
+
+  ; Remove taskbar shortcut
+  Delete "$APPDATA\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\Urocissa.lnk"
+
+  ; Remove registry keys
+  DeleteRegKey /ifempty HKCU "Software\Urocissa"
+
+  ; Remove install directory (only if empty)
+  RMDir "$INSTDIR"
+
+SectionEnd
