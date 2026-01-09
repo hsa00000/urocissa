@@ -21,7 +21,7 @@ if ($LASTEXITCODE -ne 0) {
 # 2. Create Installer with NSIS
 Write-Host "Creating Installer with NSIS ($nsisPath)..."
 
-& $nsisPath gallery-backend/installer.nsi
+& $nsisPath "/DPRODUCT_ICON=c:\Users\User\Documents\GitHub\Urocissa\gallery-backend\assets\logo.ico" gallery-backend/installer.nsi
 
 if ($LASTEXITCODE -ne 0) {
     Write-Error "NSIS build failed!"

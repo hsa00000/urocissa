@@ -76,6 +76,9 @@ webbrowser = "1.0.6"
 rust-embed = "8.5.0"
 mime_guess = "2.0.5"
 
+[build-dependencies]
+winres = "0.1"
+
 [features]
 embed-frontend = []
 

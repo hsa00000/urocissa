@@ -24,8 +24,13 @@
   !include "MUI2.nsh"
 
   !define MUI_ABORTWARNING
-  !define MUI_ICON "${NSISDIR}\Contrib\Graphics\Icons\modern-install.ico"
-  !define MUI_UNICON "${NSISDIR}\Contrib\Graphics\Icons\modern-uninstall.ico"
+  !ifdef PRODUCT_ICON
+    !define MUI_ICON "${PRODUCT_ICON}"
+    !define MUI_UNICON "${PRODUCT_ICON}"
+  !else
+    !define MUI_ICON "${NSISDIR}\Contrib\Graphics\Icons\modern-install.ico"
+    !define MUI_UNICON "${NSISDIR}\Contrib\Graphics\Icons\modern-uninstall.ico"
+  !endif
 
 ;--------------------------------
 ;Pages
