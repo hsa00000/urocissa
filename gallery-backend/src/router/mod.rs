@@ -6,7 +6,7 @@ pub mod post;
 pub mod put;
 
 // Re-export the designed error type
-pub use crate::public::error::{AppError, ErrorKind, ResultExt};
+pub use crate::public::error::{AppError, ErrorKind};
 
 // Define AppResult using the new error type
 pub type AppResult<T> = Result<T, AppError>;

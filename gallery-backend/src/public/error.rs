@@ -12,6 +12,7 @@ pub enum ErrorKind {
     Internal,
     Database,
     IO,
+    #[allow(dead_code)]
     Serialization,
     Auth,
     ReadOnlyMode,
@@ -36,6 +37,7 @@ impl ErrorKind {
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 pub enum ErrorStatus {
     Permanent,
+    #[allow(dead_code)]
     Temporary,
 }
 
@@ -74,6 +76,7 @@ impl AppError {
         }
     }
 
+    #[allow(dead_code)]
     pub fn temporary(mut self) -> Self {
         self.status = ErrorStatus::Temporary;
         self
@@ -162,6 +165,7 @@ pub trait ResultExt<T> {
         F: FnOnce() -> (ErrorKind, S),
         S: Into<String>;
         
+    #[allow(dead_code)]
     fn with_context<S>(self, ctx: S) -> Result<T, AppError>
     where S: Into<String>;
 }
@@ -203,6 +207,7 @@ where
 }
 
 // Extension trait for Option
+#[allow(dead_code)]
 pub trait OptionExt<T> {
      fn or_raise<F, S>(self, op: F) -> Result<T, AppError>
     where

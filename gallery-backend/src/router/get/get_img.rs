@@ -10,7 +10,7 @@ use crate::router::{
 use rocket::fs::NamedFile;
 use rocket::response::Responder;
 use rocket_seek_stream::SeekStream;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 #[derive(Responder)]
 pub enum CompressedFileResponse<'a> {

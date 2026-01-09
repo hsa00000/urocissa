@@ -1,5 +1,4 @@
 use crate::public::constant::storage::get_data_path;
-use std::path::PathBuf;
 use log::info;
 
 pub fn initialize_folder() {

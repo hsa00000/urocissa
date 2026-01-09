@@ -9,7 +9,7 @@ use std::fs::{self, File};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::{OnceLock, RwLock};
-use log::{info, warn, error};
+use log::{info, warn};
 
 const CONFIG_FILE: &str = "config.json";
 
