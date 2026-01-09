@@ -18,11 +18,7 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-# 2. Build Frontend (Optional - assuming already built in ../gallery-frontend/dist)
-# Write-Host "Checking Frontend..."
-# ...
-
-# 3. Create Installer with NSIS
+# 2. Create Installer with NSIS
 Write-Host "Creating Installer with NSIS ($nsisPath)..."
 
 & $nsisPath gallery-backend/installer.nsi
