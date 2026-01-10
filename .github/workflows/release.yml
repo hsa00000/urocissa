@@ -1,0 +1,60 @@
+name: Build and Release Installer
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger on tags like v1.0.0
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: gallery-frontend/package-lock.json
+
+    - name: Install Frontend Dependencies
+      working-directory: ./gallery-frontend
+      run: npm ci
+
+    - name: Build Frontend
+      working-directory: ./gallery-frontend
+      run: npm run build
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: x86_64-pc-windows-msvc
+
+    - name: Install NSIS
+      run: |
+        choco install nsis
+        # Add NSIS to PATH for the current session if choco doesn't update it immediately for the shell
+        echo "C:\Program Files (x86)\NSIS" >> $env:GITHUB_PATH
+
+    - name: Build Installer
+      run: .\build_installer.ps1
+      shell: powershell
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: urocissa-installer
+        path: gallery-backend/urocissa-install-*.exe
+
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: gallery-backend/urocissa-install-*.exe
