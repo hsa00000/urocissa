@@ -11,7 +11,7 @@ if (-not (Test-Path $nsisPath)) {
 # 1. Build Backend with Static Linking AND Embedded Frontend
 Write-Host "Compiling Rust Backend (Static Linking + Embedded Frontend)..."
 $env:RUSTFLAGS="-C target-feature=+crt-static"
-cargo build --manifest-path "gallery-backend/Cargo.toml" --profile static-release --features embed-frontend
+cargo build --manifest-path "gallery-backend/Cargo.toml" --profile static-release --features "embed-frontend auto-open-browser"
 
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Cargo build failed!"

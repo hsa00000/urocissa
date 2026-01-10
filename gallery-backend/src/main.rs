@@ -19,8 +19,8 @@ mod router;
 mod tasks;
 mod workflow;
 
-use crate::process::initialization::initialize;
 use crate::operations::initialization::logger::initialize_logger;
+use crate::process::initialization::initialize;
 use crate::public::constant::runtime::{INDEX_RUNTIME, ROCKET_RUNTIME};
 
 use crate::public::error_data::handle_error;
@@ -157,7 +157,6 @@ fn main() -> Result<()> {
 
     // Architecture: Isolate the Indexing/TUI runtime from the Rocket server runtime.
 
-
     // This prevents heavy blocking operations in the indexer from stalling web requests.
     let worker_handle = thread::spawn(move || {
         INDEX_RUNTIME.block_on(async {
@@ -229,6 +228,7 @@ fn main() -> Result<()> {
 
             // Open browser after server starts listening
             let launch_future = rocket.launch();
+            #[cfg(feature = "auto-open-browser")]
             open_browser(port);
             launch_future.await.map_err(anyhow::Error::from)
         }) {
@@ -242,6 +242,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+#[cfg(feature = "auto-open-browser")]
 fn open_browser(port: u16) {
     let url = format!("http://localhost:{}", port);
     info!("Opening browser at {}", url);

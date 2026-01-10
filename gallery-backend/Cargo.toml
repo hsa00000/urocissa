@@ -72,7 +72,7 @@ walkdir = "2.5.0"
 base64 = "0.22.1"
 directories = "6.0.0"
 zip = "7.0.0"
-webbrowser = "1.0.6"
+webbrowser = { version = "1.0.6", optional = true }
 rust-embed = "8.5.0"
 mime_guess = "2.0.5"
 
@@ -81,4 +81,5 @@ winres = "0.1"
 
 [features]
 embed-frontend = []
+auto-open-browser = ["dep:webbrowser"]
 
