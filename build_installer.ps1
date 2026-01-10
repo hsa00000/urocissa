@@ -42,9 +42,11 @@ Write-Host "Creating Installer with NSIS ($nsisPath)..."
 # However, we are passing EXE_SOURCE from outside.
 # Let's use an absolute path to avoid ambiguity.
 $exeSource = Resolve-Path "gallery-backend/target/$profile/urocissa.exe"
+$iconSource = Resolve-Path "gallery-backend\assets\logo.ico"
 Write-Host "Using Executable: $exeSource"
+Write-Host "Using Icon: $iconSource"
 
-& $nsisPath "/DPRODUCT_ICON=c:\Users\User\Documents\GitHub\Urocissa\gallery-backend\assets\logo.ico" "/DEXE_SOURCE=$exeSource" gallery-backend/installer.nsi
+& $nsisPath "/DPRODUCT_ICON=$iconSource" "/DEXE_SOURCE=$exeSource" gallery-backend/installer.nsi
 
 if ($LASTEXITCODE -ne 0) {
     Write-Error "NSIS build failed!"
