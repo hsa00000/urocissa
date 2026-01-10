@@ -81,6 +81,7 @@ async fn build_rocket() -> rocket::Rocket<rocket::Build> {
 
     let limits = Limits::default()
         .limit("form", get_limit("data-form", "10GiB"))
+        .limit("data-form", get_limit("data-form", "10GiB"))
         .limit("file", get_limit("file", "10GiB"))
         .limit("json", get_limit("json", "10MiB"));
 
