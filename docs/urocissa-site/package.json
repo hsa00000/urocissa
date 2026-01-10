@@ -1,0 +1,23 @@
+{
+  "name": "urocissa-site",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "deploy": "nuxt generate && gh-pages -d .output/public --dotfiles",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@mdi/font": "^7.4.47",
+    "nuxt": "^4.2.2",
+    "vue": "^3.5.26",
+    "vue-router": "^4.6.4"
+  },
+  "devDependencies": {
+    "gh-pages": "^6.3.0",
+    "vuetify-nuxt-module": "^0.19.2"
+  }
+}
