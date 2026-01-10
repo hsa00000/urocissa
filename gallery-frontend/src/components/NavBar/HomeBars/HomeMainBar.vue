@@ -55,7 +55,7 @@
           v-if="route.meta.level === 1"
           icon="mdi-upload"
           :loading="loading"
-          @click="uploadStore.triggerFileInput"
+          @click="uploadStore.triggerFileInput(undefined)"
         />
       </v-toolbar>
       <EditBar v-else />
