@@ -70,8 +70,8 @@ Section "Urocissa Core" SecCore
   File "bin\ffprobe.exe"
   
   ; Copy FFmpeg License and Credits
-  File "/oname=FFMPEG_LICENSE.txt" "bin\LICENSE.txt"
-  File "bin\CREDITS.txt"
+  File "bin\FFMPEG_LICENSE.txt"
+  File "bin\FFMPEG_README.txt"
 
   SetOutPath "$INSTDIR"
   
