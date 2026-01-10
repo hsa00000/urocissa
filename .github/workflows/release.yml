@@ -59,10 +59,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: urocissa-installer
-          path: gallery-backend/urocissa-install-*.exe
+          path: gallery-backend/urocissa-installer-*.exe
 
       - name: Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: gallery-backend/urocissa-install-*.exe
+          files: gallery-backend/urocissa-installer-*.exe

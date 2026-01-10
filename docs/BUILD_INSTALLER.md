@@ -40,4 +40,4 @@ Run NSIS to compile the script:
 
 ## Output
 
-The installer `urocissa-install-1.0.exe` will be generated in the `gallery-backend` folder.
+The installer `urocissa-installer-<version>.exe` will be generated in the `gallery-backend` folder.

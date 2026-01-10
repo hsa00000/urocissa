@@ -21,6 +21,18 @@ if ($dev) {
     Write-Host "Release mode. Using profile: $profile"
 }
 
+# Extract version from Cargo.toml
+$cargoToml = Get-Content "gallery-backend/Cargo.toml"
+$versionLine = $cargoToml | Select-String -Pattern '^version\s*=\s*"(.*)"'
+if ($versionLine) {
+    $version = $versionLine.Matches.Groups[1].Value
+} else {
+    $version = "0.0.0"
+    Write-Warning "Could not determine version from Cargo.toml. Using default 0.0.0"
+}
+
+Write-Host "Detected version: $version"
+
 # 1. Build Backend with Static Linking AND Embedded Frontend
 Write-Host "Compiling Rust Backend (Static Linking + Embedded Frontend)..."
 $env:RUSTFLAGS="-C target-feature=+crt-static"
@@ -43,14 +55,17 @@ Write-Host "Creating Installer with NSIS ($nsisPath)..."
 # Let's use an absolute path to avoid ambiguity.
 $exeSource = Resolve-Path "gallery-backend/target/$profile/urocissa.exe"
 $iconSource = Resolve-Path "gallery-backend\assets\logo.ico"
+$installerName = "urocissa-installer-${version}.exe"
+
 Write-Host "Using Executable: $exeSource"
 Write-Host "Using Icon: $iconSource"
+Write-Host "Installer Name: $installerName"
 
-& $nsisPath "/DPRODUCT_ICON=$iconSource" "/DEXE_SOURCE=$exeSource" gallery-backend/installer.nsi
+& $nsisPath "/DPRODUCT_ICON=$iconSource" "/DEXE_SOURCE=$exeSource" "/DINSTALLER_NAME=$installerName" gallery-backend/installer.nsi
 
 if ($LASTEXITCODE -ne 0) {
     Write-Error "NSIS build failed!"
     exit 1
 }
 
-Write-Host "Build Complete! Installer located at: gallery-backend/urocissa-install-1.0.exe"
+Write-Host "Build Complete! Installer located at: gallery-backend/$installerName"

@@ -6,7 +6,11 @@
 
   ;Name and file
   Name "Urocissa"
-  OutFile "urocissa-install-1.0.exe"
+  !ifdef INSTALLER_NAME
+    OutFile "${INSTALLER_NAME}"
+  !else
+    OutFile "urocissa-installer.exe"
+  !endif
   Unicode True
 
   ;Default installation folder
