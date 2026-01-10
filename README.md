@@ -92,7 +92,9 @@ These values are based on actual runtime RSS (resident memory) usage of the `uro
 
 ## Quick Setup
 
-To instantly set up and try Urocissa using Docker on Linux, follow these steps:
+- **Windows Users**: You can download the installation file directly from the [Releases](https://github.com/hsa00000/urocissa/releases) page.
+
+- **Linux Users**: To instantly set up and try Urocissa using Docker, follow these steps:
 
 ### Quick Setup with Docker
 
