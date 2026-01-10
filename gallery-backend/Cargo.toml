@@ -14,9 +14,11 @@ lto = false
 
 [profile.static-release]
 inherits = "release"
+lto = true
+
+[profile.static-dev]
+inherits = "release"
 lto = false
-
-
 
 [dependencies]
 anyhow = "1.0.100"
@@ -82,4 +84,3 @@ winres = "0.1"
 [features]
 embed-frontend = []
 auto-open-browser = ["dep:webbrowser"]
-

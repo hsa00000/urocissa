@@ -59,7 +59,11 @@ Section "Urocissa Core" SecCore
   SetOutPath "$INSTDIR"
   
   ; Copy backend executable
-  File "target\static-release\urocissa.exe"
+  !ifdef EXE_SOURCE
+    File "/oname=urocissa.exe" "${EXE_SOURCE}"
+  !else
+    File "target\static-release\urocissa.exe"
+  !endif
   
   ; Copy Urocissa License
   File "..\LICENSE"

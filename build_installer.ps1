@@ -1,3 +1,7 @@
+param (
+    [switch]$dev
+)
+
 Write-Host "Building Urocissa Installer..."
 
 # Locate NSIS
@@ -8,10 +12,19 @@ if (-not (Test-Path $nsisPath)) {
     $nsisPath = "makensis.exe"
 }
 
+# Determine profile based on flag
+$profile = "static-release"
+if ($dev) {
+    $profile = "static-dev"
+    Write-Host "Dev mode enabled. Using profile: $profile"
+} else {
+    Write-Host "Release mode. Using profile: $profile"
+}
+
 # 1. Build Backend with Static Linking AND Embedded Frontend
 Write-Host "Compiling Rust Backend (Static Linking + Embedded Frontend)..."
 $env:RUSTFLAGS="-C target-feature=+crt-static"
-cargo build --manifest-path "gallery-backend/Cargo.toml" --profile static-release --features "embed-frontend auto-open-browser"
+cargo build --manifest-path "gallery-backend/Cargo.toml" --profile $profile --features "embed-frontend auto-open-browser"
 
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Cargo build failed!"
@@ -21,7 +34,17 @@ if ($LASTEXITCODE -ne 0) {
 # 2. Create Installer with NSIS
 Write-Host "Creating Installer with NSIS ($nsisPath)..."
 
-& $nsisPath "/DPRODUCT_ICON=c:\Users\User\Documents\GitHub\Urocissa\gallery-backend\assets\logo.ico" gallery-backend/installer.nsi
+# Define the source executable path based on profile
+# Note: Paths should be relative to the NSIS script if not absolute.
+# Since we are running makensis on "gallery-backend/installer.nsi", 
+# the script's directory (gallery-backend/) is the context for relative paths in the script.
+#
+# However, we are passing EXE_SOURCE from outside.
+# Let's use an absolute path to avoid ambiguity.
+$exeSource = Resolve-Path "gallery-backend/target/$profile/urocissa.exe"
+Write-Host "Using Executable: $exeSource"
+
+& $nsisPath "/DPRODUCT_ICON=c:\Users\User\Documents\GitHub\Urocissa\gallery-backend\assets\logo.ico" "/DEXE_SOURCE=$exeSource" gallery-backend/installer.nsi
 
 if ($LASTEXITCODE -ne 0) {
     Write-Error "NSIS build failed!"
