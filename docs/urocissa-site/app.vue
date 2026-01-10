@@ -306,7 +306,7 @@
                     color="blue-darken-2"
                     size="x-large"
                     prepend-icon="mdi-microsoft-windows"
-                    href="https://github.com/hsa00000/urocissa/releases"
+                    :href="windowsDownloadUrl"
                     target="_blank"
                     min-width="280"
                   >
@@ -370,11 +370,31 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref, onMounted } from "vue";
 import { useHead } from "#imports";
 import { useTheme } from "vuetify";
 
 const theme = useTheme();
+
+const windowsDownloadUrl = ref("https://github.com/hsa00000/urocissa/releases");
+
+onMounted(async () => {
+  try {
+    const response = await fetch(
+      "https://api.github.com/repos/hsa00000/urocissa/releases/latest"
+    );
+    if (!response.ok) throw new Error("Network response was not ok");
+    const data = await response.json();
+    const exeAsset = data.assets.find((asset: any) =>
+      asset.name.endsWith(".exe")
+    );
+    if (exeAsset) {
+      windowsDownloadUrl.value = exeAsset.browser_download_url;
+    }
+  } catch (e) {
+    console.error("Failed to fetch latest release", e);
+  }
+});
 
 // 使用 Computed 屬性保持邏輯清晰
 const isDark = computed(() => theme.global.current.value.dark);
