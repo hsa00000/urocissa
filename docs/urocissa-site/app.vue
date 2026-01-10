@@ -1,6 +1,6 @@
 <template>
   <v-app>
-    <v-app-bar app color="white" elevation="1">
+    <v-app-bar app color="surface" elevation="1">
       <v-container class="d-flex align-center py-0">
         <v-avatar rounded="0" class="mr-3">
           <v-img src="/logo.png" alt="Urocissa Logo"></v-img>
@@ -12,13 +12,13 @@
         <v-spacer></v-spacer>
 
         <div class="d-none d-md-flex">
-          <v-btn text href="#features" color="grey-darken-3">Features</v-btn>
-          <v-btn text href="#download" color="grey-darken-3">Download</v-btn>
+          <v-btn text href="#features" color="primary">Features</v-btn>
+          <v-btn text href="#download" color="primary">Download</v-btn>
           <v-btn
             text
             href="https://github.com/hsa00000/urocissa/tree/master/docs"
             target="_blank"
-            color="grey-darken-3"
+            color="primary"
             >Docs</v-btn
           >
           <v-btn
@@ -26,25 +26,33 @@
             href="https://github.com/hsa00000/urocissa"
             target="_blank"
             prepend-icon="mdi-github"
-            color="grey-darken-3"
+            color="primary"
             >GitHub</v-btn
           >
         </div>
+
+        <v-btn icon @click="toggleTheme" class="ml-2" color="primary">
+          <v-icon>{{
+            theme.global.current.value.dark
+              ? "mdi-weather-night"
+              : "mdi-weather-sunny"
+          }}</v-icon>
+        </v-btn>
       </v-container>
     </v-app-bar>
 
-    <v-main class="bg-grey-lighten-4">
+    <v-main class="bg-background">
       <!-- Hero Section -->
-      <section class="bg-white pb-16 pt-10">
+      <v-sheet tag="section" color="surface" class="pb-16 pt-10">
         <v-container>
           <v-row justify="center" align="center" class="text-center">
             <v-col cols="12" md="8">
               <v-img
                 src="/logo.png"
                 max-width="150"
-                class="mx-auto mb-6"
+                class="mx-auto mb-6 logo-glow"
               ></v-img>
-              <h1 class="text-h2 font-weight-bold mb-4 text-grey-darken-4">
+              <h1 class="text-h2 font-weight-bold mb-4 text-high-emphasis">
                 Urocissa
               </h1>
               <p
@@ -80,14 +88,31 @@
               </p>
             </v-col>
           </v-row>
+
+          <v-row justify="center" class="mt-12">
+            <v-col cols="12" md="10">
+              <v-card elevation="24" rounded="xl" class="overflow-hidden">
+                <v-img
+                  :src="
+                    theme.global.current.value.dark
+                      ? '/demo_dark.jpg'
+                      : '/demo_light.jpg'
+                  "
+                  alt="Urocissa Demo Screenshot"
+                  width="100%"
+                  cover
+                ></v-img>
+              </v-card>
+            </v-col>
+          </v-row>
         </v-container>
-      </section>
+      </v-sheet>
 
       <!-- Features Section -->
       <section id="features" class="py-16">
         <v-container>
           <h2
-            class="text-h3 text-center mb-12 font-weight-bold text-grey-darken-3"
+            class="text-h3 text-center mb-12 font-weight-bold text-high-emphasis"
           >
             Why Urocissa?
           </h2>
@@ -226,7 +251,7 @@
       </section>
 
       <!-- Download Section -->
-      <section id="download" class="bg-white py-16">
+      <v-sheet id="download" tag="section" color="surface" class="py-16">
         <v-container>
           <v-row justify="center" class="text-center">
             <v-col cols="12" md="8">
@@ -251,7 +276,7 @@
                   Download for Windows
                 </v-btn>
                 <v-btn
-                  color="grey-darken-3"
+                  color="secondary"
                   size="x-large"
                   prepend-icon="mdi-docker"
                   href="https://github.com/hsa00000/urocissa?tab=readme-ov-file#quick-setup-with-docker"
@@ -275,11 +300,13 @@
               </div>
             </v-col>
           </v-row>
+
+
         </v-container>
-      </section>
+      </v-sheet>
     </v-main>
 
-    <v-footer class="bg-grey-lighten-3 text-center d-flex flex-column py-8">
+    <v-footer class="bg-background text-center d-flex flex-column py-8">
       <div>
         <v-btn
           variant="text"
@@ -297,6 +324,13 @@
 
 <script setup>
 import { useHead } from "#imports";
+import { useTheme } from "vuetify";
+
+const theme = useTheme();
+
+function toggleTheme() {
+  theme.global.name.value = theme.global.current.value.dark ? "light" : "dark";
+}
 
 useHead({
   title: "Urocissa - Massive Photo Gallery Server",
@@ -313,5 +347,14 @@ useHead({
 <style>
 html {
   scroll-behavior: smooth;
+}
+
+.logo-glow {
+  filter: drop-shadow(0 0 15px rgba(33, 150, 243, 0.6));
+  transition: filter 0.3s ease-in-out;
+}
+
+.logo-glow:hover {
+  filter: drop-shadow(0 0 25px rgba(33, 150, 243, 0.9));
 }
 </style>
