@@ -1,13 +1,14 @@
 <template>
   <v-app>
     <v-app-bar color="surface" elevation="1">
-      <v-container class="fill-height">
-        <v-row align="center" no-gutters>
+      <v-container class="h-100 py-0">
+        <v-row align="center" no-gutters class="h-100">
           <v-col cols="auto">
             <v-avatar rounded="0" class="me-3">
               <v-img src="/logo.png" alt="Urocissa Logo"></v-img>
             </v-avatar>
           </v-col>
+
           <v-col cols="auto">
             <v-app-bar-title class="font-weight-bold text-h5 text-primary">
               Urocissa
