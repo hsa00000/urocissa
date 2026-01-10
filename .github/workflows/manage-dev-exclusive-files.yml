@@ -1,0 +1,39 @@
+name: Manage Dev-Exclusive Files
+
+on:
+  pull_request:
+    branches: [ "main" ]
+  merge_group:
+    types: [checks_requested]
+
+permissions:
+  contents: read  # Only requires read permissions
+
+jobs:
+  manage-dev-files:
+    runs-on: ubuntu-latest
+    env:
+      DEV_EXCLUSIVE_FILES: "cleanup.sh"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch the entire history to ensure the main branch is available
+
+      - name: Fetch main branch
+        run: |
+          echo "Fetching main branch for comparison."
+          git fetch origin main
+
+      - name: Block dev-exclusive files in pull requests or pushes
+        run: |
+          echo "Checking for dev-exclusive files in PR or push..."
+          for file in $DEV_EXCLUSIVE_FILES; do
+            echo "Checking $file..."
+            if git diff --name-only origin/main...HEAD | grep -q "$file"; then
+              echo "Error: $file cannot be included in this PR or push."
+              exit 1
+            fi
+          done
+          echo "No dev-exclusive files detected. Workflow completed successfully."

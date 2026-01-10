@@ -1,0 +1,29 @@
+# Ignore all log files at the root level, typically generated with custom names by run_urocissa_docker.sh using --log-file
+/*.log
+
+# Prevent uploading development-related scripts and editor configuration files to the main branch
+cleanup.sh
+.vscode/
+
+# User-specific configuration files, added to .gitignore to avoid overwriting during collaboration
+gallery-backend/config.json
+gallery-backend/Rocket.toml
+gallery-frontend/config.ts
+.env
+
+# Ignore build and generated files that should not be version-controlled
+gallery-frontend/dist
+gallery-frontend/node_modules
+gallery-frontend/dev-dist
+gallery-backend/target
+gallery-backend/test
+gallery-backend/db
+gallery-backend/object
+
+docker/docker-compose.override.yml
+
+# Ignore installer executables
+*.exe
+
+# gallery-backend/upload: A user-specific folder for media uploads, should not be tracked
+gallery-backend/upload

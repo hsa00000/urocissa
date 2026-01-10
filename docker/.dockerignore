@@ -1,0 +1,48 @@
+# Ignore everything
+
+\*\*
+
+# Include the parent directories
+
+!frontend/
+!backend/
+
+# Ignore everything inside the included directories
+
+frontend/**
+backend/**
+
+# Include specific subdirectories
+
+!frontend/public/
+!frontend/src/
+!backend/src/
+!backend/lib/
+
+# Include all files and subdirectories within the included subdirectories
+
+!frontend/public/**
+!frontend/src/**
+!backend/src/**
+!backend/lib/**
+
+# Include specific files in frontend
+
+!frontend/package.json
+!frontend/index.html
+!frontend/package-lock.json
+!frontend/tsconfig.json
+!frontend/tsconfig.node.json
+!frontend/tsconfig.tsbuildinfo
+!frontend/vite.config.ts
+
+# Include specific files in backend
+
+!backend/config.json
+!backend/Rocket.toml
+!backend/Cargo.lock
+!backend/Cargo.toml
+!backend/.env.default
+!backend/.env
+!backend/Rocket.default.toml
+!backend/Rocket.toml
