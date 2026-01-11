@@ -1,12 +1,10 @@
 import { useRerenderStore } from '@/store/rerenderStore'
 import type { Router } from 'vue-router'
-import type { NavigationFailure } from 'vue-router'
 
 export async function navigateToAlbum(
   albumId: string,
   router: Router
-): Promise<NavigationFailure | undefined> {
-
+): ReturnType<Router['push']> {
   const albumPath = `/albums/view/${albumId}/read`
 
   if (router.currentRoute.value.fullPath.startsWith('/albums')) {
