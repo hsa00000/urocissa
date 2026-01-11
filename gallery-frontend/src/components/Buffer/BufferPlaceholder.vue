@@ -3,7 +3,8 @@
     class="w-100 position-absolute"
     ref="placeholderRef"
     :style="{
-      top: `${modifyTopPixel ? topPixel - placeholderRefHeight : topPixel}px`
+      transform: `translateY(${modifyTopPixel ? topPixel - placeholderRefHeight : topPixel}px)`,
+      willChange: 'transform'
     }"
   >
     <div class="d-flex flex-wrap" v-for="index in placeholderRowNumScaled" :key="`extra-${index}`">

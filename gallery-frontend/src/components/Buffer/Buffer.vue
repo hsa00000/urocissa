@@ -20,8 +20,9 @@
       :key="`${row.start}-${prefetchStore.timestamp}`"
       class="position-absolute w-100"
       :style="{
-        top: `${row.topPixelAccumulated! - scrollTopStore.scrollTop + bufferHeight / 3 + row.offset}px`,
-        height: `${row.rowHeight}px`
+        transform: `translateY(${row.topPixelAccumulated! - scrollTopStore.scrollTop + bufferHeight / 3 + row.offset}px)`,
+        height: `${row.rowHeight}px`,
+        willChange: 'transform'
       }"
       :start="row.start"
     >
