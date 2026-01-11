@@ -10,7 +10,7 @@ use std::time::Instant;
 
 use crate::operations::hash::generate_random_hash;
 use crate::operations::open_db::{open_data_table, open_tree_snapshot_table};
-use crate::process::transitor::index_to_abstract_data;
+use crate::operations::transitor::index_to_abstract_data;
 use crate::public::db::tree_snapshot::read_tree_snapshot::MyCow;
 use crate::public::structure::abstract_data::AbstractData;
 use crate::router::GuardResult;

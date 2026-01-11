@@ -7,3 +7,4 @@ pub mod generate_image_hash;
 pub mod generate_thumbnail;
 pub mod generate_width_height;
 pub mod video_ffprobe;
+pub mod analysis;

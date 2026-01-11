@@ -8,7 +8,7 @@ use crate::public::constant::runtime::WORKER_RAYON_POOL;
 use crate::tasks::BATCH_COORDINATOR;
 
 use crate::{
-    process::info::{process_image_info, process_video_info},
+    operations::indexation::analysis::{process_image_info, process_video_info},
     public::{
         error_data::handle_error,
         structure::{abstract_data::AbstractData, guard::PendingGuard},

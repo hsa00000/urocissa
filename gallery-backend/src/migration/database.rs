@@ -10,15 +10,11 @@
 
 use anyhow::{Context, Result};
 use arrayvec::ArrayString;
-use bitcode::{Decode, Encode};
 use chrono::Utc;
-use dotenv::dotenv;
 use rayon::prelude::*;
-use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, HashMap, HashSet};
-use std::fs::{self, File};
+use std::collections::HashMap;
 use std::io::{self, Write};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use redb::{
     ReadableDatabase, ReadableTable as NewReadableTable,
@@ -28,152 +24,18 @@ use redb_old::{
     ReadableTable as OldReadableTable, ReadableTableMetadata as OldReadableTableMetadata,
 };
 
-pub mod v3_0_schema;
-use v3_0_schema::AbstractData as AbstractDataOld;
+use super::v3_0_schema::AbstractData as AbstractDataOld;
 
+use super::old_structure::{Album as OldAlbum, Database as OldDatabase};
 use crate::public::constant::redb::DATA_TABLE;
 use crate::public::structure::abstract_data::AbstractData;
 use crate::public::structure::album::{
     combined::AlbumCombined, metadata::AlbumMetadata, share::Share as NewShare,
 };
 use crate::public::structure::common::FileModify;
-use crate::public::structure::config::AppConfig;
 use crate::public::structure::image::{combined::ImageCombined, metadata::ImageMetadata};
 use crate::public::structure::object::{ObjectSchema, ObjectType};
 use crate::public::structure::video::{combined::VideoCombined, metadata::VideoMetadata};
-
-// ==================================================================================
-// Old Data Structures (Snapshot for redb 2.6.x)
-// ==================================================================================
-
-mod old_structure {
-    #[allow(clippy::wildcard_imports)]
-    use super::*;
-    use redb_old::{TypeName, Value};
-
-    #[derive(Debug, Clone, Deserialize, Default, Serialize, Decode, Encode, PartialEq, Eq)]
-    pub struct Database {
-        pub hash: ArrayString<64>,
-        pub size: u64,
-        pub width: u32,
-        pub height: u32,
-        pub thumbhash: Vec<u8>,
-        pub phash: Vec<u8>,
-        pub ext: String,
-        pub exif_vec: BTreeMap<String, String>,
-        pub tag: HashSet<String>,
-        pub album: HashSet<ArrayString<64>>,
-        pub alias: Vec<OldFileModify>,
-        pub ext_type: String,
-        pub pending: bool,
-    }
-
-    impl Value for Database {
-        type SelfType<'a> = Self;
-        type AsBytes<'a> = Vec<u8>;
-
-        fn fixed_width() -> Option<usize> {
-            None
-        }
-
-        fn from_bytes<'a>(data: &'a [u8]) -> Self::SelfType<'a>
-        where
-            Self: 'a,
-        {
-            bitcode::decode(data).expect("Corrupt Data: Failed to decode OldDatabase via bitcode")
-        }
-
-        fn as_bytes<'a, 'b: 'a>(value: &'a Self::SelfType<'b>) -> Self::AsBytes<'a> {
-            bitcode::encode(value)
-        }
-
-        fn type_name() -> TypeName {
-            TypeName::new("Database")
-        }
-    }
-
-    #[derive(
-        Debug,
-        Default,
-        Clone,
-        Deserialize,
-        Serialize,
-        Decode,
-        Encode,
-        Hash,
-        PartialEq,
-        Eq,
-        PartialOrd,
-        Ord,
-    )]
-    #[serde(rename_all = "camelCase")]
-    pub struct OldFileModify {
-        pub file: String,
-        pub modified: u128,
-        pub scan_time: u128,
-    }
-
-    #[derive(Debug, Clone, Deserialize, Default, Serialize, Decode, Encode, PartialEq, Eq)]
-    #[serde(rename_all = "camelCase")]
-    pub struct Album {
-        pub id: ArrayString<64>,
-        pub title: Option<String>,
-        pub created_time: u128,
-        pub start_time: Option<u128>,
-        pub end_time: Option<u128>,
-        pub last_modified_time: u128,
-        pub cover: Option<ArrayString<64>>,
-        pub thumbhash: Option<Vec<u8>>,
-        pub user_defined_metadata: HashMap<String, Vec<String>>,
-        pub share_list: HashMap<ArrayString<64>, OldShare>,
-        pub tag: HashSet<String>,
-        pub width: u32,
-        pub height: u32,
-        pub item_count: usize,
-        pub item_size: u64,
-        pub pending: bool,
-    }
-
-    impl Value for Album {
-        type SelfType<'a> = Self;
-        type AsBytes<'a> = Vec<u8>;
-
-        fn fixed_width() -> Option<usize> {
-            None
-        }
-
-        fn from_bytes<'a>(data: &'a [u8]) -> Self::SelfType<'a>
-        where
-            Self: 'a,
-        {
-            bitcode::decode(data).expect("Corrupt Data: Failed to decode OldAlbum via bitcode")
-        }
-
-        fn as_bytes<'a, 'b: 'a>(value: &'a Self::SelfType<'b>) -> Self::AsBytes<'a> {
-            bitcode::encode(value)
-        }
-
-        fn type_name() -> TypeName {
-            TypeName::new("Album")
-        }
-    }
-
-    #[derive(
-        Debug, Clone, Deserialize, Default, Serialize, Decode, Encode, PartialEq, Eq, Hash,
-    )]
-    #[serde(rename_all = "camelCase")]
-    pub struct OldShare {
-        pub url: ArrayString<64>,
-        pub description: String,
-        pub password: Option<String>,
-        pub show_metadata: bool,
-        pub show_download: bool,
-        pub show_upload: bool,
-        pub exp: u64,
-    }
-}
-
-use old_structure::{Album as OldAlbum, Database as OldDatabase};
 
 // ==================================================================================
 // Migration Logic
@@ -479,9 +341,7 @@ fn needs_migration() -> MigrationType {
     if Path::new(NEW_DB_PATH).exists() {
         // Assume if it exists, it's correct (or at least we've already migrated).
         // You could add a schema check here if V4->V5 migrations happen later.
-        println!(
-            "[INFO] Found V4 database at {NEW_DB_PATH}. No migration needed."
-        );
+        println!("[INFO] Found V4 database at {NEW_DB_PATH}. No migration needed.");
         return MigrationType::None;
     }
 
@@ -512,9 +372,7 @@ fn needs_migration() -> MigrationType {
     });
 
     if let Ok(true) = is_v4 {
-        println!(
-            "[WARN] Found V4-compatible database at {OLD_DB_PATH}. Moving to {NEW_DB_PATH}."
-        );
+        println!("[WARN] Found V4-compatible database at {OLD_DB_PATH}. Moving to {NEW_DB_PATH}.");
         if let Err(e) = std::fs::rename(OLD_DB_PATH, NEW_DB_PATH) {
             eprintln!("[ERROR] Failed to move V4 database: {e}");
         }
@@ -584,9 +442,7 @@ pub fn migrate() -> Result<()> {
     println!("========================================================");
     match migration_type {
         MigrationType::V2ToV3 => {
-            println!(
-                " DETECTED OLD DATABASE (V2 / redb 2.6.x) at {OLD_DB_PATH}"
-            );
+            println!(" DETECTED OLD DATABASE (V2 / redb 2.6.x) at {OLD_DB_PATH}");
             println!(" A MIGRATION IS REQUIRED TO UPGRADE TO V4 (redb 3.1, schema V4)");
         }
         MigrationType::V3ToV4 => {
@@ -758,141 +614,3 @@ pub fn migrate() -> Result<()> {
 }
 
 // ==================================================================================
-// Config Migration Logic
-// ==================================================================================
-
-/// Reads legacy configuration sources (config.json, .env, env vars) and constructs
-/// the new nested `AppConfig` (`PublicConfig` + `PrivateConfig`).
-pub fn construct_migrated_config() -> AppConfig {
-    let mut config = AppConfig::default();
-
-    // 1. Migrate from old `config.json`
-    // Legacy files were flat. We map recognized fields to `config.public`.
-    if let Ok(file) = File::open("config.json") {
-        #[derive(serde::Deserialize)]
-        #[serde(rename_all = "camelCase")]
-        struct LegacyConfigJson {
-            #[serde(default)]
-            read_only_mode: bool,
-            #[serde(default)]
-            disable_img: bool,
-            // Add other legacy fields here if they existed in the old json
-        }
-
-        if let Ok(old) = serde_json::from_reader::<_, LegacyConfigJson>(file) {
-            config.public.read_only_mode = old.read_only_mode;
-            config.public.disable_img = old.disable_img;
-            println!("Migrated settings from legacy config.json into PublicConfig");
-        }
-    }
-
-    // 1b. Migrate from Rocket.toml (legacy Rocket configuration)
-    if let Ok(toml_content) = fs::read_to_string("Rocket.toml")
-        && let Ok(toml_value) = toml_content.parse::<toml::Table>()
-    {
-        // Try to read from [default] section first, then root level
-        let default_section = toml_value.get("default").and_then(|v| v.as_table());
-
-        // Read port
-        let port = default_section
-            .and_then(|d| d.get("port"))
-            .or_else(|| toml_value.get("port"))
-            .and_then(toml::Value::as_integer)
-            .map(|p| u16::try_from(p).unwrap_or(8000));
-
-        if let Some(p) = port {
-            config.public.port = p;
-            println!("Migrated port {p} from Rocket.toml into PublicConfig");
-        }
-
-        // Read address
-        let address = default_section
-            .and_then(|d| d.get("address"))
-            .or_else(|| toml_value.get("address"))
-            .and_then(|v| v.as_str())
-            .map(ToString::to_string);
-
-        if let Some(addr) = address {
-            config.public.address.clone_from(&addr);
-            println!(
-                "Migrated address {addr} from Rocket.toml into PublicConfig"
-            );
-        }
-    }
-
-    // 2. Migrate from Environment Variables (.env)
-    dotenv().ok();
-
-    if let Ok(pwd) = std::env::var("PASSWORD")
-        && !pwd.trim().is_empty()
-    {
-        // Sensitive -> PrivateConfig
-        config.private.password = pwd;
-        println!("Migrated PASSWORD from environment into PrivateConfig");
-    }
-
-    if let Ok(key) = std::env::var("AUTH_KEY")
-        && !key.trim().is_empty()
-    {
-        // Sensitive -> PrivateConfig
-        config.private.auth_key = Some(key);
-        println!("Migrated AUTH_KEY from environment into PrivateConfig");
-    }
-
-    if let Ok(hook) = std::env::var("DISCORD_HOOK_URL")
-        && !hook.trim().is_empty()
-    {
-        // Non-sensitive -> PublicConfig
-        config.public.discord_hook_url = Some(hook);
-        println!("Migrated DISCORD_HOOK_URL from environment into PublicConfig");
-    }
-
-    // 3. Migrate Sync Paths
-    if let Ok(sync_paths_str) = std::env::var("SYNC_PATH") {
-        let mut count = 0;
-        for path_str in sync_paths_str.split(',') {
-            let path_str = path_str.trim();
-            if !path_str.is_empty() {
-                config.public.sync_paths.insert(PathBuf::from(path_str));
-                count += 1;
-            }
-        }
-        if count > 0 {
-            println!(
-                "Migrated {count} sync paths from SYNC_PATH into PublicConfig"
-            );
-        }
-    }
-
-    // Constraint: Prevent recursive syncing.
-    if let Ok(upload_path) = fs::canonicalize(PathBuf::from("./upload")) {
-        config
-            .public
-            .sync_paths
-            .retain(|p| match fs::canonicalize(p) {
-                Ok(c) => c != upload_path,
-                Err(_) => p != &upload_path,
-            });
-    }
-
-    config
-}
-
-/// Removes legacy configuration files (.env, Rocket.toml) to finalize migration.
-pub fn cleanup_legacy_config_files() {
-    if Path::new(".env").exists() {
-        if let Err(e) = fs::remove_file(".env") {
-            eprintln!("Failed to remove legacy .env file: {e}");
-        } else {
-            println!("Removed legacy .env file");
-        }
-    }
-
-    if Path::new("Rocket.toml").exists() {
-        if let Err(e) = fs::remove_file("Rocket.toml") {
-            eprintln!("Failed to remove legacy Rocket.toml file: {e}");
-        } else {
-            println!("Removed legacy Rocket.toml file");
-        }
-    }
-}

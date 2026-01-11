@@ -1,7 +1,7 @@
 // src/router/get/get_data.rs
 
 use crate::operations::open_db::{open_data_table, open_tree_snapshot_table};
-use crate::operations::resolve_show_download_and_metadata;
+use crate::public::structure::album::resolve_show_download_and_metadata;
 use crate::operations::transitor::{
     abstract_data_to_database_timestamp_return,
     hash_to_abstract_data, index_to_hash,

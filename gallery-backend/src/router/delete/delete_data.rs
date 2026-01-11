@@ -1,6 +1,6 @@
 // src/router/delete/delete_data.rs
 use crate::operations::open_db::{open_data_table, open_tree_snapshot_table};
-use crate::process::transitor::index_to_abstract_data;
+use crate::operations::transitor::index_to_abstract_data;
 use crate::public::structure::abstract_data::AbstractData;
 use crate::router::fairing::guard_auth::GuardAuth;
 use crate::router::fairing::guard_read_only_mode::GuardReadOnlyMode;

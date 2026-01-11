@@ -12,14 +12,13 @@ use std::time::Instant;
 
 mod migration;
 mod operations;
-mod process;
 mod public;
 mod router;
 mod tasks;
 mod workflow;
 
 use crate::operations::initialization::logger::initialize_logger;
-use crate::process::initialization::initialize;
+use crate::operations::initialization::initialize;
 use crate::public::constant::runtime::{INDEX_RUNTIME, ROCKET_RUNTIME};
 
 use crate::public::error_data::handle_error;
