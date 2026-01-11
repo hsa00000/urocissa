@@ -5,7 +5,7 @@
         <v-row align="center" no-gutters class="h-100">
           <v-col cols="auto">
             <v-avatar rounded="0" class="me-3">
-              <v-img src="/logo.png" alt="Urocissa Logo"></v-img>
+              <v-img :src="logo" alt="Urocissa Logo"></v-img>
             </v-avatar>
           </v-col>
 
@@ -62,7 +62,7 @@
           <v-row justify="center" align="center">
             <v-col cols="12" md="8" class="text-center">
               <v-img
-                src="/logo.png"
+                :src="logo"
                 max-width="150"
                 class="mx-auto logo-glow"
               ></v-img>
@@ -374,6 +374,10 @@ import { computed, ref, onMounted } from "vue";
 import { useHead } from "#imports";
 import { useTheme } from "vuetify";
 
+import logo from "~/assets/logo.png";
+import demoDark from "~/assets/demo_dark.jpg";
+import demoLight from "~/assets/demo_light.jpg";
+
 const theme = useTheme();
 
 const windowsDownloadUrl = ref("https://github.com/hsa00000/urocissa/releases");
@@ -403,9 +407,9 @@ const themeIcon = computed(() =>
   isDark.value ? "mdi-weather-night" : "mdi-weather-sunny"
 );
 
-const screenshotSrc = computed(() =>
-  isDark.value ? "/demo_dark.jpg" : "/demo_light.jpg"
-);
+const screenshotSrc = computed(() => {
+  return isDark.value ? demoDark : demoLight;
+});
 
 function toggleTheme() {
   theme.global.name.value = isDark.value ? "light" : "dark";
