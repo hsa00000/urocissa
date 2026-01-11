@@ -47,10 +47,10 @@ pub async fn get_data(
             .into_par_iter()
             .map(|index| {
                 let hash = index_to_hash(&tree_snapshot, index)
-                    .or_raise(|| (ErrorKind::Database, format!("Failed to map index {} to hash", index)))?;
+                    .or_raise(|| (ErrorKind::Database, format!("Failed to map index {index} to hash")))?;
 
                 let abstract_data = hash_to_abstract_data(&data_table, hash)
-                     .or_raise(|| (ErrorKind::Database, format!("Failed to retrieve data for hash {}", hash)))?;
+                     .or_raise(|| (ErrorKind::Database, format!("Failed to retrieve data for hash {hash}")))?;
 
                 let database_timestamp_return = abstract_data_to_database_timestamp_return(
                     abstract_data,
@@ -63,7 +63,7 @@ pub async fn get_data(
             .collect();
 
         let duration = format!("{:?}", start_time.elapsed());
-        info!(duration = &*duration; "Get data: {} ~ {}", start, end);
+        info!(duration = &*duration; "Get data: {start} ~ {end}");
         Ok(Json(database_timestamp_return_list?))
     })
     .await
@@ -82,7 +82,7 @@ pub async fn get_rows(
         let filtered_rows = TREE_SNAPSHOT.read_row(index, timestamp)
             .or_raise(|| (ErrorKind::Database, "Failed to read row from snapshot"))?;
         let duration = format!("{:?}", start_time.elapsed());
-        info!(duration = &*duration; "Read rows: index = {}", index);
+        info!(duration = &*duration; "Read rows: index = {index}");
         Ok(Json(filtered_rows))
     })
     .await
@@ -90,7 +90,8 @@ pub async fn get_rows(
 }
 
 #[get("/get/get-scroll-bar?<timestamp>")]
-pub async fn get_scroll_bar(
+#[allow(clippy::needless_pass_by_value)]
+pub fn get_scroll_bar(
     auth: GuardResult<GuardTimestamp>,
     timestamp: i64,
 ) -> Json<Vec<ScrollBarData>> {

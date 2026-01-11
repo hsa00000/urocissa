@@ -11,12 +11,12 @@ impl QuerySnapshot {
         query_hash: u64,
     ) -> Result<Option<Prefetch>, Box<dyn Error>> {
         if let Some(data) = self.in_memory.get(&query_hash) {
-            return Ok(Some(data.value().clone()));
+            return Ok(Some(*data.value()));
         }
 
         let read_txn = self.in_disk.begin_read().unwrap();
 
-        let count_version = &VERSION_COUNT_TIMESTAMP.load(Ordering::Relaxed).to_string();
+        let count_version = VERSION_COUNT_TIMESTAMP.load(Ordering::Relaxed).to_string();
 
         let table_definition: TableDefinition<u64, Prefetch> = TableDefinition::new(&count_version);
 

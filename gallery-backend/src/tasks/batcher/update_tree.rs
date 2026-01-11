@@ -25,17 +25,15 @@ static ALLOWED_KEYS: LazyLock<HashSet<&'static str>> = LazyLock::new(|| {
         "rotation",
     ]
     .iter()
-    .cloned()
+    .copied()
     .collect()
 });
 
 pub struct UpdateTreeTask;
 
 impl BatchTask for UpdateTreeTask {
-    fn batch_run(_: Vec<Self>) -> impl Future<Output = ()> + Send {
-        async move {
-            update_tree_task();
-        }
+    async fn batch_run(_: Vec<Self>) {
+        update_tree_task();
     }
 }
 

@@ -102,8 +102,9 @@ impl TaskRow {
         let status = match (&self.state, self.progress) {
             // With progress: limit to 1–99, round to integer
             (TaskState::Transcoding(_), Some(p)) => {
+                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
                 let pct = (p.clamp(1.0, 99.0)).round() as u8;
-                format!("{:>2}%", pct) // e.g. " 1%", "99%"
+                format!("{pct:>2}%") // e.g. " 1%", "99%"
             }
             // Completed
             (TaskState::Done(_), _) => " v ".to_string(),
@@ -111,18 +112,18 @@ impl TaskRow {
             // Not started/Indexing
             _ => "   ".to_string(),
         };
-        let status_col = format!("{:<COL_STATUS$}", status); // Pad to 3 characters
+        let status_col = format!("{status:<COL_STATUS$}"); // Pad to 3 characters
 
         // Take the first 5 characters of the hash, right-aligned
         let short_hash = &self.hash.as_str()[..COL_HASH.min(self.hash.len())];
-        let hash_col = format!("{:>COL_HASH$}", short_hash);
+        let hash_col = format!("{short_hash:>COL_HASH$}");
 
         // Calculate elapsed seconds
         let secs = match self.state {
             TaskState::Indexing(t0) | TaskState::Transcoding(t0) => t0.elapsed().as_secs_f64(),
             TaskState::Done(d) | TaskState::Failed(d) => d,
         };
-        let suffix = format!(" │ {:>6.1}s", secs);
+        let suffix = format!(" │ {secs:>6.1}s");
 
         // Get terminal width and margin
         let margin = std::env::var("UROCISSA_TERM_MARGIN")
@@ -130,8 +131,7 @@ impl TaskRow {
             .and_then(|v| v.parse().ok())
             .unwrap_or(4);
         let cols = terminal_size()
-            .map(|(Width(w), _)| w as usize)
-            .unwrap_or(DEFAULT_COLS);
+            .map_or(DEFAULT_COLS, |(Width(w), _)| w as usize);
 
         // Calculate path column width and truncate
         let prefix_w = COL_STATUS + 3 + COL_HASH + 3;
@@ -160,7 +160,7 @@ impl TaskRow {
         for c in s.chars().rev() {
             let char_width = c.width().unwrap_or(0);
             if acc_width + char_width > tail_len {
-                if acc_width + 1 <= tail_len {
+                if acc_width < tail_len {
                     rev_chars.push('…'); // Optionally add ellipsis
                 }
                 break;
@@ -200,9 +200,9 @@ impl Dashboard {
     /* ---------- mutation API ---------- */
     pub fn add_task(&self, hash: ArrayString<64>, path: String, file_type: FileType) {
         self.tasks
-            .entry(hash.clone())
+            .entry(hash)
             .and_modify(|t| {
-                t.path = path.clone();
+                t.path.clone_from(&path);
                 t.file_type = file_type.clone();
                 t.state = TaskState::Indexing(Instant::now());
                 t.progress = None;
@@ -291,8 +291,7 @@ impl Component for Dashboard {
     fn draw_unchecked(&self, _: Dimensions, _: DrawMode) -> Result<Lines> {
         // Determine terminal width, defaulting to 120 columns if unavailable
         let cols = terminal_size()
-            .map(|(Width(w), _)| w as usize)
-            .unwrap_or(120);
+            .map_or(120, |(Width(w), _)| w as usize);
         let sep = "─".repeat(cols);
         let mut lines: Vec<Line> = Vec::new();
 
@@ -301,7 +300,9 @@ impl Component for Dashboard {
 
         // Compute average duration or fallback to "n/a"
         let avg_str = if self.handled() > 0 {
-            format!("{:.2}s", self.total_duration() / self.handled() as f64)
+            #[allow(clippy::cast_precision_loss)]
+            let handled = self.handled() as f64;
+            format!("{:.2}s", self.total_duration() / handled)
         } else {
             "n/a".into()
         };

@@ -1,7 +1,11 @@
-// frontend/src/type/schemas.ts
+#![allow(clippy::too_many_lines)]
+#![allow(clippy::cast_possible_truncation)]
+#![allow(clippy::cast_possible_wrap)]
+#![allow(clippy::cast_sign_loss)]
+
 //! Database Migration Module
 //!
-//! Handles the migration from redb 2.6.x (Old Schema) to redb 3.1.x (New AbstractData Schema).
+//! Handles the migration from redb 2.6.x (Old Schema) to redb 3.1.x (New `AbstractData` Schema).
 //!
 
 use anyhow::{Context, Result};
@@ -43,6 +47,7 @@ use crate::public::structure::video::{combined::VideoCombined, metadata::VideoMe
 // ==================================================================================
 
 mod old_structure {
+    #[allow(clippy::wildcard_imports)]
     use super::*;
     use redb_old::{TypeName, Value};
 
@@ -268,7 +273,6 @@ fn transform_database_to_abstract_data(old_data: OldDatabase) -> AbstractData {
             is_trashed,
             update_at: timestamp,
         };
-
         let metadata = ImageMetadata {
             id: old_data.hash,
             size: old_data.size,
@@ -431,6 +435,7 @@ fn transform_v30_to_v31(old_data: AbstractDataOld) -> AbstractData {
                 is_favorite: alb.object.is_favorite,
                 is_archived: alb.object.is_archived,
                 is_trashed: alb.object.is_trashed,
+                #[allow(clippy::unnecessary_cast)]
                 update_at: alb.metadata.last_modified_time as i64,
             };
             let metadata = AlbumMetadata {
@@ -475,8 +480,7 @@ fn needs_migration() -> MigrationType {
         // Assume if it exists, it's correct (or at least we've already migrated).
         // You could add a schema check here if V4->V5 migrations happen later.
         println!(
-            "[INFO] Found V4 database at {}. No migration needed.",
-            NEW_DB_PATH
+            "[INFO] Found V4 database at {NEW_DB_PATH}. No migration needed."
         );
         return MigrationType::None;
     }
@@ -509,11 +513,10 @@ fn needs_migration() -> MigrationType {
 
     if let Ok(true) = is_v4 {
         println!(
-            "[WARN] Found V4-compatible database at {}. Moving to {}.",
-            OLD_DB_PATH, NEW_DB_PATH
+            "[WARN] Found V4-compatible database at {OLD_DB_PATH}. Moving to {NEW_DB_PATH}."
         );
         if let Err(e) = std::fs::rename(OLD_DB_PATH, NEW_DB_PATH) {
-            eprintln!("[ERROR] Failed to move V4 database: {}", e);
+            eprintln!("[ERROR] Failed to move V4 database: {e}");
         }
         return MigrationType::None;
     }
@@ -582,16 +585,15 @@ pub fn migrate() -> Result<()> {
     match migration_type {
         MigrationType::V2ToV3 => {
             println!(
-                " DETECTED OLD DATABASE (V2 / redb 2.6.x) at {}",
-                OLD_DB_PATH
+                " DETECTED OLD DATABASE (V2 / redb 2.6.x) at {OLD_DB_PATH}"
             );
             println!(" A MIGRATION IS REQUIRED TO UPGRADE TO V4 (redb 3.1, schema V4)");
         }
         MigrationType::V3ToV4 => {
-            println!(" DETECTED OLD SCHEMA (V3) at {}", OLD_DB_PATH);
+            println!(" DETECTED OLD SCHEMA (V3) at {OLD_DB_PATH}");
             println!(" A MIGRATION IS REQUIRED TO UPGRADE TO V4 (schema with update_at)");
         }
-        _ => {}
+        MigrationType::None => {}
     }
     println!("========================================================");
     println!(" Please ensure you have BACKED UP your './db' folder.");
@@ -629,7 +631,7 @@ pub fn migrate() -> Result<()> {
             {
                 let mut data_table = write_txn.open_table(DATA_TABLE)?;
                 let total_items = old_data_table.len()?;
-                println!("Found {} items to migrate.", total_items);
+                println!("Found {total_items} items to migrate.");
 
                 let mut processed_count = 0;
                 let mut batch_buffer: Vec<OldDatabase> = Vec::with_capacity(BATCH_SIZE);
@@ -654,7 +656,7 @@ pub fn migrate() -> Result<()> {
                     if batch_buffer.len() >= BATCH_SIZE {
                         commit_batch(std::mem::take(&mut batch_buffer))?;
                         processed_count += BATCH_SIZE;
-                        println!("Migrated {} / {} items...", processed_count, total_items);
+                        println!("Migrated {processed_count} / {total_items} items...");
                     }
                 }
 
@@ -663,14 +665,14 @@ pub fn migrate() -> Result<()> {
                     commit_batch(batch_buffer)?;
                     processed_count += len;
                 }
-                println!("Data migration completed. Total: {}", processed_count);
+                println!("Data migration completed. Total: {processed_count}");
             }
 
             // Migrating ALBUMS
             {
                 let mut data_table = write_txn.open_table(DATA_TABLE)?;
                 let total_albums = old_album_table.len()?;
-                println!("Found {} albums to migrate.", total_albums);
+                println!("Found {total_albums} albums to migrate.");
 
                 let mut processed_count = 0;
 
@@ -681,10 +683,10 @@ pub fn migrate() -> Result<()> {
 
                     processed_count += 1;
                     if processed_count % 100 == 0 {
-                        println!("Migrated {} / {} albums...", processed_count, total_albums);
+                        println!("Migrated {processed_count} / {total_albums} albums...");
                     }
                 }
-                println!("Album migration completed. Total: {}", processed_count);
+                println!("Album migration completed. Total: {processed_count}");
             }
             // Drop handle for rename
             drop(read_txn);
@@ -700,7 +702,7 @@ pub fn migrate() -> Result<()> {
 
             let mut data_table = write_txn.open_table(DATA_TABLE)?;
             let total_items = old_data_table.len()?;
-            println!("Found {} items to migrate (V3 -> V4).", total_items);
+            println!("Found {total_items} items to migrate (V3 -> V4).");
 
             let mut processed_count = 0;
             let mut batch_buffer: Vec<AbstractDataOld> = Vec::with_capacity(BATCH_SIZE);
@@ -722,7 +724,7 @@ pub fn migrate() -> Result<()> {
                 if batch_buffer.len() >= BATCH_SIZE {
                     commit_batch(std::mem::take(&mut batch_buffer))?;
                     processed_count += BATCH_SIZE;
-                    println!("Migrated {} / {} items...", processed_count, total_items);
+                    println!("Migrated {processed_count} / {total_items} items...");
                 }
             }
 
@@ -731,7 +733,7 @@ pub fn migrate() -> Result<()> {
                 commit_batch(batch_buffer)?;
                 processed_count += len;
             }
-            println!("V3 -> V4 Migration completed. Total: {}", processed_count);
+            println!("V3 -> V4 Migration completed. Total: {processed_count}");
 
             drop(read_txn);
             drop(old_db);
@@ -743,14 +745,14 @@ pub fn migrate() -> Result<()> {
     println!("Migration completed successfully.");
 
     // Rename OLD DB to .bak
-    let backup_path = format!("{}.bak", OLD_DB_PATH);
+    let backup_path = format!("{OLD_DB_PATH}.bak");
     std::fs::rename(OLD_DB_PATH, &backup_path)
-        .context(format!("Failed to rename old DB to {}", backup_path))?;
-    println!("Old database renamed to {}", backup_path);
+        .context(format!("Failed to rename old DB to {backup_path}"))?;
+    println!("Old database renamed to {backup_path}");
 
     // DO NOT RENAME NEW DB BACK TO OLD_DB_PATH.
     // We are keeping index_v4.redb as the new standard.
-    println!("New database created at {}", NEW_DB_PATH);
+    println!("New database created at {NEW_DB_PATH}");
 
     Ok(())
 }
@@ -760,7 +762,7 @@ pub fn migrate() -> Result<()> {
 // ==================================================================================
 
 /// Reads legacy configuration sources (config.json, .env, env vars) and constructs
-/// the new nested `AppConfig` (PublicConfig + PrivateConfig).
+/// the new nested `AppConfig` (`PublicConfig` + `PrivateConfig`).
 pub fn construct_migrated_config() -> AppConfig {
     let mut config = AppConfig::default();
 
@@ -785,65 +787,64 @@ pub fn construct_migrated_config() -> AppConfig {
     }
 
     // 1b. Migrate from Rocket.toml (legacy Rocket configuration)
-    if let Ok(toml_content) = fs::read_to_string("Rocket.toml") {
-        if let Ok(toml_value) = toml_content.parse::<toml::Table>() {
-            // Try to read from [default] section first, then root level
-            let default_section = toml_value.get("default").and_then(|v| v.as_table());
+    if let Ok(toml_content) = fs::read_to_string("Rocket.toml")
+        && let Ok(toml_value) = toml_content.parse::<toml::Table>()
+    {
+        // Try to read from [default] section first, then root level
+        let default_section = toml_value.get("default").and_then(|v| v.as_table());
 
-            // Read port
-            let port = default_section
-                .and_then(|d| d.get("port"))
-                .or_else(|| toml_value.get("port"))
-                .and_then(|v| v.as_integer())
-                .map(|p| p as u16);
+        // Read port
+        let port = default_section
+            .and_then(|d| d.get("port"))
+            .or_else(|| toml_value.get("port"))
+            .and_then(toml::Value::as_integer)
+            .map(|p| u16::try_from(p).unwrap_or(8000));
 
-            if let Some(p) = port {
-                config.public.port = p;
-                println!("Migrated port {} from Rocket.toml into PublicConfig", p);
-            }
+        if let Some(p) = port {
+            config.public.port = p;
+            println!("Migrated port {p} from Rocket.toml into PublicConfig");
+        }
 
-            // Read address
-            let address = default_section
-                .and_then(|d| d.get("address"))
-                .or_else(|| toml_value.get("address"))
-                .and_then(|v| v.as_str())
-                .map(|s| s.to_string());
+        // Read address
+        let address = default_section
+            .and_then(|d| d.get("address"))
+            .or_else(|| toml_value.get("address"))
+            .and_then(|v| v.as_str())
+            .map(ToString::to_string);
 
-            if let Some(addr) = address {
-                config.public.address = addr.clone();
-                println!(
-                    "Migrated address {} from Rocket.toml into PublicConfig",
-                    addr
-                );
-            }
+        if let Some(addr) = address {
+            config.public.address.clone_from(&addr);
+            println!(
+                "Migrated address {addr} from Rocket.toml into PublicConfig"
+            );
         }
     }
 
     // 2. Migrate from Environment Variables (.env)
     dotenv().ok();
 
-    if let Ok(pwd) = std::env::var("PASSWORD") {
-        if !pwd.trim().is_empty() {
-            // Sensitive -> PrivateConfig
-            config.private.password = pwd;
-            println!("Migrated PASSWORD from environment into PrivateConfig");
-        }
+    if let Ok(pwd) = std::env::var("PASSWORD")
+        && !pwd.trim().is_empty()
+    {
+        // Sensitive -> PrivateConfig
+        config.private.password = pwd;
+        println!("Migrated PASSWORD from environment into PrivateConfig");
     }
 
-    if let Ok(key) = std::env::var("AUTH_KEY") {
-        if !key.trim().is_empty() {
-            // Sensitive -> PrivateConfig
-            config.private.auth_key = Some(key);
-            println!("Migrated AUTH_KEY from environment into PrivateConfig");
-        }
+    if let Ok(key) = std::env::var("AUTH_KEY")
+        && !key.trim().is_empty()
+    {
+        // Sensitive -> PrivateConfig
+        config.private.auth_key = Some(key);
+        println!("Migrated AUTH_KEY from environment into PrivateConfig");
     }
 
-    if let Ok(hook) = std::env::var("DISCORD_HOOK_URL") {
-        if !hook.trim().is_empty() {
-            // Non-sensitive -> PublicConfig
-            config.public.discord_hook_url = Some(hook);
-            println!("Migrated DISCORD_HOOK_URL from environment into PublicConfig");
-        }
+    if let Ok(hook) = std::env::var("DISCORD_HOOK_URL")
+        && !hook.trim().is_empty()
+    {
+        // Non-sensitive -> PublicConfig
+        config.public.discord_hook_url = Some(hook);
+        println!("Migrated DISCORD_HOOK_URL from environment into PublicConfig");
     }
 
     // 3. Migrate Sync Paths
@@ -858,8 +859,7 @@ pub fn construct_migrated_config() -> AppConfig {
         }
         if count > 0 {
             println!(
-                "Migrated {} sync paths from SYNC_PATH into PublicConfig",
-                count
+                "Migrated {count} sync paths from SYNC_PATH into PublicConfig"
             );
         }
     }
@@ -882,7 +882,7 @@ pub fn construct_migrated_config() -> AppConfig {
 pub fn cleanup_legacy_config_files() {
     if Path::new(".env").exists() {
         if let Err(e) = fs::remove_file(".env") {
-            eprintln!("Failed to remove legacy .env file: {}", e);
+            eprintln!("Failed to remove legacy .env file: {e}");
         } else {
             println!("Removed legacy .env file");
         }
@@ -890,7 +890,7 @@ pub fn cleanup_legacy_config_files() {
 
     if Path::new("Rocket.toml").exists() {
         if let Err(e) = fs::remove_file("Rocket.toml") {
-            eprintln!("Failed to remove legacy Rocket.toml file: {}", e);
+            eprintln!("Failed to remove legacy Rocket.toml file: {e}");
         } else {
             println!("Removed legacy Rocket.toml file");
         }

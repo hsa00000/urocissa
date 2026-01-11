@@ -1,3 +1,4 @@
+#![allow(clippy::too_many_lines)]
 use super::{AlbumFilterValue, Expression, FilterValue};
 use crate::public::structure::abstract_data::AbstractData;
 
@@ -40,7 +41,7 @@ impl Expression {
                         AbstractData::Video(vid) => &vid.object.tags,
                         AbstractData::Album(alb) => &alb.object.tags,
                     };
-                    !tags.is_empty() == exists
+                    tags.is_empty() != exists
                 }),
             },
             Expression::Favorite(value) => {
@@ -91,7 +92,7 @@ impl Expression {
                             img.metadata
                                 .exif_vec
                                 .get("Model")
-                                .map_or(false, |model_of_exif| {
+                                .is_some_and(|model_of_exif| {
                                     model_of_exif.to_ascii_lowercase().contains(&model_lower)
                                 })
                         }
@@ -99,7 +100,7 @@ impl Expression {
                             vid.metadata
                                 .exif_vec
                                 .get("Model")
-                                .map_or(false, |model_of_exif| {
+                                .is_some_and(|model_of_exif| {
                                     model_of_exif.to_ascii_lowercase().contains(&model_lower)
                                 })
                         }
@@ -109,10 +110,10 @@ impl Expression {
                 FilterValue::Exists(exists) => {
                     Box::new(move |abstract_data: &AbstractData| match abstract_data {
                         AbstractData::Image(img) => {
-                            img.metadata.exif_vec.get("Model").is_some() == exists
+                            img.metadata.exif_vec.contains_key("Model") == exists
                         }
                         AbstractData::Video(vid) => {
-                            vid.metadata.exif_vec.get("Model").is_some() == exists
+                            vid.metadata.exif_vec.contains_key("Model") == exists
                         }
                         AbstractData::Album(_) => false,
                     })
@@ -126,30 +127,28 @@ impl Expression {
                             .metadata
                             .exif_vec
                             .get("Make")
-                            .map_or(false, |make_of_exif| {
+                            .is_some_and(|make_of_exif| {
                                 make_of_exif.to_ascii_lowercase().contains(&make_lower)
                             }),
                         AbstractData::Video(vid) => vid
                             .metadata
                             .exif_vec
                             .get("Make")
-                            .map_or(false, |make_of_exif| {
+                            .is_some_and(|make_of_exif| {
                                 make_of_exif.to_ascii_lowercase().contains(&make_lower)
                             }),
                         AbstractData::Album(_) => false,
                     })
                 }
-                FilterValue::Exists(exists) => {
-                    Box::new(move |abstract_data: &AbstractData| match abstract_data {
-                        AbstractData::Image(img) => {
-                            img.metadata.exif_vec.get("Make").is_some() == exists
-                        }
-                        AbstractData::Video(vid) => {
-                            vid.metadata.exif_vec.get("Make").is_some() == exists
-                        }
-                        AbstractData::Album(_) => false,
-                    })
-                }
+                FilterValue::Exists(exists) => Box::new(move |abstract_data: &AbstractData| match abstract_data {
+                    AbstractData::Image(img) => {
+                        img.metadata.exif_vec.contains_key("Make") == exists
+                    }
+                    AbstractData::Video(vid) => {
+                        vid.metadata.exif_vec.contains_key("Make") == exists
+                    }
+                    AbstractData::Album(_) => false,
+                }),
             },
             Expression::Path(path) => {
                 let path_lower = path.to_ascii_lowercase();
@@ -173,8 +172,8 @@ impl Expression {
                 }
                 AlbumFilterValue::Exists(exists) => {
                     Box::new(move |abstract_data: &AbstractData| match abstract_data {
-                        AbstractData::Image(img) => !img.metadata.albums.is_empty() == exists,
-                        AbstractData::Video(vid) => !vid.metadata.albums.is_empty() == exists,
+                        AbstractData::Image(img) => img.metadata.albums.is_empty() != exists,
+                        AbstractData::Video(vid) => vid.metadata.albums.is_empty() != exists,
                         AbstractData::Album(_) => false,
                     })
                 }
@@ -196,14 +195,14 @@ impl Expression {
                                 .metadata
                                 .exif_vec
                                 .get("Make")
-                                .map_or(false, |make_of_exif| {
+                                .is_some_and(|make_of_exif| {
                                     make_of_exif.to_ascii_lowercase().contains(&any_lower)
                                 })
                             || img
                                 .metadata
                                 .exif_vec
                                 .get("Model")
-                                .map_or(false, |model_of_exif| {
+                                .is_some_and(|model_of_exif| {
                                     model_of_exif.to_ascii_lowercase().contains(&any_lower)
                                 })
                             || img.metadata.alias.iter().any(|file_modify| {
@@ -224,14 +223,14 @@ impl Expression {
                                 .metadata
                                 .exif_vec
                                 .get("Make")
-                                .map_or(false, |make_of_exif| {
+                                .is_some_and(|make_of_exif| {
                                     make_of_exif.to_ascii_lowercase().contains(&any_lower)
                                 })
                             || vid
                                 .metadata
                                 .exif_vec
                                 .get("Model")
-                                .map_or(false, |model_of_exif| {
+                                .is_some_and(|model_of_exif| {
                                     model_of_exif.to_ascii_lowercase().contains(&any_lower)
                                 })
                             || vid.metadata.alias.iter().any(|file_modify| {

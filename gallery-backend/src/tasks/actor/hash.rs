@@ -21,13 +21,11 @@ impl HashTask {
 impl Task for HashTask {
     type Output = Result<ArrayString<64>>;
 
-    fn run(self) -> impl Future<Output = Self::Output> + Send {
-        async move {
-            WORKER_RAYON_POOL
-                .spawn_async(move || hash_task(self.file))
-                .await
-                .map_err(|err| handle_error(err.context("Failed to run hash task")))
-        }
+    async fn run(self) -> Self::Output {
+        WORKER_RAYON_POOL
+            .spawn_async(move || hash_task(self.file))
+            .await
+            .map_err(|err| handle_error(err.context("Failed to run hash task")))
     }
 }
 fn hash_task(file: File) -> Result<ArrayString<64>> {

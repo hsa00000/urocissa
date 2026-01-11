@@ -49,17 +49,14 @@ impl Expire {
                         .unwrap();
 
                     // Iterate over all entries in the expiration table
-                    for result in expire_table.iter().unwrap() {
-                        // Depublic::structure the key-value pair from the result
-                        if let Ok((key, _)) = result {
-                            let key_timestamp = key.value();
-                            // If the key's timestamp is less than or equal to the provided timestamp
-                            if key_timestamp <= timestamp {
-                                // Remove the expired key from the table
-                                write_table.remove(key_timestamp).unwrap();
-                                // Log the deletion of the expired key
-                                info!("Deleted expired key: {:?}", key_timestamp);
-                            }
+                    for (key, _) in expire_table.iter().unwrap().flatten() {
+                        let key_timestamp = key.value();
+                        // If the key's timestamp is less than or equal to the provided timestamp
+                        if key_timestamp <= timestamp {
+                            // Remove the expired key from the table
+                            write_table.remove(key_timestamp).unwrap();
+                            // Log the deletion of the expired key
+                            info!("Deleted expired key: {key_timestamp:?}");
                         }
                     }
 

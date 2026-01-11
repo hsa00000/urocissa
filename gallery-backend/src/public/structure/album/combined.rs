@@ -35,7 +35,7 @@ impl AlbumCombined {
 
     fn set_cover_from_info(&mut self, info: &MediaItemInfo) {
         self.metadata.cover = Some(info.hash);
-        self.object.thumbhash = info.thumbhash.clone();
+        self.object.thumbhash.clone_from(&info.thumbhash);
     }
 
     pub fn self_update(&mut self) {
@@ -110,11 +110,10 @@ impl AlbumCombined {
             // Check if current cover is still in the album, if not update it
             let current_cover = self.metadata.cover.unwrap();
             let cover_still_in_album = data_in_album.iter().any(|info| info.hash == current_cover);
-            if !cover_still_in_album {
-                if let Some(first_info) = data_in_album.first() {
+            if !cover_still_in_album
+                && let Some(first_info) = data_in_album.first() {
                     self.set_cover_from_info(first_info);
                 }
-            }
         }
     }
 }

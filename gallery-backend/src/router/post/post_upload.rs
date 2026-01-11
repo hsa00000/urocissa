@@ -26,7 +26,7 @@ pub struct UploadForm<'r> {
 }
 
 fn get_filename(file: &TempFile<'_>) -> String {
-    file.name().map(|name| name.to_string()).unwrap_or_default()
+    file.name().map(std::string::ToString::to_string).unwrap_or_default()
 }
 
 #[post("/upload?<presigned_album_id_opt>", data = "<form>")]
@@ -46,7 +46,7 @@ pub async fn upload(
             let error_msg = errors
                 .iter()
                 .fold(String::from("Form parsing failed: "), |acc, e| {
-                    format!("{}; {}", acc, e)
+                    format!("{acc}; {e}")
                 });
             return Err(AppError::new(ErrorKind::InvalidInput, error_msg));
         }
@@ -76,7 +76,7 @@ pub async fn upload(
                 .or_raise(|| (ErrorKind::Internal, "Failed to index file"))?;
         } else {
             error!("Rejected invalid file type: {}", extension);
-            return Err(AppError::new(ErrorKind::InvalidInput, format!("Invalid file type: {}", extension)));
+            return Err(AppError::new(ErrorKind::InvalidInput, format!("Invalid file type: {extension}")));
         }
     }
 
@@ -98,10 +98,10 @@ async fn save_file(
     
     // Ensure upload directory exists (though it should be created at init)
     if !upload_dir.exists() {
-         std::fs::create_dir_all(&upload_dir).map_err(|e| AppError::new(ErrorKind::IO, format!("Failed to create upload dir: {}", e)))?;
+         std::fs::create_dir_all(&upload_dir).map_err(|e| AppError::new(ErrorKind::IO, format!("Failed to create upload dir: {e}")))?;
     }
     
-    let tmp_path = upload_dir.join(format!("{}-{}.tmp", filename, unique_id));
+    let tmp_path = upload_dir.join(format!("{filename}-{unique_id}.tmp"));
 
     // Move to a temp location first to avoid blocking the async runtime with IO
     file.move_copy_to(&tmp_path)
@@ -116,7 +116,7 @@ async fn save_file(
     // 2. Atomic rename to .ext (final state).
     // This ensures the file watcher (workflow) only picks up the file once it is fully written and has the correct timestamp.
     let final_path = spawn_blocking(move || -> Result<String, AppError> {
-        let final_path = upload_dir.join(format!("{}-{}.{}", filename_owned, unique_id, extension));
+        let final_path = upload_dir.join(format!("{filename_owned}-{unique_id}.{extension}"));
 
         set_last_modified_time(&tmp_path_owned, last_modified_ms)?;
         std::fs::rename(&tmp_path_owned, &final_path)
@@ -130,6 +130,7 @@ async fn save_file(
     Ok(final_path)
 }
 
+#[allow(clippy::cast_possible_wrap)]
 fn set_last_modified_time(path: &Path, last_modified_ms: u64) -> Result<(), AppError> {
     let mtime = filetime::FileTime::from_unix_time((last_modified_ms / 1000) as i64, 0);
     filetime::set_file_mtime(path, mtime)

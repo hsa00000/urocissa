@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub enum Role {
     Admin,
-    Share(ResolvedShare),
+    Share(Box<ResolvedShare>),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -20,6 +20,7 @@ pub struct Claims {
 
 impl Claims {
     pub fn new_admin() -> Self {
+        #[allow(clippy::cast_sign_loss)]
         let exp = (Utc::now().timestamp_millis() / 1000) as u64 + 14 * 86_400; // 14 days
 
         Self {
@@ -29,23 +30,21 @@ impl Claims {
     }
 
     pub fn new_share(resolved_share: ResolvedShare) -> Self {
+        #[allow(clippy::cast_sign_loss)]
         let exp = (Utc::now().timestamp_millis() / 1000) as u64 + 14 * 86_400; // 14 days
 
         Self {
-            role: Role::Share(resolved_share),
+            role: Role::Share(Box::new(resolved_share)),
             exp,
         }
     }
     pub fn is_admin(&self) -> bool {
-        match &self.role {
-            Role::Admin => true,
-            _ => false,
-        }
+        matches!(self.role, Role::Admin)
     }
     pub fn get_share(self) -> Option<ResolvedShare> {
         match self.role {
-            Role::Share(share) => Some(share),
-            _ => None,
+            Role::Share(share) => Some(*share),
+            Role::Admin => None,
         }
     }
 

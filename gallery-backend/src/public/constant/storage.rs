@@ -25,15 +25,14 @@ pub fn get_data_path() -> &'static PathBuf {
             let data_dir = proj_dirs.data_dir().to_path_buf();
             
             // Create the directory if it doesn't exist
-            if !data_dir.exists() {
-                 if let Err(e) = std::fs::create_dir_all(&data_dir) {
-                     error!("Failed to create data directory {:?}: {}", data_dir, e);
+            if !data_dir.exists()
+                 && let Err(e) = std::fs::create_dir_all(&data_dir) {
+                     error!("Failed to create data directory {}: {e}", data_dir.display());
                      // Fallback to local if we can't write to AppData
                      return PathBuf::from(".");
-                 }
             }
             
-            info!("Installed mode detected. Using data directory: {:?}", data_dir);
+            info!("Installed mode detected. Using data directory: {}", data_dir.display());
             return data_dir;
         }
 
@@ -42,4 +41,3 @@ pub fn get_data_path() -> &'static PathBuf {
         PathBuf::from(".")
     })
 }
-

@@ -104,17 +104,16 @@ impl AppConfig {
             let cfg = crate::migration::construct_migrated_config();
 
             if let Err(e) = Self::save_update(&cfg) {
-                warn!("Warning: Failed to save migrated config: {}", e);
+                warn!("Warning: Failed to save migrated config: {e}");
             } else {
                 crate::migration::cleanup_legacy_config_files();
             }
             info!(
-                "Migration completed. New configuration saved to {}",
-                CONFIG_FILE
+                "Migration completed. New configuration saved to {CONFIG_FILE}"
             );
             cfg
         } else {
-            info!("Loading configuration from {}", CONFIG_FILE);
+            info!("Loading configuration from {CONFIG_FILE}");
             Self::load_from_file()
         };
 
@@ -138,21 +137,19 @@ impl AppConfig {
     fn load_from_file() -> AppConfig {
         let file_content = fs::read_to_string(CONFIG_FILE).unwrap_or_else(|e| {
             warn!(
-                "Failed to read config file {}: {}, using defaults",
-                CONFIG_FILE, e
+                "Failed to read config file {CONFIG_FILE}: {e}, using defaults"
             );
             "{}".to_string()
         });
 
         match serde_json::from_str::<AppConfig>(&file_content) {
             Ok(config) => {
-                info!("Successfully loaded configuration from {}", CONFIG_FILE);
+                info!("Successfully loaded configuration from {CONFIG_FILE}");
                 config
             }
             Err(e) => {
                 warn!(
-                    "Failed to deserialize config from {}: {:?}, using defaults",
-                    CONFIG_FILE, e
+                    "Failed to deserialize config from {CONFIG_FILE}: {e:?}, using defaults"
                 );
                 AppConfig::default()
             }
@@ -202,13 +199,13 @@ impl AppConfig {
 
     fn save_update(config: &AppConfig) -> anyhow::Result<()> {
         let mut file = File::create(CONFIG_FILE)
-            .context(format!("Failed to create config file {}", CONFIG_FILE))?;
+            .context(format!("Failed to create config file {CONFIG_FILE}"))?;
 
         let pretty_json = serde_json::to_string_pretty(config)
             .context("Failed to serialize configuration to JSON")?;
 
         file.write_all(pretty_json.as_bytes())
-            .context(format!("Failed to write configuration to {}", CONFIG_FILE))?;
+            .context(format!("Failed to write configuration to {CONFIG_FILE}"))?;
 
         Ok(())
     }

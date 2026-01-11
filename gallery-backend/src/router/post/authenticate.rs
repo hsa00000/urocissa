@@ -6,7 +6,7 @@ use crate::router::{AppResult, AppError, ErrorKind};
 use crate::router::claims::claims::Claims;
 
 #[post("/post/authenticate", data = "<password>")]
-pub async fn authenticate(password: Json<String>) -> AppResult<Json<String>> {
+pub fn authenticate(password: Json<String>) -> AppResult<Json<String>> {
     let input_password = password.into_inner();
 
     let current_password = APP_CONFIG.get().unwrap().read().unwrap().private.password.clone();

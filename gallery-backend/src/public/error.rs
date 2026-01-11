@@ -19,7 +19,7 @@ pub enum ErrorKind {
 }
 
 impl ErrorKind {
-    pub fn as_str(&self) -> &'static str {
+    pub fn as_str(self) -> &'static str {
         match self {
             ErrorKind::NotFound => "Not Found",
             ErrorKind::PermissionDenied => "Permission Denied",
@@ -113,10 +113,10 @@ impl fmt::Display for AppError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}: {}", self.kind.as_str(), self.message)?;
         for ctx in &self.context {
-            write!(f, "\n  Context: {}", ctx)?;
+            write!(f, "\n  Context: {ctx}")?;
         }
         if let Some(src) = &self.source {
-            write!(f, "\n  Caused by: {:?}", src)?;
+            write!(f, "\n  Caused by: {src:?}")?;
         }
         Ok(())
     }
@@ -124,7 +124,7 @@ impl fmt::Display for AppError {
 
 impl std::error::Error for AppError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        self.source.as_ref().map(|e| e.root_cause())
+        self.source.as_ref().map(anyhow::Error::root_cause)
     }
 }
 
@@ -146,7 +146,7 @@ impl<'r> Responder<'r, 'static> for AppError {
         };
 
         // Log the error
-        log::error!("API Error: {}", self);
+        log::error!("API Error: {self}");
         
         // Also trigger the old handler for Discord notifications if needed
         crate::public::error_data::handle_app_error(&self); 

@@ -41,9 +41,9 @@ pub async fn create_share(
         match create_and_insert_share(&txn, create_share) {
             Ok(link) => {
                 txn.commit().map_err(|e| AppError::from_err(ErrorKind::Database, e.into()))?;
-                return Ok(link);
+                Ok(link)
             }
-            Err(err) => return Err(err),
+            Err(err) => Err(err),
         }
     })
     .await

@@ -1,3 +1,4 @@
+#![allow(clippy::struct_excessive_bools)]
 use arrayvec::ArrayString;
 use bitcode::{Decode, Encode};
 use serde::{Deserialize, Serialize};

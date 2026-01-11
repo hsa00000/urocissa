@@ -8,11 +8,11 @@ pub fn initialize_file() {
         let db_path = root.join("db/temp_db.redb");
         if fs::metadata(&db_path).is_ok() {
             match fs::remove_file(&db_path) {
-                Ok(_) => {
+                Ok(()) => {
                     info!("Clear tree cache");
                 }
                 Err(_) => {
-                    error!("Fail to delete cache data {:?}", db_path)
+                    error!("Fail to delete cache data {db_path:?}");
                 }
             }
         }
@@ -21,11 +21,11 @@ pub fn initialize_file() {
         let db_path = root.join("db/cache_db.redb");
         if fs::metadata(&db_path).is_ok() {
             match fs::remove_file(&db_path) {
-                Ok(_) => {
+                Ok(()) => {
                     info!("Clear query cache");
                 }
                 Err(_) => {
-                    error!("Fail to delete cache data {:?}", db_path)
+                    error!("Fail to delete cache data {db_path:?}");
                 }
             }
         }
@@ -34,11 +34,11 @@ pub fn initialize_file() {
         let db_path = root.join("db/expire_db.redb");
         if fs::metadata(&db_path).is_ok() {
             match fs::remove_file(&db_path) {
-                Ok(_) => {
+                Ok(()) => {
                     info!("Clear expire table");
                 }
                 Err(_) => {
-                    error!("Fail to delete expire table {:?}", db_path)
+                    error!("Fail to delete expire table {db_path:?}");
                 }
             }
         }

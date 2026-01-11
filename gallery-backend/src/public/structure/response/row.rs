@@ -1,3 +1,4 @@
+#![allow(clippy::struct_field_names)]
 use bitcode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 

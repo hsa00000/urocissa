@@ -1,7 +1,6 @@
 use crate::operations::open_db::{open_data_table, open_tree_snapshot_table};
 use crate::operations::transitor::index_to_hash;
 use crate::public::db::tree::read_tags::TagInfo;
-use crate::public::db::tree_snapshot::TREE_SNAPSHOT;
 use crate::public::structure::abstract_data::AbstractData;
 use crate::router::fairing::guard_auth::GuardAuth;
 use crate::router::fairing::guard_read_only_mode::GuardReadOnlyMode;
@@ -40,7 +39,7 @@ pub async fn edit_tag(
 
         for &index in &json_data.index_array {
             let hash = index_to_hash(&tree_snapshot, index)
-                .or_raise(|| (ErrorKind::Database, format!("Failed to get hash for index {}", index)))?;
+                .or_raise(|| (ErrorKind::Database, format!("Failed to get hash for index {index}")))?;
 
             if let Some(guard) = data_table.get(&*hash).or_raise(|| (ErrorKind::Database, "Failed to get data"))? {
                 let mut abstract_data = guard.value();
@@ -64,7 +63,7 @@ pub async fn edit_tag(
         }
 
         // Return TagInfo
-        Ok(TREE_SNAPSHOT.read_tags().map_err(|e| AppError::from(anyhow::Error::from(e)))?)
+        crate::public::db::tree_snapshot::TreeSnapshot::read_tags().map_err(AppError::from)
     })
     .await
     .or_raise(|| (ErrorKind::Internal, "Failed to join blocking task"))??;

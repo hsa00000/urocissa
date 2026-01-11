@@ -13,9 +13,9 @@ use crate::public::error::{AppError, ErrorKind};
 #[post("/post/config/import", data = "<file>")]
 pub fn import_config_handler(_auth: GuardAuth, file: Json<AppConfig>) -> AppResult<Status> {
     match AppConfig::update(file.into_inner()) {
-        Ok(_) => Ok(Status::Ok),
+        Ok(()) => Ok(Status::Ok),
         Err(e) => {
-            error!("Import failed: {}", e);
+            error!("Import failed: {e}");
             Err(AppError::from_err(ErrorKind::Internal, e))
         }
     }

@@ -16,7 +16,7 @@ pub fn handle_error(error: Error) -> Error {
         .public
         .discord_hook_url
     {
-        send_discord_webhook(url, &format!("{:?}", error));
+        send_discord_webhook(url, &format!("{error:?}"));
     }
     error
 }
@@ -40,14 +40,14 @@ pub fn handle_app_error(error: &AppError) {
         .public
         .discord_hook_url
     {
-        let debug_string = format!("{}", error);
+        let debug_string = format!("{error}");
         send_discord_webhook(url, &debug_string);
     }
 }
 
-fn send_discord_webhook(webhook_url: &str, error_msg: &str) -> () {
+fn send_discord_webhook(webhook_url: &str, error_msg: &str) {
     let client = Client::new();
-    let debug_string = format!("```rust\n{}\n```", error_msg);
+    let debug_string = format!("```rust\n{error_msg}\n```");
     let params = json!({ "content": debug_string });
     if let Err(e) = client.post(webhook_url).json(&params).send() {
         error!("Failed to send discord webhook: {}", e);

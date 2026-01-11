@@ -3,7 +3,7 @@ use std::sync::LazyLock;
 use rayon::{ThreadPool, ThreadPoolBuilder};
 use tokio::runtime::{Builder, Runtime};
 
-pub static CURRENT_NUM_THREADS: LazyLock<usize> = LazyLock::new(|| rayon::current_num_threads());
+pub static CURRENT_NUM_THREADS: LazyLock<usize> = LazyLock::new(rayon::current_num_threads);
 
 // Rocket-specific Tokio Runtime
 // This runtime is dedicated to handling network requests, with thread names clearly labeled.
@@ -42,7 +42,7 @@ pub static INDEX_RUNTIME: LazyLock<Runtime> = LazyLock::new(|| {
 pub static WORKER_RAYON_POOL: LazyLock<ThreadPool> = LazyLock::new(|| {
     ThreadPoolBuilder::new()
         .num_threads(*CURRENT_NUM_THREADS)
-        .thread_name(|i| format!("cpu-intensive-worker-{}", i))
+        .thread_name(|i| format!("cpu-intensive-worker-{i}"))
         .build()
         .expect("Failed to build Worker Rayon pool")
 });

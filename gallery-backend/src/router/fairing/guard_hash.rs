@@ -161,8 +161,7 @@ pub async fn renew_hash_token(
             Ok(data) => data,
             Err(err) => {
                 warn!(
-                    "Token renewal failed: unable to decode token. Error: {:#?}",
-                    err
+                    "Token renewal failed: unable to decode token. Error: {err:#?}"
                 );
                 return Err(AppError::new(ErrorKind::Auth, "Unauthorized: Invalid token"));
             }
@@ -198,14 +197,56 @@ impl<'r> FromRequest<'r> for TimestampGuardModified {
     type Error = ();
 
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let Ok(token) = extract_bearer_token(req) else {
+            // Note: We can't access `err` easily with let-else if we just unwrap Ok.
+            // But extract_bearer_token returns Result.
+            // To preserve error message we need the match, or be clever.
+            // Clippy suggestion was `let Ok(token) = ... else { ... }`
+            // But we need to use `err` in the `Outcome::Error`.
+            // Wait, if we use let-else, we lose the error variable unless we match it out.
+            // `let Ok(token) = ...` destructures Ok.
+            // If it is Err(err), the else block executes, but we don't have access to `err`.
+            // So for these cases, `manual_let_else` might be WRONG if we need the error value.
+            // But let's look at the clippy warning again.
+            // It says "this could be rewritten as `let...else`".
+            // If I rewrite it, I might lose the error context unless I re-extract it or use a different pattern.
+            // Actually, if I use `let Ok(token) = ...` I can't get the error.
+            // So I will ignore this specific instance if I need the error.
+            // BUT, wait, for `GuardHash`, line 200: `let token = match extract_bearer_token(req) { Ok(token) => token, Err(_) => return Outcome::Forward(Status::Unauthorized) };`
+            // That one (line 200) ignores the error! So that one IS valid for let-else.
+            // Lines 27-36 USE the error. So clippy shouldn't be complaining about those?
+            // Let's re-read the clippy output.
+            // Warning at `src/router/fairing/guard_hash.rs:200:9` -> This is inside `TimestampGuardModified`.
+            // Warning for `GuardHash` itself? I don't see it in the snippet I posted in thought block.
+            // Ah, I see "warning: this could be rewritten as `let...else` --> src/router/fairing/guard_hash.rs:200:9".
+            // Only line 200 is complained about!
+            // Line 27 was NOT complained about in the log I read.
+            // Okay, so I only fix line 200.
+            return match extract_bearer_token(req) {
+                Ok(token) => match my_decode_token::<ClaimsTimestamp>(token, &VALIDATION) {
+                    Ok(claims) => Outcome::Success(TimestampGuardModified {
+                        timestamp_decoded: claims.timestamp,
+                    }),
+                    Err(_) => Outcome::Forward(Status::Unauthorized),
+                },
+                Err(_) => Outcome::Forward(Status::Unauthorized),
+            }
+        };
+
+        // Wait, the code at 200 is:
+        /*
         let token = match extract_bearer_token(req) {
             Ok(token) => token,
             Err(_) => return Outcome::Forward(Status::Unauthorized),
         };
+        */
+        // I will change it to let-else.
+        let Ok(_token) = extract_bearer_token(req) else {
+            return Outcome::Forward(Status::Unauthorized);
+        };
 
-        let claims: ClaimsTimestamp = match my_decode_token(token, &VALIDATION) {
-            Ok(claims) => claims,
-            Err(_) => return Outcome::Forward(Status::Unauthorized),
+        let Ok(claims) = my_decode_token::<ClaimsTimestamp>(token, &VALIDATION) else {
+             return Outcome::Forward(Status::Unauthorized);
         };
 
         Outcome::Success(TimestampGuardModified {

@@ -7,7 +7,7 @@ use redb::ReadableTable;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 impl TreeSnapshot {
-    pub fn read_tags(&self) -> Result<Vec<TagInfo>> {
+    pub fn read_tags() -> Result<Vec<TagInfo>> {
         // Concurrent counter for each tag
         let tag_counts: DashMap<String, AtomicUsize> = DashMap::new();
 

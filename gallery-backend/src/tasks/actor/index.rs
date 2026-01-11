@@ -31,19 +31,17 @@ impl IndexTask {
 impl Task for IndexTask {
     type Output = Result<AbstractData>;
 
-    fn run(self) -> impl Future<Output = Self::Output> + Send {
-        async move {
-            let _pending_guard = PendingGuard::new();
-            WORKER_RAYON_POOL
-                .spawn_async(move || index_task_match(self.abstract_data))
-                .await
-                .map_err(|err| handle_error(err.context("Failed to run index task")))
-        }
+    async fn run(self) -> Self::Output {
+        let _pending_guard = PendingGuard::new();
+        WORKER_RAYON_POOL
+            .spawn_async(move || index_task_match(self.abstract_data))
+            .await
+            .map_err(|err| handle_error(err.context("Failed to run index task")))
     }
 }
 
-/// Outer layer: unify business result matching and update TUI  
-/// (success -> advance, failure -> mark_failed)
+/// Outer layer: unify business result matching and update TUI\
+/// (success -> advance, failure -> `mark_failed`)
 fn index_task_match(abstract_data: AbstractData) -> Result<AbstractData> {
     let hash = abstract_data.hash();
     match index_task(abstract_data) {
@@ -65,7 +63,7 @@ fn index_task(mut abstract_data: AbstractData) -> Result<AbstractData> {
         .alias()
         .iter()
         .max()
-        .ok_or_else(|| anyhow!("alias collection is empty for hash: {}", hash))?
+        .ok_or_else(|| anyhow!("alias collection is empty for hash: {hash}"))?
         .file
         .clone();
 
@@ -81,7 +79,7 @@ fn index_task(mut abstract_data: AbstractData) -> Result<AbstractData> {
     let is_image = abstract_data.is_image();
     if is_image {
         if let Err(e) = process_image_info(&mut abstract_data) {
-            debug!("Failed image data dump: {:#?}", abstract_data);
+            debug!("Failed image data dump: {abstract_data:#?}");
             return Err(e).context(format!(
                 "failed to process image metadata pipeline. Hash: {}, Path: {}",
                 abstract_data.hash(),
@@ -90,7 +88,7 @@ fn index_task(mut abstract_data: AbstractData) -> Result<AbstractData> {
         }
     } else {
         if let Err(e) = process_video_info(&mut abstract_data) {
-            debug!("Failed video data dump: {:#?}", abstract_data);
+            debug!("Failed video data dump: {abstract_data:#?}");
             return Err(e).context(format!(
                 "failed to process video metadata pipeline. Hash: {}, Path: {}",
                 abstract_data.hash(),

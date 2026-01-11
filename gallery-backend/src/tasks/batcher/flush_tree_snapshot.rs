@@ -10,10 +10,8 @@ use anyhow;
 pub struct FlushTreeSnapshotTask;
 
 impl BatchTask for FlushTreeSnapshotTask {
-    fn batch_run(_: Vec<Self>) -> impl Future<Output = ()> + Send {
-        async move {
-            flush_tree_snapshot_task();
-        }
+    async fn batch_run(_: Vec<Self>) {
+        flush_tree_snapshot_task();
     }
 }
 
@@ -38,8 +36,7 @@ fn flush_tree_snapshot_task() {
                 Ok(t) => t,
                 Err(e) => {
                     handle_error(anyhow::anyhow!(
-                        "FlushTreeSnapshotTask: Failed to begin write transaction: {}",
-                        e
+                        "FlushTreeSnapshotTask: Failed to begin write transaction: {e}"
                     ));
                     break;
                 }
@@ -52,9 +49,7 @@ fn flush_tree_snapshot_task() {
                     Ok(t) => t,
                     Err(e) => {
                         handle_error(anyhow::anyhow!(
-                            "FlushTreeSnapshotTask: Failed to open table {}: {}",
-                            timestamp_str,
-                            e
+                            "FlushTreeSnapshotTask: Failed to open table {timestamp_str}: {e}"
                         ));
                         break;
                     }
@@ -62,10 +57,7 @@ fn flush_tree_snapshot_task() {
                 for (index, data) in entry_ref.iter().enumerate() {
                     if let Err(e) = table.insert(index as u64, data) {
                         handle_error(anyhow::anyhow!(
-                            "FlushTreeSnapshotTask: Failed to insert data at index {} for timestamp {}: {}",
-                            index,
-                            timestamp,
-                            e
+                            "FlushTreeSnapshotTask: Failed to insert data at index {index} for timestamp {timestamp}: {e}"
                         ));
                     }
                 }
@@ -73,9 +65,7 @@ fn flush_tree_snapshot_task() {
 
             if let Err(e) = txn.commit() {
                 handle_error(anyhow::anyhow!(
-                    "FlushTreeSnapshotTask: Failed to commit transaction for timestamp {}: {}",
-                    timestamp,
-                    e
+                    "FlushTreeSnapshotTask: Failed to commit transaction for timestamp {timestamp}: {e}"
                 ));
                 break;
             }

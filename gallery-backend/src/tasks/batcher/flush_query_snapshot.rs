@@ -13,10 +13,8 @@ use anyhow;
 pub struct FlushQuerySnapshotTask;
 
 impl BatchTask for FlushQuerySnapshotTask {
-    fn batch_run(_: Vec<Self>) -> impl Future<Output = ()> + Send {
-        async move {
-            flush_query_snapshot_task();
-        }
+    async fn batch_run(_: Vec<Self>) {
+        flush_query_snapshot_task();
     }
 }
 
@@ -42,8 +40,7 @@ fn flush_query_snapshot_task() {
                 Ok(t) => t,
                 Err(e) => {
                     handle_error(anyhow::anyhow!(
-                        "FlushQuerySnapshotTask: Failed to begin write transaction: {}",
-                        e
+                        "FlushQuerySnapshotTask: Failed to begin write transaction: {e}"
                     ));
                     break;
                 }
@@ -57,27 +54,21 @@ fn flush_query_snapshot_task() {
                     Ok(t) => t,
                     Err(e) => {
                         handle_error(anyhow::anyhow!(
-                            "FlushQuerySnapshotTask: Failed to open table {}: {}",
-                            count_version,
-                            e
+                            "FlushQuerySnapshotTask: Failed to open table {count_version}: {e}"
                         ));
                         break;
                     }
                 };
                 if let Err(e) = table.insert(expression_hashed, ref_data) {
                     handle_error(anyhow::anyhow!(
-                        "FlushQuerySnapshotTask: Failed to insert data for expression_hashed {}: {}",
-                        expression_hashed,
-                        e
+                        "FlushQuerySnapshotTask: Failed to insert data for expression_hashed {expression_hashed}: {e}"
                     ));
                 }
             }
 
             if let Err(e) = txn.commit() {
                 handle_error(anyhow::anyhow!(
-                    "FlushQuerySnapshotTask: Failed to commit transaction for expression_hashed {}: {}",
-                    expression_hashed,
-                    e
+                    "FlushQuerySnapshotTask: Failed to commit transaction for expression_hashed {expression_hashed}: {e}"
                 ));
                 break;
             }

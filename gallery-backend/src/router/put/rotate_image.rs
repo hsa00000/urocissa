@@ -52,8 +52,7 @@ pub async fn rotate_image(
         // Load the compressed image (not the original)
         let compressed_path = abstract_data.compressed_path();
         let mut dyn_img = image::open(&compressed_path).map_err(|e| AppError::new(ErrorKind::IO, format!(
-            "Failed to load compressed image: {:?} ({})",
-            compressed_path, e
+            "Failed to load compressed image: {} ({e})", compressed_path.display()
         )))?;
 
         // Rotate counter-clockwise (270 degrees clockwise = 90 degrees counter-clockwise)
@@ -63,7 +62,7 @@ pub async fn rotate_image(
         abstract_data.swap_width_height();
 
         // Generate and save the rotated thumbnail
-        generate_thumbnail_for_image(&mut abstract_data, dyn_img.clone())
+        generate_thumbnail_for_image(&mut abstract_data, &dyn_img.clone())
             .or_raise(|| (ErrorKind::Internal, "Failed to generate thumbnail for rotated image"))?;
 
         // Update thumbhash and phash with the rotated image
@@ -73,7 +72,7 @@ pub async fn rotate_image(
 
         let album_ids: Vec<_> = abstract_data
             .albums()
-            .map(|albums| albums.iter().cloned().collect())
+            .map(|albums| albums.iter().copied().collect())
             .unwrap_or_default();
 
         let mut result_vec = vec![abstract_data];

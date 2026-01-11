@@ -123,8 +123,8 @@ pub fn index_edit_album_insert(
     index: usize,
     album_id: ArrayString<64>,
 ) -> Result<AbstractData, AppError> {
-    let mut abstract_data = index_to_abstract_data(&tree_snapshot, &data_table, index)
-        .or_raise(|| (ErrorKind::Database, format!("Failed to convert index {} to abstract data", index)))?;
+    let mut abstract_data = index_to_abstract_data(tree_snapshot, data_table, index)
+        .or_raise(|| (ErrorKind::Database, format!("Failed to convert index {index} to abstract data")))?;
     if let Some(albums) = abstract_data.albums_mut() {
         albums.insert(album_id);
     }

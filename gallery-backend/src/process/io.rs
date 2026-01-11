@@ -13,12 +13,11 @@ pub fn copy_with_retry(src: &Path, dst: &Path) -> Result<u64> {
             Ok(bytes) => return Ok(bytes),
             Err(error) if attempt <= MAX_COPY_RETRIES => {
                 warn!(
-                    "File copy failed (attempt {}/{}): {:?} → {:?}\nError: {}\nRetrying in 1 second...",
+                    "File copy failed (attempt {}/{}): {} → {}\nError: {error}\nRetrying in 1 second...",
                     attempt,
                     MAX_COPY_RETRIES + 1,
-                    src,
-                    dst,
-                    error
+                    src.display(),
+                    dst.display()
                 );
                 thread::sleep(Duration::from_secs(1));
             }

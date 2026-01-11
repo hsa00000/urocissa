@@ -15,12 +15,10 @@ use std::sync::atomic::Ordering;
 pub struct ExpireCheckTask;
 
 impl BatchTask for ExpireCheckTask {
-    fn batch_run(_: Vec<Self>) -> impl Future<Output = ()> + Send {
-        async move {
-            expire_check_task();
-            // Reset countdown timer after task execution
-            reset_expire_check_timer().await;
-        }
+    async fn batch_run(_: Vec<Self>) {
+        expire_check_task();
+        // Reset countdown timer after task execution
+        reset_expire_check_timer().await;
     }
 }
 
@@ -45,7 +43,7 @@ fn expire_check_task() {
 
                 match write_txn.delete_table(table_handle) {
                     Ok(true) => {
-                        info!("Delete query cache table: {:?}", timestamp);
+                        info!("Delete query cache table: {timestamp}");
                         let tree_snapshot_delete_queue: Vec<_> = table
                             .iter()
                             .unwrap()
@@ -58,16 +56,16 @@ fn expire_check_task() {
                             .collect();
 
                         for timestamp in tree_snapshot_delete_queue {
+                            #[allow(clippy::let_underscore_future)]
                             let _ = INDEX_COORDINATOR.execute_detached(RemoveTask::new(timestamp));
                         }
                     }
                     Ok(false) => {
-                        error!("Failed to delete query cache table: {:?}", timestamp);
+                        error!("Failed to delete query cache table: {timestamp}");
                     }
                     Err(err) => {
                         error!(
-                            "Failed to delete query cache table: {:?}, error: {:#?}",
-                            timestamp, err
+                            "Failed to delete query cache table: {timestamp}, error: {err:#?}"
                         );
                     }
                 }

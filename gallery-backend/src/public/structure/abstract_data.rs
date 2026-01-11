@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::public::constant::VALID_IMAGE_EXTENSIONS;
 
-/// Regex for parsing timestamps from filenames (e.g., 20231225_143052)
+/// Regex for parsing timestamps from filenames (e.g., `20231225_143052`)
 static FILE_NAME_TIME_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"\b(\d{4})[^a-zA-Z0-9]?(\d{2})[^a-zA-Z0-9]?(\d{2})[^a-zA-Z0-9]?(\d{2})[^a-zA-Z0-9]?(\d{2})[^a-zA-Z0-9]?(\d{2})\b").unwrap()
 });
@@ -28,7 +28,7 @@ use super::{
     video::{VideoCombined, VideoMetadata},
 };
 
-/// AbstractData enum with Image, Video, and Album variants
+/// `AbstractData` enum with Image, Video, and Album variants
 #[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum AbstractData {
@@ -83,7 +83,7 @@ impl AbstractData {
         }
     }
 
-    /// Update the update_at timestamp
+    /// Update the `update_at` timestamp
     pub fn update_update_at(&mut self) {
         let timestamp = Utc::now().timestamp_millis();
         match self {
@@ -94,7 +94,7 @@ impl AbstractData {
     }
 
     /// Compute timestamp for sorting based on priority list
-    /// Checks fields in order: DateTimeOriginal, filename, scan_time, modified, random
+    /// Checks fields in order: `DateTimeOriginal`, filename, `scan_time`, modified, random
     pub fn compute_timestamp(&self, priority_list: &[&str]) -> i64 {
         if let AbstractData::Album(alb) = self {
             return alb.metadata.created_time;
@@ -169,13 +169,13 @@ impl AbstractData {
                     let random_number: i64 = rng.random();
                     return random_number;
                 }
-                _ => panic!("Unknown field type: {}", field),
+                _ => panic!("Unknown field type: {field}"),
             }
         }
         0
     }
 
-    /// Get ext_type (image/video/album)
+    /// Get `ext_type` (image/video/album)
     pub fn ext_type(&self) -> &str {
         match self {
             AbstractData::Image(_) => "image",
@@ -193,7 +193,7 @@ impl AbstractData {
         }
     }
 
-    /// Get exif_vec
+    /// Get `exif_vec`
     pub fn exif_vec(&self) -> Option<&BTreeMap<String, String>> {
         match self {
             AbstractData::Image(img) => Some(&img.metadata.exif_vec),
@@ -202,7 +202,7 @@ impl AbstractData {
         }
     }
 
-    /// Get exif_vec mutable
+    /// Get `exif_vec` mutable
     pub fn exif_vec_mut(&mut self) -> Option<&mut BTreeMap<String, String>> {
         match self {
             AbstractData::Image(img) => Some(&mut img.metadata.exif_vec),
@@ -257,23 +257,24 @@ impl AbstractData {
         matches!(self, AbstractData::Video(_))
     }
 
-    /// Create a new AbstractData from a file path and hash
+    /// Create a new `AbstractData` from a file path and hash
     pub fn new(path: &Path, hash: ArrayString<64>) -> Result<Self> {
         let ext = path
             .extension()
-            .ok_or_else(|| anyhow::anyhow!("File has no extension: {:?}", path))?
+            .ok_or_else(|| anyhow::anyhow!("File has no extension: {}", path.display()))?
             .to_str()
-            .ok_or_else(|| anyhow::anyhow!("Extension is not valid UTF-8: {:?}", path))?
+            .ok_or_else(|| anyhow::anyhow!("Extension is not valid UTF-8: {}", path.display()))?
             .to_ascii_lowercase();
 
-        let md = metadata(path).with_context(|| format!("Failed to read metadata: {:?}", path))?;
+        let md = metadata(path).with_context(|| format!("Failed to read metadata: {}", path.display()))?;
         let size = md.len();
 
         let modified_millis = md
             .modified()?
             .duration_since(UNIX_EPOCH)
-            .with_context(|| format!("Modification time is before UNIX_EPOCH: {:?}", path))?
-            .as_millis() as i64;
+            .with_context(|| format!("Modification time is before UNIX_EPOCH: {}", path.display()))?
+            .as_millis();
+        let modified_millis = i64::try_from(modified_millis).unwrap_or(0);
 
         let file_modify = FileModify::new(path, modified_millis);
         let obj_type = Self::determine_type(&ext);
@@ -303,7 +304,7 @@ impl AbstractData {
         }
     }
 
-    /// Generate random AbstractData (image) for testing
+    /// Generate random `AbstractData` (image) for testing
     pub fn generate_random_data() -> Self {
         use crate::operations::hash::generate_random_hash;
         use rand::Rng;

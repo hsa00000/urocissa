@@ -1,3 +1,4 @@
+#![allow(clippy::too_many_lines)]
 use super::{AlbumFilterValue, Expression, FilterValue};
 use crate::public::structure::abstract_data::AbstractData;
 use arrayvec::ArrayString;
@@ -9,21 +10,21 @@ impl Expression {
     ) -> Box<dyn Fn(&AbstractData) -> bool + Send + Sync> {
         match self {
             Expression::Or(exprs) => {
-                let id = shared_album_id.clone();
+                let id = shared_album_id;
                 let filters = exprs;
                 Box::new(move |data| {
                     filters.iter().any(|expr| {
-                        let filter = expr.clone().generate_filter_hide_metadata(id.clone());
+                        let filter = expr.clone().generate_filter_hide_metadata(id);
                         filter(data)
                     })
                 })
             }
             Expression::And(exprs) => {
-                let id = shared_album_id.clone();
+                let id = shared_album_id;
                 let filters = exprs;
                 Box::new(move |data| {
                     filters.iter().all(|expr| {
-                        let filter = expr.clone().generate_filter_hide_metadata(id.clone());
+                        let filter = expr.clone().generate_filter_hide_metadata(id);
                         filter(data)
                     })
                 })
@@ -51,8 +52,7 @@ impl Expression {
                     // In a shared album, all visible images/videos are in the shared album.
                     // So they are definitely "in an album".
                     Box::new(move |data| match data {
-                        AbstractData::Image(_) => exists,
-                        AbstractData::Video(_) => exists,
+                        AbstractData::Image(_) | AbstractData::Video(_) => exists,
                         AbstractData::Album(_) => false,
                     })
                 }
@@ -104,21 +104,21 @@ impl Expression {
                             .metadata
                             .exif_vec
                             .get("Model")
-                            .map_or(false, |v| v.to_ascii_lowercase().contains(&model_lower)),
+                            .is_some_and(|v| v.to_ascii_lowercase().contains(&model_lower)),
                         AbstractData::Video(vid) => vid
                             .metadata
                             .exif_vec
                             .get("Model")
-                            .map_or(false, |v| v.to_ascii_lowercase().contains(&model_lower)),
+                            .is_some_and(|v| v.to_ascii_lowercase().contains(&model_lower)),
                         AbstractData::Album(_) => false,
                     })
                 }
                 FilterValue::Exists(exists) => Box::new(move |data| match data {
                     AbstractData::Image(img) => {
-                        img.metadata.exif_vec.get("Model").is_some() == exists
+                        img.metadata.exif_vec.contains_key("Model") == exists
                     }
                     AbstractData::Video(vid) => {
-                        vid.metadata.exif_vec.get("Model").is_some() == exists
+                        vid.metadata.exif_vec.contains_key("Model") == exists
                     }
                     AbstractData::Album(_) => false,
                 }),
@@ -131,21 +131,21 @@ impl Expression {
                             .metadata
                             .exif_vec
                             .get("Make")
-                            .map_or(false, |v| v.to_ascii_lowercase().contains(&make_lower)),
+                            .is_some_and(|v| v.to_ascii_lowercase().contains(&make_lower)),
                         AbstractData::Video(vid) => vid
                             .metadata
                             .exif_vec
                             .get("Make")
-                            .map_or(false, |v| v.to_ascii_lowercase().contains(&make_lower)),
+                            .is_some_and(|v| v.to_ascii_lowercase().contains(&make_lower)),
                         AbstractData::Album(_) => false,
                     })
                 }
                 FilterValue::Exists(exists) => Box::new(move |data| match data {
                     AbstractData::Image(img) => {
-                        img.metadata.exif_vec.get("Make").is_some() == exists
+                        img.metadata.exif_vec.contains_key("Make") == exists
                     }
                     AbstractData::Video(vid) => {
-                        vid.metadata.exif_vec.get("Make").is_some() == exists
+                        vid.metadata.exif_vec.contains_key("Make") == exists
                     }
                     AbstractData::Album(_) => false,
                 }),
@@ -162,12 +162,12 @@ impl Expression {
                                 .metadata
                                 .exif_vec
                                 .get("Make")
-                                .map_or(false, |v| v.to_ascii_lowercase().contains(&any_lower))
+                                .is_some_and(|v| v.to_ascii_lowercase().contains(&any_lower))
                             || img
                                 .metadata
                                 .exif_vec
                                 .get("Model")
-                                .map_or(false, |v| v.to_ascii_lowercase().contains(&any_lower))
+                                .is_some_and(|v| v.to_ascii_lowercase().contains(&any_lower))
                     }
                     AbstractData::Video(vid) => {
                         "video".contains(&identifier)
@@ -176,12 +176,12 @@ impl Expression {
                                 .metadata
                                 .exif_vec
                                 .get("Make")
-                                .map_or(false, |v| v.to_ascii_lowercase().contains(&any_lower))
+                                .is_some_and(|v| v.to_ascii_lowercase().contains(&any_lower))
                             || vid
                                 .metadata
                                 .exif_vec
                                 .get("Model")
-                                .map_or(false, |v| v.to_ascii_lowercase().contains(&any_lower))
+                                .is_some_and(|v| v.to_ascii_lowercase().contains(&any_lower))
                     }
                     AbstractData::Album(_) => false,
                 })

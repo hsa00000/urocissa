@@ -31,36 +31,30 @@ impl FlushTreeTask {
 }
 
 impl BatchTask for FlushTreeTask {
-    fn batch_run(list: Vec<Self>) -> impl Future<Output = ()> + Send {
-        async move {
-            let mut all_insert_data = Vec::new();
-            let mut all_remove_abstract_data = Vec::new();
-            for task in list {
-                all_insert_data.extend(task.insert_list);
-                all_remove_abstract_data.extend(task.remove_list);
-            }
-            flush_tree_task(all_insert_data, all_remove_abstract_data);
+    async fn batch_run(list: Vec<Self>) {
+        let mut all_insert_data = Vec::new();
+        let mut all_remove_abstract_data = Vec::new();
+        for task in list {
+            all_insert_data.extend(task.insert_list);
+            all_remove_abstract_data.extend(task.remove_list);
         }
+        flush_tree_task(&all_insert_data, &all_remove_abstract_data);
     }
 }
 
-fn flush_tree_task(insert_list: Vec<AbstractData>, remove_list: Vec<AbstractData>) {
+fn flush_tree_task(insert_list: &[AbstractData], remove_list: &[AbstractData]) {
     let write_txn = TREE.in_disk.begin_write().unwrap();
     {
         let mut data_table = write_txn.open_table(DATA_TABLE).unwrap();
 
-        insert_list
-            .iter()
-            .for_each(|abstract_data| {
-                let hash = abstract_data.hash();
-                data_table.insert(&*hash, abstract_data).unwrap();
-            });
-        remove_list
-            .iter()
-            .for_each(|abstract_data| {
-                let hash = abstract_data.hash();
-                data_table.remove(&*hash).unwrap();
-            });
+        for abstract_data in insert_list {
+            let hash = abstract_data.hash();
+            data_table.insert(&*hash, abstract_data).unwrap();
+        }
+        for abstract_data in remove_list {
+            let hash = abstract_data.hash();
+            data_table.remove(&*hash).unwrap();
+        }
     };
     write_txn.commit().unwrap();
     BATCH_COORDINATOR.execute_batch_detached(UpdateTreeTask);

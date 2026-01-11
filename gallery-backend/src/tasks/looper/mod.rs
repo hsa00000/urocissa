@@ -23,14 +23,14 @@ pub fn start_expire_check_loop() {
             let sleep_future = sleep(Duration::from_millis(SNAPSHOT_MAX_LIFETIME_MS));
 
             tokio::select! {
-                _ = sleep_future => {
+                () = sleep_future => {
                     // Timeout reached, execute the check task
                     info!("Timeout reached, executing the check task");
                     BATCH_COORDINATOR.execute_batch_detached(ExpireCheckTask);
                 }
                 _ = rx.recv() => {
                     // Received reset signal, restart the timer
-                    continue;
+                    
                 }
             }
         }

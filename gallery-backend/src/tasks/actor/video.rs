@@ -29,29 +29,26 @@ impl VideoTask {
 impl Task for VideoTask {
     type Output = Result<()>;
 
-    fn run(self) -> impl Future<Output = Self::Output> + Send {
-        async move {
-            let _pending_guard = PendingGuard::new();
-            WORKER_RAYON_POOL
-                .spawn_async(move || video_task(self.abstract_data))
-                .await
-                .map_err(|err| handle_error(err.context("Failed to run video task")))
-        }
+    async fn run(self) -> Self::Output {
+        let _pending_guard = PendingGuard::new();
+        WORKER_RAYON_POOL
+            .spawn_async(move || video_task(self.abstract_data))
+            .await
+            .map_err(|err| handle_error(err.context("Failed to run video task")))
     }
 }
 
 pub fn video_task(mut abstract_data: AbstractData) -> Result<()> {
     let hash = abstract_data.hash();
     match generate_compressed_video(&mut abstract_data) {
-        Ok(_) => {
+        Ok(()) => {
             abstract_data.set_pending(false);
             BATCH_COORDINATOR.execute_batch_detached(FlushTreeTask::insert(vec![abstract_data.clone()]));
 
             DASHBOARD.advance_task_state(&hash);
         }
         Err(err) => Err(err).context(format!(
-            "video_task: video compression failed for hash: {}",
-            hash
+            "video_task: video compression failed for hash: {hash}"
         ))?,
     }
     Ok(())

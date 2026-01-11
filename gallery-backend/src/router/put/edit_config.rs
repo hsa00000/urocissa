@@ -61,7 +61,7 @@ pub async fn update_config_handler(
 
         // 4. Update using the full config
         AppConfig::update(new_full_config).map_err(|e| {
-            error!("Failed to update config: {}", e);
+            error!("Failed to update config: {e}");
             AppError::from_err(ErrorKind::Internal, e)
         })?;
 

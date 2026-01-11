@@ -22,7 +22,7 @@ impl Drop for ProcessingGuard {
 }
 
 fn try_acquire(hash: ArrayString<64>) -> Option<ProcessingGuard> {
-    if IN_PROGRESS.insert(hash.clone()) {
+    if IN_PROGRESS.insert(hash) {
         Some(ProcessingGuard(hash))
     } else {
         None
@@ -42,15 +42,12 @@ pub async fn index_for_watch(
         .execute_waiting(HashTask::new(file))
         .await??;
 
-    let _guard = match try_acquire(hash) {
-        Some(g) => g,
-        None => {
-            warn!(
-                "Processing already in progress for path: {:?}, hash: {}",
-                path, hash
-            );
-            return Ok(());
-        }
+    let Some(_guard) = try_acquire(hash) else {
+        warn!(
+            "Processing already in progress for path: {}, hash: {hash}",
+            path.display()
+        );
+        return Ok(());
     };
 
     let abstract_data_opt = INDEX_COORDINATOR
@@ -62,12 +59,9 @@ pub async fn index_for_watch(
         .await??;
 
     // If the file is already in the database, we can skip further processing.
-    let mut abstract_data = match abstract_data_opt {
-        Some(data) => data,
-        None => {
-            INDEX_COORDINATOR.execute_detached(DeleteTask::new(path));
-            return Ok(());
-        }
+    let Some(mut abstract_data) = abstract_data_opt else {
+        INDEX_COORDINATOR.execute_detached(DeleteTask::new(path));
+        return Ok(());
     };
 
     abstract_data = INDEX_COORDINATOR

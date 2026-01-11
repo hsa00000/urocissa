@@ -16,6 +16,7 @@ pub struct ClaimsTimestamp {
 
 impl ClaimsTimestamp {
     pub fn new(resolved_share_opt: Option<ResolvedShare>, timestamp: i64) -> Self {
+        #[allow(clippy::cast_sign_loss)]
         let exp = (Utc::now().timestamp_millis() / 1000) as u64 + 300;
 
         Self {

@@ -49,7 +49,7 @@ pub async fn compressed_file(
             CompressedFileResponse::NamedFile(named_file)
         }
         Some(ext) => {
-            return Err(AppError::new(ErrorKind::InvalidInput, format!("Unsupported file extension: {}", ext))
+            return Err(AppError::new(ErrorKind::InvalidInput, format!("Unsupported file extension: {ext}"))
                 .context(format!("File path: {}", compressed_file_path.display())));
         }
         None => {

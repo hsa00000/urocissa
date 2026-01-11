@@ -14,28 +14,27 @@ pub fn generate_dynamic_image(abstract_data: &AbstractData) -> Result<DynamicIma
     };
 
     let dynamic_image =
-        decode_image(&img_path).context(format!("failed to decode image: {:?}", img_path))?;
+        decode_image(&img_path).context(format!("failed to decode image: {}", img_path.display()))?;
 
     Ok(dynamic_image)
 }
 
 fn decode_image(file_path: &PathBuf) -> Result<DynamicImage> {
     let file_in_memory =
-        read(file_path).context(format!("failed to read file into memory: {:?}", file_path))?;
+        read(file_path).context(format!("failed to read file into memory: {}", file_path.display()))?;
 
-    let decoders: Vec<fn(&Vec<u8>) -> Result<DynamicImage>> = vec![image_crate_decoder];
+    let decoders = vec![image_crate_decoder];
 
     for decoder in decoders {
-        match decoder(&file_in_memory) {
-            Ok(decoded_image) => return Ok(decoded_image),
-            Err(_) => continue,
+        if let Ok(decoded_image) = decoder(&file_in_memory) {
+            return Ok(decoded_image);
         }
     }
 
-    bail!("all decoders failed for file: {:?}", file_path);
+    bail!("all decoders failed for file: {}", file_path.display());
 }
 
-fn image_crate_decoder(file_in_memory: &Vec<u8>) -> Result<DynamicImage> {
+fn image_crate_decoder(file_in_memory: &[u8]) -> Result<DynamicImage> {
     let dynamic_image = image::load_from_memory(file_in_memory)
         .context("image crate failed to decode image from memory")?;
     Ok(dynamic_image)

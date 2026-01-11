@@ -21,6 +21,7 @@ static REGEX_OUT_TIME_US: LazyLock<Regex> =
 /// Compresses a video file, reporting progress by parsing ffmpeg's output.
 pub fn generate_compressed_video(abstract_data: &mut AbstractData) -> Result<()> {
     let duration_result = video_duration(&abstract_data.imported_path_string());
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     let duration = match duration_result {
         // Handle static GIFs by delegating to the image processor.
         Ok(d) if (d * 1000.0) as u32 == 100 => {
@@ -85,15 +86,13 @@ pub fn generate_compressed_video(abstract_data: &mut AbstractData) -> Result<()>
     let reader = BufReader::new(stderr);
 
     // Process each line of progress output from ffmpeg's stderr.
-    for line_result in reader.lines() {
-        if let Ok(line) = line_result {
-            if let Some(caps) = REGEX_OUT_TIME_US.captures(&line) {
-                // The regex now captures either digits or "N/A".
-                // We only proceed if the captured value can be parsed as a number.
-                if let Ok(microseconds) = caps[1].parse::<f64>() {
-                    let percentage = (microseconds / 1_000_000.0 / duration) * 100.0;
-                    DASHBOARD.update_progress(abstract_data.hash(), percentage);
-                }
+    for line in reader.lines().map_while(Result::ok) {
+        if let Some(caps) = REGEX_OUT_TIME_US.captures(&line) {
+            // The regex now captures either digits or "N/A".
+            // We only proceed if the captured value can be parsed as a number.
+            if let Ok(microseconds) = caps[1].parse::<f64>() {
+                let percentage = (microseconds / 1_000_000.0 / duration) * 100.0;
+                DASHBOARD.update_progress(abstract_data.hash(), percentage);
             }
         }
     }

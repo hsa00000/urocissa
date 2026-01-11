@@ -35,18 +35,16 @@ impl DeduplicateTask {
 impl Task for DeduplicateTask {
     type Output = Result<Option<AbstractData>>;
 
-    fn run(self) -> impl Future<Output = Self::Output> + Send {
-        async move {
-            spawn_blocking(move || deduplicate_task(self))
-                .await
-                .expect("blocking task panicked")
-                // convert Err into your crate‑error via `handle_error`
-                .map_err(|err| handle_error(err.context("Failed to run deduplicate task")))
-        }
+    async fn run(self) -> Self::Output {
+        spawn_blocking(move || deduplicate_task(&self))
+            .await
+            .expect("blocking task panicked")
+            // convert Err into your crate‑error via `handle_error`
+            .map_err(|err| handle_error(err.context("Failed to run deduplicate task")))
     }
 }
 
-fn deduplicate_task(task: DeduplicateTask) -> Result<Option<AbstractData>> {
+fn deduplicate_task(task: &DeduplicateTask) -> Result<Option<AbstractData>> {
     let mut abstract_data = AbstractData::new(&task.path, task.hash)?;
 
     let data_table = open_data_table();
@@ -60,20 +58,18 @@ fn deduplicate_task(task: DeduplicateTask) -> Result<Option<AbstractData>> {
                 exist_alias.push(file_modify);
             }
         }
-        if let Some(album_id) = task.presigned_album_id_opt {
-            if let Some(albums) = data_exist.albums_mut() {
+        if let Some(album_id) = task.presigned_album_id_opt
+            && let Some(albums) = data_exist.albums_mut() {
                 albums.insert(album_id);
             }
-        }
         BATCH_COORDINATOR.execute_batch_detached(FlushTreeTask::insert(vec![data_exist]));
         warn!("File already exists in the database:\n{:#?}", abstract_data);
         Ok(None)
     } else {
-        if let Some(album_id) = task.presigned_album_id_opt {
-            if let Some(albums) = abstract_data.albums_mut() {
+        if let Some(album_id) = task.presigned_album_id_opt
+            && let Some(albums) = abstract_data.albums_mut() {
                 albums.insert(album_id);
             }
-        }
         Ok(Some(abstract_data))
     }
 }

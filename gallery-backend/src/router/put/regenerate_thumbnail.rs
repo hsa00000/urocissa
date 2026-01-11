@@ -40,7 +40,7 @@ pub async fn regenerate_thumbnail_with_frame(
             let error_msg = errors
                 .iter()
                 .fold(String::from("Form parsing failed: "), |acc, e| {
-                    format!("{}; {}", acc, e)
+                    format!("{acc}; {e}")
                 });
             return Err(AppError::new(ErrorKind::InvalidInput, error_msg));
         }

@@ -1,3 +1,4 @@
+#![allow(clippy::struct_excessive_bools)]
 use arrayvec::ArrayString;
 use bitcode::{Decode, Encode};
 use chrono::Utc;
@@ -31,7 +32,7 @@ impl FromStr for ObjectType {
             "image" => Ok(ObjectType::Image),
             "video" => Ok(ObjectType::Video),
             "album" => Ok(ObjectType::Album),
-            _ => Err(format!("Invalid ObjectType: {}", s)),
+            _ => Err(format!("Invalid ObjectType: {s}")),
         }
     }
 }

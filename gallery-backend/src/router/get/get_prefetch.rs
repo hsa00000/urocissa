@@ -108,12 +108,12 @@ fn check_query_cache(
 
 fn filter_items(
     expression_option: Option<Expression>,
-    resolved_share_option: &Option<ResolvedShare>,
+    resolved_share_option: Option<&ResolvedShare>,
 ) -> Result<Vec<ReducedData>, AppError> {
     let filter_items_start_time = Instant::now();
 
-    let tree_guard = TREE.in_memory.read().map_err(|err| AppError::new(ErrorKind::Internal, format!("Failed to read tree in memory: {:?}", err)))?;
-    let reduced_data_vector: Vec<ReducedData> = match (expression_option, &resolved_share_option) {
+    let tree_guard = TREE.in_memory.read().map_err(|err| AppError::new(ErrorKind::Internal, format!("Failed to read tree in memory: {err:?}")))?;
+    let reduced_data_vector: Vec<ReducedData> = match (expression_option, resolved_share_option) {
         // If we have a resolved share then it must have a filter expression
         (Some(expr), Some(resolved_share)) => {
             let filter_fn = if resolved_share.share.show_metadata {
@@ -124,7 +124,7 @@ fn filter_items(
             tree_guard
                 .par_iter()
                 .filter(|db_ts| filter_fn(&db_ts.abstract_data))
-                .map(|db_ts| db_ts.into())
+                .map(std::convert::Into::into)
                 .collect()
         }
         (Some(expr), None) => {
@@ -132,12 +132,12 @@ fn filter_items(
             tree_guard
                 .par_iter()
                 .filter(|database_timestamp| filter_fn(&database_timestamp.abstract_data))
-                .map(|database_timestamp| database_timestamp.into())
+                .map(std::convert::Into::into)
                 .collect()
         }
         (None, _) => tree_guard
             .par_iter()
-            .map(|database_timestamp| database_timestamp.into())
+            .map(std::convert::Into::into)
             .collect(),
     };
 
@@ -149,12 +149,12 @@ fn filter_items(
 
 fn compute_locate(
     reduced_data_vector: &[ReducedData],
-    locate_option: &Option<String>,
+    locate_option: Option<&String>,
 ) -> Option<usize> {
     let layout_start_time = Instant::now();
 
     // Find locate index if requested
-    let locate_to_index = locate_option.as_ref().and_then(|hash| {
+    let locate_to_index = locate_option.and_then(|hash| {
         reduced_data_vector
             .par_iter()
             .position_first(|reduced| reduced.hash.as_str() == hash)
@@ -166,7 +166,7 @@ fn compute_locate(
     locate_to_index
 }
 
-fn build_cache_key(expression_option: &Option<Expression>, locate_option: &Option<String>) -> u64 {
+fn build_cache_key(expression_option: Option<&Expression>, locate_option: Option<&String>) -> u64 {
     let cache_key_start_time = Instant::now();
 
     let mut hasher = DefaultHasher::new();
@@ -183,7 +183,7 @@ fn build_cache_key(expression_option: &Option<Expression>, locate_option: &Optio
     query_hash
 }
 
-fn insert_data_into_tree_snapshot(reduced_data_vector: Vec<ReducedData>) -> Result<(i64, usize), AppError> {
+fn insert_data_into_tree_snapshot(reduced_data_vector: Vec<ReducedData>) -> (i64, usize) {
     let db_start_time = Instant::now();
 
     // Persist to snapshot
@@ -197,7 +197,7 @@ fn insert_data_into_tree_snapshot(reduced_data_vector: Vec<ReducedData>) -> Resu
     let duration = format!("{:?}", db_start_time.elapsed());
     info!(duration = &*duration; "Write cache into memory");
 
-    Ok((timestamp_millis, reduced_data_vector_length))
+    (timestamp_millis, reduced_data_vector_length)
 }
 
 fn create_json_response(
@@ -239,14 +239,14 @@ fn create_json_response(
 
 fn execute_prefetch_logic(
     expression_option: Option<Expression>,
-    locate_option: Option<String>,
+    locate_option: Option<&String>,
     mut resolved_share_option: Option<ResolvedShare>,
 ) -> Result<Json<PrefetchReturn>, AppError> {
     // Start timer
     let start_time = Instant::now();
 
     // Step 1: Build cache key for response creation
-    let query_hash = build_cache_key(&expression_option, &locate_option);
+    let query_hash = build_cache_key(expression_option.as_ref(), locate_option);
 
     // Step 2: Check if query cache is available
     if let Some(cached_response) = check_query_cache(query_hash, &mut resolved_share_option) {
@@ -254,14 +254,14 @@ fn execute_prefetch_logic(
     }
 
     // Step 3: Filter items
-    let reduced_data_vector = filter_items(expression_option, &resolved_share_option)?;
+    let reduced_data_vector = filter_items(expression_option, resolved_share_option.as_ref())?;
 
     // Step 4: Compute layout
-    let locate_to_index = compute_locate(&reduced_data_vector, &locate_option);
+    let locate_to_index = compute_locate(&reduced_data_vector, locate_option);
 
     // Step 6: Insert data into TREE_SNAPSHOT
     let (timestamp_millis, reduced_data_vector_length) =
-        insert_data_into_tree_snapshot(reduced_data_vector)?;
+        insert_data_into_tree_snapshot(reduced_data_vector);
 
     // Step 7: Create and return JSON response
     let json = create_json_response(
@@ -287,7 +287,7 @@ pub async fn prefetch(
 ) -> AppResult<Json<PrefetchReturn>> {
     let auth_guard = auth_guard?;
     // Combine album filter (if any) with the client‑supplied query.
-    let mut combined_expression_option = query_data.map(|wrapper| wrapper.into_inner());
+    let mut combined_expression_option = query_data.map(rocket::serde::json::Json::into_inner);
     let resolved_share_option = auth_guard.claims.get_share();
 
     if let Some(resolved_share) = &resolved_share_option {
@@ -304,7 +304,7 @@ pub async fn prefetch(
 
     // Execute on blocking thread
     let job_handle = tokio::task::spawn_blocking(move || {
-        execute_prefetch_logic(combined_expression_option, locate, resolved_share_option)
+        execute_prefetch_logic(combined_expression_option, locate.as_ref(), resolved_share_option)
     })
     .await
     .or_raise(|| (ErrorKind::Internal, "Failed to join blocking task"))??;

@@ -13,7 +13,7 @@ use std::process::Stdio;
 /// every error with clear human‑readable context strings.
 pub fn generate_thumbnail_for_image(
     abstract_data: &mut AbstractData,
-    dynamic_image: DynamicImage,
+    dynamic_image: &DynamicImage,
 ) -> Result<()> {
     let (compressed_width, compressed_height) =
         small_width_height(abstract_data.width(), abstract_data.height(), 720);
@@ -26,21 +26,21 @@ pub fn generate_thumbnail_for_image(
     let binding = abstract_data.compressed_path();
     let parent_path = binding.parent().ok_or_else(|| {
         anyhow!(
-            "failed to determine parent directory of {:?}",
-            abstract_data.compressed_path()
+            "failed to determine parent directory of {}",
+            abstract_data.compressed_path().display()
         )
     })?;
 
     // Ensure the directory exists
     std::fs::create_dir_all(parent_path)
-        .context(format!("failed to create directory tree {:?}", parent_path))?;
+        .context(format!("failed to create directory tree {}", parent_path.display()))?;
 
     // Persist the thumbnail as JPEG
     thumbnail_image
         .save_with_format(abstract_data.compressed_path(), ImageFormat::Jpeg)
         .context(format!(
-            "failed to save JPEG thumbnail to {:?}",
-            abstract_data.compressed_path()
+            "failed to save JPEG thumbnail to {}",
+            abstract_data.compressed_path().display()
         ))?;
 
     Ok(())
@@ -69,7 +69,7 @@ pub fn generate_thumbnail_for_video(abstract_data: &AbstractData) -> Result<()> 
         "-vframes",
         "1",
         "-vf",
-        &format!("scale={}:{}", thumb_width, thumb_height),
+        &format!("scale={thumb_width}:{thumb_height}"),
         &thumbnail_path,
     ]);
 

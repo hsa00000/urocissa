@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use std::{cmp::Ordering, path::Path};
 
-#[derive(Debug, Default, Clone, Deserialize, Serialize, Decode, Encode, Hash)]
+#[derive(Debug, Default, Clone, Deserialize, Serialize, Decode, Encode)]
 #[serde(rename_all = "camelCase")]
 pub struct FileModify {
     pub file: String,
@@ -38,5 +38,11 @@ impl PartialOrd for FileModify {
 impl Ord for FileModify {
     fn cmp(&self, other: &Self) -> Ordering {
         self.scan_time.cmp(&other.scan_time)
+    }
+}
+
+impl std::hash::Hash for FileModify {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.scan_time.hash(state);
     }
 }

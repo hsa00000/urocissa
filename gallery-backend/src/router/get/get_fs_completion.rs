@@ -25,18 +25,17 @@ pub fn get_fs_completion(_auth: GuardAuth, path: Option<String>) -> AppResult<Js
         // Add contents of current directory (./)
         // We ignore errors here as we have a fallback (roots)
         if let Ok(entries) = fs::read_dir(".") {
-            for entry in entries.filter_map(|e| e.ok()) {
+            for entry in entries.filter_map(std::result::Result::ok) {
                 let path = entry.path();
-                if path.is_dir() {
-                    if let Some(path_str) = path.to_str() {
+                if path.is_dir()
+                    && let Some(path_str) = path.to_str() {
                         children.push(path_str.to_string());
                     }
-                }
             }
         }
 
         // Sort children
-        children.sort_by(|a, b| a.to_lowercase().cmp(&b.to_lowercase()));
+        children.sort_by_key(|a| a.to_lowercase());
         children.truncate(50);
         
         return Ok(Json(FsCompletion {
@@ -74,22 +73,21 @@ pub fn get_fs_completion(_auth: GuardAuth, path: Option<String>) -> AppResult<Js
                 
                 // 2. Search Current Directory
                 if let Ok(entries) = fs::read_dir(".") {
-                    for entry in entries.filter_map(|e| e.ok()) {
+                    for entry in entries.filter_map(std::result::Result::ok) {
                         let path = entry.path();
                         if path.is_dir() {
                             // Check prefix match
                             let name = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
-                            if name.to_lowercase().starts_with(&query.to_lowercase()) {
-                                if let Some(path_str) = path.to_str() {
+                            if name.to_lowercase().starts_with(&query.to_lowercase())
+                                && let Some(path_str) = path.to_str() {
                                     matches.push(path_str.to_string());
                                 }
-                            }
                         }
                     }
                 }
 
                 // Sort and limit
-                matches.sort_by(|a, b| a.to_lowercase().cmp(&b.to_lowercase()));
+                matches.sort_by_key(|a| a.to_lowercase());
                 matches.truncate(50);
                 
                 if matches.is_empty() {
@@ -118,7 +116,7 @@ pub fn get_fs_completion(_auth: GuardAuth, path: Option<String>) -> AppResult<Js
 
     let mut suggestions = Vec::new();
     
-    for entry in entries.filter_map(|e| e.ok()) {
+    for entry in entries.filter_map(std::result::Result::ok) {
         let path = entry.path();
         if path.is_dir() {
             // Check prefix match (case-insensitive for better UX)
@@ -134,7 +132,7 @@ pub fn get_fs_completion(_auth: GuardAuth, path: Option<String>) -> AppResult<Js
     }
 
     // Sort alphabetically
-    suggestions.sort_by(|a, b| a.to_lowercase().cmp(&b.to_lowercase()));
+    suggestions.sort_by_key(|a| a.to_lowercase());
     // Limit to avoid huge payloads
     suggestions.truncate(50);
 

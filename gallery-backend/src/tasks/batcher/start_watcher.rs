@@ -30,11 +30,9 @@ static DEBOUNCE_POOL: LazyLock<Mutex<HashMap<PathBuf, Instant>>> =
 pub struct StartWatcherTask;
 
 impl BatchTask for StartWatcherTask {
-    fn batch_run(_: Vec<Self>) -> impl Future<Output = ()> + Send {
-        async move {
-            if let Err(e) = start_watcher_task_internal() {
-                handle_error(e);
-            }
+    async fn batch_run(_: Vec<Self>) {
+        if let Err(e) = start_watcher_task_internal() {
+            handle_error(e);
         }
     }
 }
@@ -52,12 +50,12 @@ pub fn reload_watcher() {
     IS_WATCHING.store(false, Ordering::SeqCst);
 
     if let Err(e) = start_watcher_task_internal() {
-        error!("Failed to reload watcher: {}", e);
+        error!("Failed to reload watcher: {e}");
     }
 }
 
 /// Resolve relative paths in the config file to absolute paths
-/// If UROCISSA_PATH is set, use it as the base, otherwise use the current working directory as the base
+/// If `UROCISSA_PATH` is set, use it as the base, otherwise use the current working directory as the base
 fn resolve_sync_paths(paths: HashSet<PathBuf>) -> HashSet<PathBuf> {
     let (base_path, append_subdir) = match std::env::var("UROCISSA_PATH") {
         Ok(p) => (PathBuf::from(p), true),
@@ -112,10 +110,10 @@ fn start_watcher_task_internal() -> Result<()> {
         if path.exists() {
             watcher
                 .watch(path, RecursiveMode::Recursive)
-                .map_err(|e| anyhow::anyhow!("Failed to watch path {:?}: {}", path, e))?;
-            info!("Watching path {:?}", path);
+                .map_err(|e| anyhow::anyhow!("Failed to watch path {}: {e}", path.display()))?;
+            info!("Watching path {}", path.display());
         } else {
-            error!("Path not found, skipped: {:?}", path);
+            error!("Path not found, skipped: {}", path.display());
         }
     }
 
@@ -127,12 +125,11 @@ fn start_watcher_task_internal() -> Result<()> {
 fn is_valid_media_file(path: &Path) -> bool {
     path.extension()
         .and_then(|ext| ext.to_str())
-        .map(|ext| ext.to_lowercase())
-        .map(|ext| {
+        .map(str::to_lowercase)
+        .is_some_and(|ext| {
             VALID_IMAGE_EXTENSIONS.contains(&ext.as_str())
                 || VALID_VIDEO_EXTENSIONS.contains(&ext.as_str())
         })
-        .unwrap_or(false)
 }
 
 fn submit_to_debounce_pool(path: PathBuf) {
@@ -182,7 +179,7 @@ fn new_watcher() -> Result<RecommendedWatcher> {
                         } else if path.is_dir() {
                             WalkDir::new(&path)
                                 .into_iter()
-                                .filter_map(|dir_entry| dir_entry.ok())
+                                .filter_map(std::result::Result::ok)
                                 .filter(|dir_entry| dir_entry.file_type().is_file())
                                 .for_each(|dir_entry| {
                                     path_list.insert(dir_entry.into_path());
@@ -217,8 +214,8 @@ fn new_watcher() -> Result<RecommendedWatcher> {
             }
         }
         Err(err) => {
-            handle_error(anyhow::anyhow!("Watch error: {:#?}", err));
+            handle_error(anyhow::anyhow!("Watch error: {err:#?}"));
         }
     })
-    .map_err(|e| anyhow::anyhow!("Failed to create watcher: {}", e))
+    .map_err(|e| anyhow::anyhow!("Failed to create watcher: {e}"))
 }

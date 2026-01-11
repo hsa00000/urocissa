@@ -12,7 +12,7 @@ static QUERY_SNAPSHOT_IN_DISK: LazyLock<redb::Database> =
     });
 
 static QUERY_SNAPSHOT_IN_MEMORY: LazyLock<DashMap<u64, Prefetch>> =
-    LazyLock::new(|| DashMap::new());
+    LazyLock::new(DashMap::new);
 
 impl QuerySnapshot {
     pub fn new() -> Self {

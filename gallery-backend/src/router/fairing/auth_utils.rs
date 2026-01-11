@@ -51,8 +51,8 @@ pub fn my_decode_token<T: DeserializeOwned>(token: &str, validation: &Validation
     match decode::<T>(token, &DecodingKey::from_secret(&secret_key), validation) {
         Ok(token_data) => Ok(token_data.claims),
         Err(err) => {
-            info!("Token decode failed: {:?}", err);
-            return Err(Error::from(err).context("Failed to decode JWT token"));
+            info!("Token decode failed: {err:?}");
+            Err(Error::from(err).context("Failed to decode JWT token"))
         }
     }
 }
@@ -64,9 +64,8 @@ pub fn try_jwt_cookie_auth(req: &Request<'_>, validation: &Validation) -> Result
         let claims = my_decode_token::<Claims>(token, validation)?;
         if claims.is_admin() {
             return Ok(claims);
-        } else {
-            return Err(anyhow!("User is not an admin"));
         }
+        return Err(anyhow!("User is not an admin"));
     }
     Err(anyhow!("JWT not found in cookies"))
 }
@@ -101,11 +100,10 @@ fn validate_share_access(share: &Share, req: &Request<'_>) -> Result<(), AppErro
     // 2. Check password
     if let Some(ref pwd) = share.password {
         // Check Header: x-share-password
-        if let Some(header_pwd) = req.headers().get_one("x-share-password") {
-            if header_pwd == pwd {
+        if let Some(header_pwd) = req.headers().get_one("x-share-password")
+            && header_pwd == pwd {
                 return Ok(());
             }
-        }
 
         return Err(AppError::new(ErrorKind::Auth, "Share password required or incorrect"));
     }
@@ -130,18 +128,15 @@ fn resolve_share_internal(
     let data_guard = table
         .get(album_id)
         .map_err(|e| AppError::from_err(ErrorKind::Database, e.into()).context("Failed to get data from table"))?
-        .ok_or_else(|| AppError::new(ErrorKind::NotFound, format!("Album not found for id '{}'", album_id)))?;
+        .ok_or_else(|| AppError::new(ErrorKind::NotFound, format!("Album not found for id '{album_id}'")))?;
 
     let abstract_data = data_guard.value();
-    let mut album = match abstract_data {
-        AbstractData::Album(album) => album,
-        _ => {
-            return Err(AppError::new(ErrorKind::InvalidInput, format!("Data with id '{}' is not an album", album_id)));
-        }
+    let AbstractData::Album(mut album) = abstract_data else {
+        return Err(AppError::new(ErrorKind::InvalidInput, format!("Data with id '{album_id}' is not an album")));
     };
 
     let share = album.metadata.share_list.remove(share_id).ok_or_else(|| {
-        AppError::new(ErrorKind::NotFound, format!("Share '{}' not found in album '{}'", share_id, album_id))
+        AppError::new(ErrorKind::NotFound, format!("Share '{share_id}' not found in album '{album_id}'"))
     })?;
 
     // Validate share access (password and expiration)

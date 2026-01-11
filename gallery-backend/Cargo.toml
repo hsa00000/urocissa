@@ -84,3 +84,8 @@ winres = "0.1"
 [features]
 embed-frontend = []
 auto-open-browser = ["dep:webbrowser"]
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+unwrap_used = "allow"

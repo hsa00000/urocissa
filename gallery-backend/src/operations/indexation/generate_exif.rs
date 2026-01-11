@@ -27,13 +27,13 @@ fn read_exif(file_path: &Path) -> Result<exif::Exif> {
 
     // Reading the file into a buffered reader
     let file =
-        std::fs::File::open(file_path).context(format!("failed to open file {:?}", file_path))?;
+        std::fs::File::open(file_path).context(format!("failed to open file {}", file_path.display()))?;
     let mut bufreader = io::BufReader::with_capacity(1024 * 1024, &file);
 
     // Parsing EXIF data
     let exif = exif_reader
         .read_from_container(&mut bufreader)
-        .context(format!("failed to read EXIF metadata from {:?}", file_path))?;
+        .context(format!("failed to read EXIF metadata from {}", file_path.display()))?;
 
     Ok(exif)
 }
@@ -53,27 +53,26 @@ pub fn generate_exif_for_video(abstract_data: &AbstractData) -> Result<BTreeMap<
         .arg("error")
         .arg("-show_format")
         .arg("-show_streams")
-        .arg(&source_path)
+        .arg(source_path)
         .output()
-        .context(format!("failed to spawn ffprobe for {:?}", source_path))?;
+        .context(format!("failed to spawn ffprobe for {source_path}"))?;
 
     if output.status.success() {
         // Convert raw bytes to UTF‑8 text
         let stdout = String::from_utf8(output.stdout).context(format!(
-            "failed to convert ffprobe stdout to UTF‑8 for {:?}",
-            source_path
+            "failed to convert ffprobe stdout to UTF‑8 for {source_path}"
         ))?;
 
         // Regex‑parse key/value pairs
         for cap in RE_VIDEO_INFO.captures_iter(&stdout) {
             let key = cap
                 .get(1)
-                .context(format!("capture group 1 missing in {:?}", source_path))?
+                .context(format!("capture group 1 missing in {source_path}"))?
                 .as_str()
                 .to_string();
             let value = cap
                 .get(2)
-                .context(format!("capture group 2 missing in {:?}", source_path))?
+                .context(format!("capture group 2 missing in {source_path}"))?
                 .as_str()
                 .to_string();
             exif_tuple.insert(key, value);
@@ -82,7 +81,7 @@ pub fn generate_exif_for_video(abstract_data: &AbstractData) -> Result<BTreeMap<
         Ok(exif_tuple)
     } else {
         Err(anyhow!(
-            "ffprobe exited with status {:?} for {:?}",
+            "ffprobe exited with status {:?} for {}",
             output.status.code().unwrap_or(-1),
             source_path
         ))

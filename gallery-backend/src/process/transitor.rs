@@ -13,9 +13,9 @@ pub fn index_to_abstract_data(
     data_table: &ReadOnlyTable<&'static str, AbstractData>,
     index: usize,
 ) -> Result<AbstractData> {
-    let hash = index_to_hash(&tree_snapshot, index)
-        .map_err(|e| anyhow!("Failed to read hash by index {}: {}", index, e))?;
+    let hash = index_to_hash(tree_snapshot, index)
+        .map_err(|e| anyhow!("Failed to read hash by index {index}: {e}"))?;
     let abstract_data = hash_to_abstract_data(data_table, hash)
-        .map_err(|e| anyhow!("Failed to read abstract data by hash {}: {}", hash, e))?;
+        .map_err(|e| anyhow!("Failed to read abstract data by hash {hash}: {e}"))?;
     Ok(abstract_data)
 }

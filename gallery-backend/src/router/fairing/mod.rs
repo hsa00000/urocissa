@@ -20,8 +20,8 @@ pub fn generate_fairing_routes() -> Vec<Route> {
 }
 
 static VALIDATION: LazyLock<Validation> = LazyLock::new(|| {
-    let validation = Validation::new(Algorithm::HS256);
-    validation
+    
+    Validation::new(Algorithm::HS256)
 });
 
 static VALIDATION_ALLOW_EXPIRED: LazyLock<Validation> = LazyLock::new(|| {

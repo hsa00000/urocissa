@@ -14,7 +14,7 @@ static TREE_SNAPSHOT_IN_DISK: LazyLock<redb::Database> =
     });
 
 static TREE_SNAPSHOT_IN_MEMORY: LazyLock<DashMap<i64, Vec<ReducedData>>> =
-    LazyLock::new(|| DashMap::new());
+    LazyLock::new(DashMap::new);
 
 impl TreeSnapshot {
     pub fn new() -> Self {

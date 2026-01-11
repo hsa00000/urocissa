@@ -9,10 +9,10 @@ pub fn check_ffmpeg_and_ffprobe() {
 
     // Also check the executable directory's bin folder (for installed version)
     let mut bin_dirs = vec![bin_dir];
-    if let Ok(exe_path) = std::env::current_exe() {
-        if let Some(exe_dir) = exe_path.parent() {
-             bin_dirs.push(exe_dir.join("bin"));
-        }
+    if let Ok(exe_path) = std::env::current_exe()
+        && let Some(exe_dir) = exe_path.parent()
+    {
+         bin_dirs.push(exe_dir.join("bin"));
     }
 
     // Prepend local bin directories to PATH for this process
@@ -21,7 +21,7 @@ pub fn check_ffmpeg_and_ffprobe() {
         for dir in &bin_dirs {
             if dir.exists() {
                 paths.insert(0, dir.clone());
-                info!("Added {:?} to PATH", dir);
+                info!("Added {} to PATH", dir.display());
             }
         }
         let new_path = env::join_paths(paths).unwrap();
@@ -45,18 +45,16 @@ pub fn check_ffmpeg_and_ffprobe() {
                     .split_whitespace()
                     .nth(2) // Get the third word
                     .unwrap_or("Unknown");
-                info!("{} version: {}", command, version_number);
+                info!("{command} version: {version_number}");
             }
             Ok(_) => {
                 error!(
-                    "`{}` command was found, but it returned an error. Please ensure it's correctly installed.",
-                    command
+                    "`{command}` command was found, but it returned an error. Please ensure it's correctly installed."
                 );
             }
             Err(_) => {
                 error!(
-                    "`{}` is not installed or not available in PATH. Please install it before running the application.",
-                    command
+                    "`{command}` is not installed or not available in PATH. Please install it before running the application."
                 );
             }
         }

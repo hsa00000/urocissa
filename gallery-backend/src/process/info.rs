@@ -44,7 +44,7 @@ pub fn process_image_info(abstract_data: &mut AbstractData) -> Result<()> {
     abstract_data.set_phash(generate_phash(&dynamic_image));
 
     // Generate on‑disk JPEG thumbnail
-    generate_thumbnail_for_image(abstract_data, dynamic_image)
+    generate_thumbnail_for_image(abstract_data, &dynamic_image)
         .context("failed to generate JPEG thumbnail for image")?;
 
     Ok(())

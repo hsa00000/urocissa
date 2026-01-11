@@ -48,14 +48,11 @@ impl<'r> FromRequest<'r> for GuardTimestamp {
                 .and_then(|(_, value)| value.parse::<i64>().ok())
         });
 
-        let query_timestamp = match query_timestamp {
-            Some(ts) => ts,
-            None => {
-                return Outcome::Error((
-                    Status::Unauthorized,
-                    AppError::new(ErrorKind::Auth, "No valid 'timestamp' parameter found in the query"),
-                ));
-            }
+        let Some(query_timestamp) = query_timestamp else {
+            return Outcome::Error((
+                Status::Unauthorized,
+                AppError::new(ErrorKind::Auth, "No valid 'timestamp' parameter found in the query"),
+            ));
         };
 
         if query_timestamp != claims.timestamp {
@@ -102,8 +99,7 @@ pub async fn renew_timestamp_token(
             Ok(data) => data,
             Err(err) => {
                 warn!(
-                    "Token renewal failed: unable to decode token, error: {:#?}",
-                    err
+                    "Token renewal failed: unable to decode token, error: {err:#?}"
                 );
                 return Err(AppError::new(ErrorKind::Auth, "Unauthorized: Invalid token"));
             }

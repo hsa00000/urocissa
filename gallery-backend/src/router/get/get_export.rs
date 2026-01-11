@@ -16,17 +16,14 @@ pub struct ExportEntry {
 }
 
 #[get("/get/get-export")]
-pub async fn get_export(auth: GuardResult<GuardAuth>) -> AppResult<ByteStream![Vec<u8>]> {
+pub fn get_export(auth: GuardResult<GuardAuth>) -> AppResult<ByteStream![Vec<u8>]> {
     let _ = auth?;
     let data_table = open_data_table();
     let byte_stream = ByteStream! {
         // Open DB and prepare to iterate
-        let iter = match data_table.iter() {
-            Ok(it) => it,
-            Err(_) => {
-                yield b"{\"error\":\"failed to iterate\"}".to_vec();
-                return;
-            }
+        let Ok(iter) = data_table.iter() else {
+            yield b"{\"error\":\"failed to iterate\"}".to_vec();
+            return;
         };
 
         // Start the JSON array
@@ -34,12 +31,9 @@ pub async fn get_export(auth: GuardResult<GuardAuth>) -> AppResult<ByteStream![V
         let mut first = true;
 
         for entry_res in iter {
-            let (key, value) = match entry_res {
-                Ok(kv) => kv,
-                Err(_) => {
-                    // Skip or handle the error
-                    continue;
-                }
+            let Ok((key, value)) = entry_res else {
+                // Skip or handle the error
+                continue;
             };
 
             // Insert a comma if not the first element
@@ -55,12 +49,9 @@ pub async fn get_export(auth: GuardResult<GuardAuth>) -> AppResult<ByteStream![V
             };
 
             // Convert it to JSON
-            let json_obj = match serde_json::to_string(&export) {
-                Ok(s) => s,
-                Err(_) => {
-                    // Skip or handle the error
-                    continue;
-                }
+            let Ok(json_obj) = serde_json::to_string(&export) else {
+                // Skip or handle the error
+                continue;
             };
 
             // Stream it out

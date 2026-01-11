@@ -75,11 +75,11 @@ fn process_deletes(
 
     for index in delete_list {
         let abstract_data = index_to_abstract_data(&tree_snapshot, &data_table, index)
-            .or_raise(|| (ErrorKind::Database, format!("Failed to retrieve data at index {}", index)))?;
+            .or_raise(|| (ErrorKind::Database, format!("Failed to retrieve data at index {index}")))?;
 
         let affected_albums = match &abstract_data {
-            AbstractData::Image(img) => img.metadata.albums.iter().cloned().collect(),
-            AbstractData::Video(vid) => vid.metadata.albums.iter().cloned().collect(),
+            AbstractData::Image(img) => img.metadata.albums.iter().copied().collect(),
+            AbstractData::Video(vid) => vid.metadata.albums.iter().copied().collect(),
             AbstractData::Album(alb) => vec![alb.object.id],
         };
 

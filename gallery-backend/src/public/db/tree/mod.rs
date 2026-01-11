@@ -9,6 +9,6 @@ pub struct Tree {
     pub in_memory: &'static Arc<RwLock<Vec<DatabaseTimestamp>>>,
 }
 
-pub static TREE: LazyLock<Tree> = LazyLock::new(|| Tree::new());
+pub static TREE: LazyLock<Tree> = LazyLock::new(Tree::new);
 
 pub static VERSION_COUNT_TIMESTAMP: AtomicI64 = AtomicI64::new(0);

@@ -25,14 +25,12 @@ impl CopyTask {
 impl Task for CopyTask {
     type Output = Result<AbstractData>;
 
-    fn run(self) -> impl Future<Output = Self::Output> + Send {
-        async move {
-            let _permit = COPY_LIMIT.acquire().await?;
-            spawn_blocking(move || copy_task(self.abstract_data))
-                .await
-                .expect("blocking task panicked")
-                .map_err(|err| handle_error(err.context("Failed to run copy task")))
-        }
+    async fn run(self) -> Self::Output {
+        let _permit = COPY_LIMIT.acquire().await?;
+        spawn_blocking(move || copy_task(self.abstract_data))
+            .await
+            .expect("blocking task panicked")
+            .map_err(|err| handle_error(err.context("Failed to run copy task")))
     }
 }
 
@@ -42,13 +40,12 @@ fn copy_task(abstract_data: AbstractData) -> Result<AbstractData> {
 
     if let Some(parent) = dest_path.parent() {
         fs::create_dir_all(parent)
-            .with_context(|| format!("failed to create directory tree for {:?}", parent))?;
+            .with_context(|| format!("failed to create directory tree for {}", parent.display()))?;
     }
 
     copy_with_retry(&source_path, &dest_path).with_context(|| {
         format!(
-            "failed to copy file from {:?} to {:?}",
-            source_path, dest_path
+            "failed to copy file from {} to {}", source_path.display(), dest_path.display()
         )
     })?; // If it fails three times, it goes into the Err branch
 

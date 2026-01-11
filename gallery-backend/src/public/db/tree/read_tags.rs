@@ -54,8 +54,7 @@ impl Tree {
     }
 
     pub fn read_albums(&self) -> Result<Vec<AlbumCombined>, AppError> {
-        Ok(self
-            .in_disk
+        self.in_disk
             .begin_read()
             .or_raise(|| (ErrorKind::Database, "Failed to begin read transaction"))?
             .open_table(DATA_TABLE)
@@ -75,7 +74,6 @@ impl Tree {
                     .transpose()
             })
             .collect::<Result<Vec<_>, _>>()
-            .or_raise(|| (ErrorKind::Database, "Failed to collect album records in parallel"))?)
+            .or_raise(|| (ErrorKind::Database, "Failed to collect album records in parallel"))
     }
 }
-

@@ -45,13 +45,13 @@ pub async fn set_user_defined_description(
 
             match &mut abstract_data {
                 AbstractData::Image(img) => {
-                    img.object.description = set_user_defined_description.description.clone();
+                    img.object.description.clone_from(&set_user_defined_description.description);
                 }
                 AbstractData::Video(vid) => {
-                    vid.object.description = set_user_defined_description.description.clone();
+                    vid.object.description.clone_from(&set_user_defined_description.description);
                 }
                 AbstractData::Album(album) => {
-                    album.object.description = set_user_defined_description.description.clone();
+                    album.object.description.clone_from(&set_user_defined_description.description);
                 }
             }
 
@@ -69,4 +69,3 @@ pub async fn set_user_defined_description(
 
     Ok(())
 }
-

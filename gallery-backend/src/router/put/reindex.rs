@@ -42,14 +42,14 @@ pub async fn reindex(
     tokio::task::spawn_blocking(move || {
         let data_table = open_data_table();
         let reduced_data_vec = TREE_SNAPSHOT
-            .read_tree_snapshot(&json_data.timestamp)
+            .read_tree_snapshot(json_data.timestamp)
             .unwrap();
         let hash_vec: Vec<ArrayString<64>> = json_data
             .index_array
             .par_iter()
             .map(|index| reduced_data_vec.get_hash(*index).unwrap())
             .collect();
-        let total_batches = (hash_vec.len() + PROCESS_BATCH_NUMBER - 1) / PROCESS_BATCH_NUMBER;
+        let total_batches = hash_vec.len().div_ceil(PROCESS_BATCH_NUMBER);
 
         for (i, batch) in hash_vec.chunks(PROCESS_BATCH_NUMBER).enumerate() {
             info!("Processing batch {}/{}", i + 1, total_batches);
@@ -57,37 +57,33 @@ pub async fn reindex(
             let data_list: Vec<_> = batch
                 .into_par_iter()
                 .filter_map(|&hash| {
-                    match data_table.get(&*hash).unwrap() {
-                        Some(guard) => {
-                            let mut abstract_data = guard.value();
-                            match &abstract_data {
-                                AbstractData::Image(_) => {
-                                    match regenerate_metadata_for_image(&mut abstract_data) {
-                                        Ok(_) => Some(abstract_data),
-                                        Err(_) => None,
-                                    }
-                                }
-                                AbstractData::Video(_) => {
-                                    match regenerate_metadata_for_video(&mut abstract_data) {
-                                        Ok(_) => Some(abstract_data),
-                                        Err(_) => None,
-                                    }
-                                }
-                                AbstractData::Album(_) => {
-                                    // album_self_update already will commit
-                                    INDEX_COORDINATOR
-                                        .execute_detached(AlbumSelfUpdateTask::new(hash));
-                                    None
+                    if let Some(guard) = data_table.get(&*hash).unwrap() {
+                        let mut abstract_data = guard.value();
+                        match &abstract_data {
+                            AbstractData::Image(_) => {
+                                match regenerate_metadata_for_image(&mut abstract_data) {
+                                    Ok(()) => Some(abstract_data),
+                                    Err(_) => None,
                                 }
                             }
+                            AbstractData::Video(_) => {
+                                match regenerate_metadata_for_video(&mut abstract_data) {
+                                    Ok(()) => Some(abstract_data),
+                                    Err(_) => None,
+                                }
+                            }
+                            AbstractData::Album(_) => {
+                                // album_self_update already will commit
+                                INDEX_COORDINATOR
+                                    .execute_detached(AlbumSelfUpdateTask::new(hash));
+                                None
+                            }
                         }
-                        _ => {
-                            error!(
-                                "Reindex failed: cannot find data with hash/id: {}",
-                                hash
-                            );
-                            None
-                        }
+                    } else {
+                        error!(
+                            "Reindex failed: cannot find data with hash/id: {hash}"
+                        );
+                        None
                     }
                 })
                 .collect();

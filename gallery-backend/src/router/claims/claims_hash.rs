@@ -17,6 +17,7 @@ pub struct ClaimsHash {
 
 impl ClaimsHash {
     pub fn new(hash: ArrayString<64>, timestamp: i64, allow_original: bool) -> Self {
+        #[allow(clippy::cast_sign_loss)]
         let exp = (Utc::now().timestamp_millis() / 1000) as u64 + 300;
 
         Self {

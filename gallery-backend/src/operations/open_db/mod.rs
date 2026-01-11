@@ -17,9 +17,8 @@ pub fn open_data_table() -> ReadOnlyTable<&'static str, AbstractData> {
 
 pub fn open_tree_snapshot_table(timestamp: i64) -> Result<MyCow> {
     TREE_SNAPSHOT
-        .read_tree_snapshot(&timestamp)
+        .read_tree_snapshot(timestamp)
         .context(format!(
-            "Failed to read tree snapshot for timestamp {}",
-            timestamp
+            "Failed to read tree snapshot for timestamp {timestamp}"
         ))
 }

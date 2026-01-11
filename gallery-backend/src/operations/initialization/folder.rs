@@ -3,7 +3,7 @@ use log::info;
 
 pub fn initialize_folder() {
     let root = get_data_path();
-    info!("Storage root initialized at: {:?}", root);
+    info!("Storage root initialized at: {}", root.display());
     std::fs::create_dir_all(root.join("db")).unwrap();
 
 

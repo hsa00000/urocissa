@@ -7,8 +7,8 @@ use dashmap::mapref::one::Ref;
 use redb::{ReadOnlyTable, ReadableDatabase, ReadableTableMetadata, TableDefinition};
 
 impl TreeSnapshot {
-    pub fn read_tree_snapshot(&'static self, timestamp: &i64) -> Result<MyCow> {
-        if let Some(data) = self.in_memory.get(timestamp) {
+    pub fn read_tree_snapshot(&'static self, timestamp: i64) -> Result<MyCow> {
+        if let Some(data) = self.in_memory.get(&timestamp) {
             return Ok(MyCow::DashMap(data));
         }
 
@@ -29,6 +29,7 @@ pub enum MyCow {
 }
 
 impl MyCow {
+    #[allow(clippy::cast_possible_truncation)]
     pub fn len(&self) -> usize {
         match self {
             MyCow::DashMap(data) => data.value().len(),
@@ -46,8 +47,7 @@ impl MyCow {
                 let data = &table
                     .get(index as u64)?
                     .context(format!(
-                        "Fail to find with and height in tree snapshots for index {}",
-                        index
+                        "Fail to find with and height in tree snapshots for index {index}"
                     ))?
                     .value();
 
@@ -66,8 +66,7 @@ impl MyCow {
                 let data = table
                     .get(index as u64)?
                     .context(format!(
-                        "Fail to find hash in tree snapshots for index {}",
-                        index
+                        "Fail to find hash in tree snapshots for index {index}"
                     ))?
                     .value();
                 Ok(data.hash)

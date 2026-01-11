@@ -35,33 +35,31 @@ impl DeleteTask {
 impl Task for DeleteTask {
     type Output = Result<()>;
 
-    fn run(self) -> impl Future<Output = Self::Output> + Send {
-        async move {
-            spawn_blocking(move || delete_in_upload_task(self.path))
-                .await
-                .expect("blocking task panicked")
-                .map_err(|err| handle_error(err.context("Failed to run delete task")))
-        }
+    async fn run(self) -> Self::Output {
+        spawn_blocking(move || delete_in_upload_task(&self.path))
+            .await
+            .expect("blocking task panicked")
+            .map_err(|err| handle_error(err.context("Failed to run delete task")))
     }
 }
-fn delete_in_upload_task(path: PathBuf) -> Result<()> {
+fn delete_in_upload_task(path: &PathBuf) -> Result<()> {
     // Skip if path is not under ./upload
-    if !path_starts_with_upload(&path) {
+    if !path_starts_with_upload(path) {
         return Ok(());
     }
 
     let mut attempts = 0;
     loop {
         attempts += 1;
-        match fs::remove_file(&path) {
-            Ok(_) => {
-                log::info!("Deleted file: {:?}", path);
+        match fs::remove_file(path) {
+            Ok(()) => {
+                log::info!("Deleted file: {}", path.display());
                 return Ok(());
             }
             Err(err) if attempts < MAX_DELETE_ATTEMPTS => {
                 log::warn!(
-                    "Failed deleting {:?} (attempt {}), retrying in {}ms: {}",
-                    path,
+                    "Failed deleting {} (attempt {}), retrying in {}ms: {}",
+                    path.display(),
                     attempts,
                     100 * attempts,
                     err
@@ -70,8 +68,7 @@ fn delete_in_upload_task(path: PathBuf) -> Result<()> {
             }
             Err(err) => {
                 return Err(err).context(format!(
-                    "Failed deleting {:?} after {} attempts",
-                    path, attempts
+                    "Failed deleting {} after {attempts} attempts", path.display()
                 ));
             }
         }

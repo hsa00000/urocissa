@@ -50,19 +50,18 @@ pub async fn edit_flags(
 
             for &index in &json_data.index_array {
                 let hash = index_to_hash(&tree_snapshot, index)
-                    .or_raise(|| (ErrorKind::Database, format!("Failed to get hash for index {}", index)))?;
+                    .or_raise(|| (ErrorKind::Database, format!("Failed to get hash for index {index}")))?;
 
                 if let Some(guard) = data_table.get(&*hash).or_raise(|| (ErrorKind::Database, "Failed to get data"))? {
                     let mut abstract_data = guard.value();
 
                     // If trashed is involved, record the albums this data belongs to
-                    if is_trashed_involved {
-                        if let Some(albums) = abstract_data.albums() {
+                    if is_trashed_involved
+                        && let Some(albums) = abstract_data.albums() {
                             for album_id in albums {
-                                affected_album_ids.insert(album_id.clone());
+                                affected_album_ids.insert(*album_id);
                             }
                         }
-                    }
 
                     // Apply flag changes
                     if let Some(is_favorite) = json_data.is_favorite {

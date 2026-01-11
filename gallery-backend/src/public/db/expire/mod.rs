@@ -10,4 +10,4 @@ pub struct Expire {
     pub in_disk: &'static redb::Database,
 }
 
-pub static EXPIRE: LazyLock<Expire> = LazyLock::new(|| Expire::new());
+pub static EXPIRE: LazyLock<Expire> = LazyLock::new(Expire::new);

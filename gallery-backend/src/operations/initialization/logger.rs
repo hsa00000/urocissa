@@ -18,7 +18,7 @@ impl std::io::Write for TokioPipe {
         for line in s.split_terminator('\n') {
             let clean = line.replace('\t', "    ");
             if !clean.is_empty() {
-                let _ = self.0.send(clean.to_string());
+                let _ = self.0.send(clean.clone());
             }
         }
         Ok(buf.len())
@@ -60,12 +60,12 @@ pub fn initialize_logger() -> UnboundedReceiver<String> {
                 .key_values()
                 .get(Key::from("duration"))
                 .map(|v| {
-                    let s = format!("{}", v);
+                    let s = format!("{v}");
                     if let Some(idx) = s.find(|c: char| c.is_alphabetic()) {
                         let (num, unit) = (&s[..idx], &s[idx..]);
                         if let Ok(val) = num.parse::<f32>() {
                             // Insert space between number and unit
-                            return format!("{:.2} {}", val, unit);
+                            return format!("{val:.2} {unit}");
                         }
                     }
                     s
@@ -76,11 +76,11 @@ pub fn initialize_logger() -> UnboundedReceiver<String> {
             let dur = if dur_raw.is_empty() {
                 " ".repeat(10)
             } else {
-                format!("{:>10}", dur_raw).cyan().to_string()
+                format!("{dur_raw:>10}").cyan().to_string()
             };
 
             // First, print the common prefix for all log entries
-            writeln!(buf, "{} {} {}", ts, lvl, tgt)?;
+            writeln!(buf, "{ts} {lvl} {tgt}")?;
 
             // Convert log message to string
             let message = format!("{}", record.args());
@@ -93,12 +93,12 @@ pub fn initialize_logger() -> UnboundedReceiver<String> {
 
             // Handle the first line of the message, prefix with duration
             if let Some(first_line) = lines.next() {
-                writeln!(buf, "{} {}", dur, first_line)?;
+                writeln!(buf, "{dur} {first_line}")?;
             }
 
             // Handle all subsequent lines, indenting them properly
             for line in lines {
-                writeln!(buf, "{}{}", subsequent_indent, line)?;
+                writeln!(buf, "{subsequent_indent}{line}")?;
             }
 
             Ok(())

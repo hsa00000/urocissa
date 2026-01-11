@@ -1,6 +1,5 @@
 #[macro_use]
 extern crate rocket;
-use anyhow::Result;
 use figment::{
     Figment,
     providers::{Format, Json},
@@ -59,7 +58,7 @@ async fn assets(
 }
 
 /// Configures the Rocket instance with routes, fairings, and file servers.
-async fn build_rocket() -> rocket::Rocket<rocket::Build> {
+fn build_rocket() -> rocket::Rocket<rocket::Build> {
     // Modified: Load config.json into Figment for extraction
     let figment = Figment::new().merge(Json::file("config.json"));
 
@@ -74,8 +73,7 @@ async fn build_rocket() -> rocket::Rocket<rocket::Build> {
             .public
             .limits
             .get(key)
-            .map(|s| s.as_str())
-            .unwrap_or(default);
+            .map_or(default, std::string::String::as_str);
         parse_limit(val)
     };
 
@@ -134,7 +132,7 @@ fn parse_limit(s: &str) -> ByteUnit {
     ByteUnit::from(bytes)
 }
 
-fn main() -> Result<()> {
+fn main() {
     // Initialize logger first thing
     let tui_events_rx = initialize_logger();
 
@@ -168,11 +166,11 @@ fn main() -> Result<()> {
                 let album_count = table
                     .iter()
                     .unwrap()
-                    .filter_map(|entry| entry.ok())
+                    .filter_map(std::result::Result::ok)
                     .filter(|(_, guard)| matches!(guard.value(), AbstractData::Album(_)))
                     .count();
 
-                let media_count = total_count as usize - album_count;
+                let media_count = usize::try_from(total_count).unwrap_or(0) - album_count;
 
                 info!(
                     duration = &*format!("{:?}", start_time.elapsed());
@@ -210,8 +208,8 @@ fn main() -> Result<()> {
     let rocket_handle = thread::spawn(|| {
         info!("Rocket thread starting.");
         if let Err(e) = ROCKET_RUNTIME.block_on(async {
-            let rocket = build_rocket().await.ignite().await?;
-            let port = rocket.config().port;
+            let rocket = build_rocket().ignite().await?;
+            let _port = rocket.config().port;
             let shutdown_handle = rocket.shutdown();
 
             // Manually handle Ctrl-C to trigger graceful shutdown
@@ -234,8 +232,6 @@ fn main() -> Result<()> {
 
     worker_handle.join().expect("Worker thread panicked");
     rocket_handle.join().expect("Rocket thread panicked");
-
-    Ok(())
 }
 
 #[cfg(feature = "auto-open-browser")]

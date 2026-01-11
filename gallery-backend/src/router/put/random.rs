@@ -27,7 +27,7 @@ pub async fn generate_random_data(
     BATCH_COORDINATOR
         .execute_batch_waiting(UpdateTreeTask)
         .await
-        .map_err(|e| AppError::new(ErrorKind::Internal, format!("Failed to update tree: {}", e)))?;
+        .map_err(|e| AppError::new(ErrorKind::Internal, format!("Failed to update tree: {e}")))?;
     info!("Insert random data complete");
     Ok(())
 }

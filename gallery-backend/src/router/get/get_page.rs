@@ -36,7 +36,7 @@ fn resolve_path(filename: &str) -> PathBuf {
     if prod_path.exists() {
         prod_path.to_path_buf()
     } else {
-        PathBuf::from(format!("../gallery-frontend/dist/{}", filename))
+        PathBuf::from(format!("../gallery-frontend/dist/{filename}"))
     }
 }
 
@@ -81,7 +81,7 @@ async fn serve_file(filename: &str) -> AppResult<FrontendResponse> {
         NamedFile::open(path)
             .await
             .map(FrontendResponse::File)
-            .or_raise(|| (ErrorKind::IO, format!("Failed to open {}", filename)))
+            .or_raise(|| (ErrorKind::IO, format!("Failed to open {filename}")))
     }
 }
 
@@ -102,7 +102,7 @@ pub fn redirect_to_login() -> Redirect {
 }
 
 #[get("/unauthorized")]
-pub async fn unauthorized() -> Status {
+pub fn unauthorized() -> Status {
     Status::Unauthorized
 }
 

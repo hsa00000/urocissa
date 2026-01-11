@@ -1,5 +1,5 @@
 use crate::public::{
-    db::tree_snapshot::TREE_SNAPSHOT, error_data::handle_error,
+    db::tree_snapshot::TREE_SNAPSHOT,
     structure::response::reduced_data::ReducedData,
 };
 use anyhow::Result;
@@ -19,33 +19,31 @@ impl RemoveTask {
 impl Task for RemoveTask {
     type Output = Result<()>;
 
-    fn run(self) -> impl Future<Output = Self::Output> + Send {
-        async move {
-            spawn_blocking(move || remove_task(self.timestamp))
-                .await
-                .expect("blocking task panicked")
-                .map_err(|err| handle_error(err.context("Failed to run remove task")))
-        }
+    async fn run(self) -> Self::Output {
+        spawn_blocking(move || remove_task(self.timestamp))
+            .await
+            .expect("blocking task panicked");
+        Ok(())
     }
 }
 /// Removes a tree cache table by its timestamp.
-fn remove_task(timestamp: i64) -> Result<()> {
+fn remove_task(timestamp: i64) {
     let write_txn = TREE_SNAPSHOT.in_disk.begin_write().unwrap();
     let binding = timestamp.to_string();
     let table_definition: TableDefinition<u64, ReducedData> = TableDefinition::new(&binding);
 
     match write_txn.delete_table(table_definition) {
         Ok(true) => {
-            info!("Delete tree cache table: {:?}", timestamp)
+            info!("Delete tree cache table: {:?}", timestamp);
         }
         Ok(false) => {
-            error!("Failed to delete tree cache table: {:?}", timestamp)
+            error!("Failed to delete tree cache table: {:?}", timestamp);
         }
         Err(err) => {
             error!(
                 "Failed to delete tree cache table: {:?}, error: {:#?}",
                 timestamp, err
-            )
+            );
         }
     }
 
@@ -55,5 +53,4 @@ fn remove_task(timestamp: i64) -> Result<()> {
     );
 
     write_txn.commit().unwrap();
-    Ok(())
 }

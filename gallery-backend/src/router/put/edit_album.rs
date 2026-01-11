@@ -44,6 +44,7 @@ pub async fn edit_album(
     read_only_mode: GuardResult<GuardReadOnlyMode>,
     json_data: Json<EditAlbumsData>,
 ) -> AppResult<()> {
+    const MAX_CONCURRENT_UPDATES: usize = 8;
     let _ = auth?;
     let _ = read_only_mode?;
 
@@ -56,11 +57,11 @@ pub async fn edit_album(
             let mut to_flush = Vec::with_capacity(json_data.index_array.len());
             for &index in &json_data.index_array {
                 let mut abstract_data = index_to_abstract_data(&tree_snapshot, &data_table, index)
-                    .or_raise(|| (ErrorKind::Database, format!("Failed to retrieve data at index {}", index)))?;
+                    .or_raise(|| (ErrorKind::Database, format!("Failed to retrieve data at index {index}")))?;
 
                 if let Some(albums) = abstract_data.albums_mut() {
                     for album_id in &json_data.add_albums_array {
-                        albums.insert(album_id.clone());
+                        albums.insert(*album_id);
                     }
                     for album_id in &json_data.remove_albums_array {
                         albums.remove(album_id);
@@ -74,7 +75,7 @@ pub async fn edit_album(
                 .add_albums_array
                 .iter()
                 .chain(json_data.remove_albums_array.iter())
-                .cloned()
+                .copied()
                 .collect::<HashSet<_>>()
                 .into_iter()
                 .collect();
@@ -93,7 +94,7 @@ pub async fn edit_album(
         .execute_batch_waiting(UpdateTreeTask)
         .await
         .or_raise(|| (ErrorKind::Internal, "Failed to execute update tree task"))?;
-    const MAX_CONCURRENT_UPDATES: usize = 8;
+
     stream::iter(unique_affected_albums)
         .map(|album_id| async move {
             INDEX_COORDINATOR
@@ -140,9 +141,8 @@ pub async fn set_album_cover(
                 .or_raise(|| (ErrorKind::Database, "Failed to get album"))?
                 .ok_or_else(|| AppError::new(ErrorKind::NotFound, "Album not found"))?
                 .value();
-            let mut album = match album {
-                AbstractData::Album(album) => album,
-                _ => return Err(AppError::new(ErrorKind::InvalidInput, "Expected Album but got different type")),
+            let AbstractData::Album(mut album) = album else {
+                return Err(AppError::new(ErrorKind::InvalidInput, "Expected Album but got different type"));
             };
             let database = data_table.get(&*cover_hash)
                 .or_raise(|| (ErrorKind::Database, "Failed to get cover image"))?
@@ -197,9 +197,8 @@ pub async fn set_album_title(
                 .or_raise(|| (ErrorKind::Database, "Failed to get album"))?
                 .ok_or_else(|| AppError::new(ErrorKind::NotFound, "Album not found"))?
                 .value();
-            let mut album = match album {
-                AbstractData::Album(album) => album,
-                _ => return Err(AppError::new(ErrorKind::InvalidInput, "Expected Album but got different type")),
+            let AbstractData::Album(mut album) = album else {
+                return Err(AppError::new(ErrorKind::InvalidInput, "Expected Album but got different type"));
             };
 
             album.metadata.title = set_album_title_inner.title;

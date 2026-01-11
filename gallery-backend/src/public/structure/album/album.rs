@@ -31,6 +31,7 @@ pub struct Album {
 
 impl Album {
     pub fn new(id: ArrayString<64>, title: Option<String>) -> Self {
+        #[allow(clippy::cast_sign_loss)]
         let timestamp = Utc::now().timestamp_millis() as u128;
         Self {
             id,
@@ -49,7 +50,8 @@ impl Album {
         }
     }
 
-    /// Convert Album to AbstractData::Album(AlbumCombined)
+    /// Convert Album to `AbstractData::Album(AlbumCombined)`
+    #[allow(clippy::cast_possible_truncation)]
     pub fn into_abstract_data(self) -> AbstractData {
         // Create ObjectSchema
         let object = ObjectSchema {
