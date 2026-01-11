@@ -17,16 +17,16 @@
                   <v-row>
                     <ChangePassword
                       v-model:password="localSettings.password"
-                      v-model:oldPassword="oldPassword"
+                      v-model:old-password="oldPassword"
                     />
 
-                    <StorageAndSync v-model:syncPaths="localSettings.syncPaths" />
+                    <StorageAndSync v-model:sync-paths="localSettings.syncPaths" />
 
                     <AdvancedConfig
-                      v-model:authKey="localSettings.authKey"
-                      v-model:discordHookUrl="localSettings.discordHookUrl"
-                      v-model:readOnlyMode="localSettings.readOnlyMode"
-                      v-model:disableImg="localSettings.disableImg"
+                      v-model:auth-key="localSettings.authKey"
+                      v-model:discord-hook-url="localSettings.discordHookUrl"
+                      v-model:read-only-mode="localSettings.readOnlyMode"
+                      v-model:disable-img="localSettings.disableImg"
                     />
 
                     <v-col cols="12">
@@ -78,6 +78,8 @@ import AdvancedConfig from './Config/AdvancedConfig.vue'
 import { tryWithMessageStore } from '@/script/utils/try_catch'
 import { useMessageStore } from '@/store/messageStore'
 
+import { VForm } from 'vuetify/components'
+
 const configStore = useConfigStore('mainId')
 const initializedStore = useInitializedStore('mainId')
 const messageStore = useMessageStore('mainId')
@@ -86,7 +88,8 @@ const messageStore = useMessageStore('mainId')
 const loading = ref(false)
 const valid = ref(false)
 const oldPassword = ref('')
-const form = ref<any>(null)
+const form = ref<VForm | null>(null)
+
 
 // Local State
 const localSettings = reactive<AppConfig>({
@@ -116,9 +119,10 @@ const initData = async () => {
     return true
   })
 
-  if (result) {
+  if (result === true) {
     initializedStore.initialized = true
   }
+
   loading.value = false
 }
 
@@ -130,22 +134,28 @@ const resetToStore = () => {
 }
 
 const save = async () => {
-  const { valid } = (await form.value?.validate()) || { valid: false }
-  if (!valid) return
+  const { valid: isValid } = (await form.value?.validate()) ?? { valid: false }
+  if (!isValid) return
 
   loading.value = true
   const success = await tryWithMessageStore('mainId', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload: any = { ...localSettings }
 
     // Only send password if user intends to change it
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/strict-boolean-expressions
     if (!payload.password) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       delete payload.password
     } else {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       payload.oldPassword = oldPassword.value
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     const result = await configStore.updateConfig(payload)
 
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     if (!result) return false
 
     // Reset password fields on success
@@ -156,11 +166,12 @@ const save = async () => {
     return true
   })
 
-  if (success) {
+  if (success === true) {
     messageStore.success('Settings saved successfully.')
   }
   loading.value = false
 }
+
 
 onMounted(initData)
 

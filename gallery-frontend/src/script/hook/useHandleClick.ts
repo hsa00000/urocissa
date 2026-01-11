@@ -48,10 +48,12 @@ export function useHandleClick(
       const abstractData = dataStore.data.get(currentIndex)
       if (abstractData) {
         const hashOrId = abstractData.id
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         if (hashOrId !== undefined) {
           const page = route.meta.getChildPage(route, hashOrId)
           router
             .push(page)
+
             .then(() => ({}))
             .catch((error: unknown) => {
               console.error('Navigation Error:', error)

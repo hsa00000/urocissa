@@ -1,6 +1,6 @@
 <template>
   <v-dialog
-  v-model="modelValue"
+    v-model="modelValue"
     :fullscreen="isMobile"
     :max-width="isMobile ? undefined : 600"
     :height="isMobile ? undefined : 600"
@@ -29,7 +29,7 @@
                 variant="outlined"
                 single-line
                 :error="!!errorMsg"
-                @keyup.enter="loadItems(currentPath)"
+                @keyup.enter="loadItems(currentPath).catch(console.error)"
               >
                 <template #append-inner>
                   <v-fade-transition>
@@ -37,11 +37,12 @@
                       v-if="currentPath"
                       icon="mdi-arrow-right"
                       class="cursor-pointer"
-                      @click="loadItems(currentPath)"
+                      @click="loadItems(currentPath).catch(console.error)"
                     />
                   </v-fade-transition>
                 </template>
               </v-text-field>
+
             </v-col>
 
             <v-col cols="auto">
@@ -136,6 +137,7 @@
 import { ref, computed, watch } from 'vue'
 import { useDisplay } from 'vuetify'
 import { fetchFsCompletion } from '@/api/fs'
+import axios from 'axios'
 
 // --- Props & Emits ---
 const modelValue = defineModel<boolean>({ required: true })
@@ -144,9 +146,9 @@ const props = defineProps<{
   initialPath?: string
 }>()
 
-const emit = defineEmits<{
-  (e: 'select', path: string): void
-}>()
+ 
+const emit = defineEmits<(e: 'select', path: string) => void>()
+
 
 // --- Responsiveness ---
 const { mobile } = useDisplay()
@@ -165,13 +167,16 @@ const emptyStateIcon = computed(() => {
   return 'mdi-folder-open-outline'
 })
 
-// --- Utilities ---
+// Utilities
 const getFolderName = (fullPath: string) => {
+   
   if (!fullPath) return ''
   const separator = fullPath.includes('\\') ? '\\' : '/'
   if (fullPath.endsWith(separator)) return fullPath
+  // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing, @typescript-eslint/strict-boolean-expressions
   return fullPath.split(separator).pop() || fullPath
 }
+
 
 // --- Logic ---
 const loadItems = async (path: string) => {
@@ -182,12 +187,12 @@ const loadItems = async (path: string) => {
     items.value = res.children
     roots.value = res.roots
     isDefault.value = res.is_default
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error(e)
     items.value = []
     roots.value = []
     isDefault.value = false
-    if (e.response && e.response.status === 404) {
+    if (axios.isAxiosError(e) && e.response?.status === 404) {
       errorMsg.value = 'Directory does not exist'
     } else {
       errorMsg.value = 'Error listing directory'
@@ -196,6 +201,7 @@ const loadItems = async (path: string) => {
     loading.value = false
   }
 }
+
 
 const navigateDown = (path: string) => {
   const isWindows = path.includes('\\')
@@ -207,7 +213,7 @@ const navigateDown = (path: string) => {
   }
 
   currentPath.value = target
-  loadItems(target)
+  loadItems(target).catch(console.error)
 }
 
 const navigateUp = () => {
@@ -216,12 +222,13 @@ const navigateUp = () => {
   const isWindows = currentPath.value.includes('\\')
   const separator = isWindows ? '\\' : '/'
 
-  // Clean up existing path to handle parsing
-  const cleanPath = currentPath.value.endsWith(separator)
-    ? currentPath.value.slice(0, -1)
-    : currentPath.value
+    // clean up existing path to handle parsing
+    const cleanPath = currentPath.value.endsWith(separator)
+      ? currentPath.value.slice(0, -1)
+      : currentPath.value
 
-  const parts = cleanPath.split(separator)
+    const parts = cleanPath.split(separator)
+
 
   // Go to root logic
   if (parts.length <= 1) {
@@ -237,7 +244,7 @@ const navigateUp = () => {
       const newPath = parts.join('/')
       currentPath.value = newPath || '/'
     }
-    
+
     // Ensure trailing slash for intermediate directories to avoid "searching" mode
     const separator = isWindows ? '\\' : '/'
     if (!currentPath.value.endsWith(separator)) {
@@ -245,8 +252,9 @@ const navigateUp = () => {
     }
   }
 
-  loadItems(currentPath.value)
+  loadItems(currentPath.value).catch(console.error)
 }
+
 
 const confirmSelection = () => {
   if (currentPath.value) {
@@ -255,9 +263,11 @@ const confirmSelection = () => {
     const separator = isWindows ? '\\' : '/'
 
     // Normalize root check
+     
     const isRoot = (isWindows && selected.length <= 3) || (!isWindows && selected === '/')
 
     // Remove trailing slash if not root
+     
     if (!isRoot && selected.endsWith(separator)) {
       selected = selected.slice(0, -1)
     }
@@ -268,13 +278,13 @@ const confirmSelection = () => {
 }
 
 // --- Watchers ---
-watch(
-  modelValue,
-  (isOpen) => {
-    if (isOpen) {
-      currentPath.value = props.initialPath || ''
-      loadItems(currentPath.value)
-    }
+watch(modelValue, (isOpen) => {
+  if (isOpen) {
+    currentPath.value = props.initialPath ?? ''
+    loadItems(currentPath.value).catch((err: unknown) => {
+      console.error('Failed to load items in watcher:', err)
+    })
   }
-)
+})
+
 </script>

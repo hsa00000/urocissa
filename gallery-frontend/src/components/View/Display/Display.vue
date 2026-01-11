@@ -244,8 +244,11 @@ const handleKeyDown = (event: KeyboardEvent) => {
         console.error('Navigation Error:', error)
       })
     } else if (event.key === 'R' && event.shiftKey && props.abstractData?.type === 'image') {
-      rotateImageHandler()
+      rotateImageHandler().catch((error: unknown) => {
+        console.error('Rotate Error:', error)
+      })
     }
+
   }
 }
 

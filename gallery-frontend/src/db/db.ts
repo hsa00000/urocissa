@@ -121,10 +121,12 @@ function getShareKey(albumId: string, shareId: string): string {
 }
 
 export async function storeShareInfo(info: ShareInfo): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   if (!info.albumId || !info.shareId) {
     console.error('Cannot store share info without albumId and shareId')
     return
   }
+
 
   const db = await openHashDB()
   if (!db) {

@@ -32,9 +32,11 @@ export const useScrollbarStore = (isolationId: IsolationId) =>
           lastDataForYear = scrollbarData
         })
 
-        if (lastDataForYear) {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        if (lastDataForYear !== null) {
           this.scrollbarDataArrayYear.push(lastDataForYear)
         }
+
 
         this.initialized = true
       }

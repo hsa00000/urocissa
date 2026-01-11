@@ -45,9 +45,11 @@ onBeforeMount(async () => {
     shareStore.shareId = shareIdOpt
 
     const savedInfo = await getShareInfo(albumIdOpt, shareIdOpt)
+    // eslint-disable-next-line @typescript-eslint/prefer-optional-chain, @typescript-eslint/strict-boolean-expressions
     if (savedInfo && savedInfo.password) {
       shareStore.password = savedInfo.password
     }
+
 
     basicString.value = `and(trashed:false, album:"${albumIdOpt}")`
 

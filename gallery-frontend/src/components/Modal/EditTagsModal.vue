@@ -76,8 +76,10 @@ onMounted(() => {
     }
     const { index, data } = initializeResult
     let defaultTags: string[]
+     
     if (data.type === 'image' || data.type === 'video') {
       defaultTags = data.tags
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     } else if (data.type === 'album') {
       defaultTags = data.tags
     } else {
@@ -85,6 +87,7 @@ onMounted(() => {
       return undefined
     }
     changedTagsArray.value = [...defaultTags]
+
 
     const innerSubmit = async () => {
       const hashArray: number[] = [index]

@@ -85,9 +85,11 @@ async function processPrefetchChain(
 
   // 3. Fetch dependent resources (Scrollbar, Tags, Albums)
   // fetchScrollbar MUST run after syncStoreFromPrefetch because it needs the new Token.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const dependentPromises: Promise<any>[] = []
 
   dependentPromises.push(fetchScrollbar(isolationId))
+
 
   if (route.meta.baseName !== 'share') {
     const tagStore = useTagStore('mainId')

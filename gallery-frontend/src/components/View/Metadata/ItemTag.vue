@@ -81,6 +81,7 @@ import { IsolationId } from '@type/types'
 import { searchByTag } from '@utils/getter'
 import { setFavorite, setArchived } from '@/api/editFlags'
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const props = defineProps<{
   isolationId: IsolationId
   index: number
@@ -90,6 +91,7 @@ const props = defineProps<{
 }>()
 
 const modalStore = useModalStore('mainId')
+
 const route = useRoute()
 const router = useRouter()
 

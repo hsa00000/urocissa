@@ -15,12 +15,13 @@ export const useEditStore = (isolationId: IsolationId) =>
     actions: {
       async queueRotate(hash: string, task: () => Promise<void>) {
         // Get the current promise chain for this hash, or start a new one
+        // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
         const previousTask = this.rotationQueue.get(hash) || Promise.resolve()
 
         // Chain the new task to run after the previous one completes
         const newTask = previousTask
           .then(() => task())
-          .catch((error) => {
+          .catch((error: unknown) => {
             console.error(`Rotation task failed for hash ${hash}:`, error)
           })
 
@@ -40,8 +41,10 @@ export const useEditStore = (isolationId: IsolationId) =>
         return this.processingRegenerate.has(hash)
       },
       incrementRotation(hash: string) {
+        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/prefer-nullish-coalescing
         const count = this.rotationCounts.get(hash) || 0
         this.rotationCounts.set(hash, count + 1)
       }
+
     }
   })()

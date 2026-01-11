@@ -62,3 +62,15 @@ export interface EditShareData {
   share: Share
   displayName: string
 }
+
+export interface ShareFormData {
+  description: string
+  passwordRequired: boolean
+  password: string
+  expireEnabled: boolean
+  expDuration: number | null
+  showUpload: boolean
+  showDownload: boolean
+  showMetadata: boolean
+}
+

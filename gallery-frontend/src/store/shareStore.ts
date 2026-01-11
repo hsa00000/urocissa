@@ -39,6 +39,7 @@ export const useShareStore = (isolationId: IsolationId) =>
         })
       },
       async syncShareInfoToIndexedDB() {
+        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
         if (this.albumId && this.shareId) {
           await storeShareInfo({
             albumId: this.albumId,
@@ -48,9 +49,11 @@ export const useShareStore = (isolationId: IsolationId) =>
         }
       },
       async clearShareInfoFromIndexedDB() {
+        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
         if (this.albumId && this.shareId) {
           await clearShareInfo(this.albumId, this.shareId)
         }
       }
+
     }
   })()

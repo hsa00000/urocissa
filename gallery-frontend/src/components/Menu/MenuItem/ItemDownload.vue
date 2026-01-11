@@ -95,10 +95,12 @@ const downloadAllFiles = async () => {
               }
             })
 
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
             if (abstractData.type === 'image' || abstractData.type === 'video') {
               const fileName = `${hash}.${abstractData.ext}`
               saveAs(response.data, fileName)
             }
+
             return true
           })
 

@@ -13,8 +13,9 @@
 
 <script setup lang="ts">
 import ShareModalBase from '@/components/Modal/ShareModalBase.vue'
-import { ShareFormData } from '@/components/Modal/ShareSettingsForm.vue'
+import { ShareFormData } from '@type/types'
 import { useModalStore } from '@/store/modalStore'
+
 import { useMessageStore } from '@/store/messageStore'
 import { tryWithMessageStore } from '@/script/utils/try_catch'
 import axios from 'axios'
@@ -58,7 +59,7 @@ const loading = ref(false)
 const createLink = async (formData: ShareFormData) => {
   loading.value = true
   const expirationTimestamp =
-    formData.expireEnabled && formData.expDuration
+    formData.expireEnabled && formData.expDuration !== null
       ? Math.floor(Date.now() / 1000) + formData.expDuration * 60
       : 0
 
@@ -85,11 +86,11 @@ const createLink = async (formData: ShareFormData) => {
 }
 
 const updateLink = async (formData: ShareFormData) => {
-  if (!createdShareKey.value) return
+  if (createdShareKey.value === null || createdShareKey.value === '') return
 
   loading.value = true
   const expirationTimestamp =
-    formData.expireEnabled && formData.expDuration
+    formData.expireEnabled && formData.expDuration !== null
       ? Math.floor(Date.now() / 1000) + formData.expDuration * 60
       : 0
 

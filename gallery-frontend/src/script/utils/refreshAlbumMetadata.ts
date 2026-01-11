@@ -34,7 +34,7 @@ export async function refreshAlbumMetadata(albumId: string) {
       })
 
       const data = dataStore.data.get(albumIndex)
-      if (!data || data.type !== 'album') {
+      if (data?.type !== 'album') {
         console.error(`cannot find album with albumIndex = ${albumIndex}`)
         return
       }

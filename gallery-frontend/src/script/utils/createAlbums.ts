@@ -75,7 +75,7 @@ export async function editTitle(album: GalleryAlbum, titleModelValue: string) {
     if (index !== undefined) {
       const data = dataStore.data.get(index)
 
-      if (albumInfo && data && data.type === 'album') {
+      if (albumInfo && data?.type === 'album') {
         albumInfo.albumName = title
         albumInfo.displayName = albumInfo.albumName ?? 'Untitled'
         data.title = title

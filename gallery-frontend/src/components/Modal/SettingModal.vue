@@ -45,7 +45,7 @@
                   <v-chip variant="text" class="pr-2"> ViewBar Overlay </v-chip>
 
                   <v-tooltip location="top" max-width="300">
-                    <template v-slot:activator="{ props }">
+                    <template #activator="{ props }">
                       <v-icon
                         v-bind="props"
                         icon="mdi-alert-circle-outline"
@@ -137,16 +137,21 @@ const viewBarOverlayValue = computed<boolean>({
   get: () => constStore.viewBarOverlay,
   set: (newVal: boolean | null) => {
     if (newVal !== null) {
-      constStore.updateViewBarOverlay(newVal)
+      constStore.updateViewBarOverlay(newVal).catch((error: unknown) => {
+        console.error('Failed to update viewBarOverlay (via setter):', error)
+      })
     }
   }
 })
 
 const onViewBarOverlayUpdate = (newValue: boolean | null) => {
   if (newValue !== null) {
-    constStore.updateViewBarOverlay(newValue)
+    constStore.updateViewBarOverlay(newValue).catch((error: unknown) => {
+      console.error('Failed to update viewBarOverlay:', error)
+    })
   }
 }
+
 
 
 </script>

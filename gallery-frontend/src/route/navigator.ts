@@ -5,7 +5,8 @@ import type { NavigationFailure } from 'vue-router'
 export async function navigateToAlbum(
   albumId: string,
   router: Router
-): Promise<void | NavigationFailure> {
+): Promise<NavigationFailure | undefined> {
+
   const albumPath = `/albums/view/${albumId}/read`
 
   if (router.currentRoute.value.fullPath.startsWith('/albums')) {

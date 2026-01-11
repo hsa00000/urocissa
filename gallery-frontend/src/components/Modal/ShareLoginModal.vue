@@ -49,6 +49,7 @@ import { useShareStore } from '@/store/shareStore'
 import axios from 'axios'
 
 const modalStore = useModalStore('mainId')
+
 const messageStore = useMessageStore('mainId')
 const shareStore = useShareStore('mainId')
 
@@ -94,16 +95,20 @@ const submit = async () => {
     errorMessage.value = ''
     password.value = ''
     modalStore.showShareLoginModal = false
-  } catch (error: any) {
-    const status = error.response?.status
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status
 
-    if (status === 403) {
-      shareStore.isLinkExpired = true
-      messageStore.error('Link has expired.')
-    } else if (status === 401) {
-      errorMessage.value = 'Incorrect password'
+      if (status === 403) {
+        shareStore.isLinkExpired = true
+        messageStore.error('Link has expired.')
+      } else if (status === 401) {
+        errorMessage.value = 'Incorrect password'
+      } else {
+        errorMessage.value = 'Server error or invalid request.'
+      }
     } else {
-      errorMessage.value = 'Server error or invalid request.'
+      errorMessage.value = 'An unexpected error occurred.'
     }
   } finally {
     loading.value = false

@@ -62,8 +62,10 @@ import { computed, ref, watch } from 'vue'
 import { useDisplay } from 'vuetify'
 import { useClipboard } from '@vueuse/core'
 import BaseModal from '@/components/Modal/BaseModal.vue'
-import ShareSettingsForm, { ShareFormData } from '@/components/Modal/ShareSettingsForm.vue'
+import ShareSettingsForm from '@/components/Modal/ShareSettingsForm.vue'
+import { ShareFormData } from '@type/types'
 import { useMessageStore } from '@/store/messageStore'
+
 
 const props = withDefaults(
   defineProps<{
@@ -93,24 +95,28 @@ const messageStore = useMessageStore('mainId')
 
 const lastSavedState = ref('')
 
-watch(
+  watch(
   () => props.shareLink,
   (newLink) => {
-    if (newLink) {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (newLink !== null && newLink !== undefined && newLink !== '') {
       lastSavedState.value = JSON.stringify(formState.value)
     }
   }
 )
 
-const showLinkDisplay = computed(() => !!props.shareLink)
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+const showLinkDisplay = computed(() => props.shareLink !== null && props.shareLink !== undefined && props.shareLink !== '')
 
 const isFormValid = computed(() => {
-  if (formState.value.passwordRequired && !formState.value.password) return false
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  if (formState.value.passwordRequired && (formState.value.password === null || formState.value.password === undefined || formState.value.password === '')) return false
   return true
 })
 
 const hasChanges = computed(() => {
-  if (!props.shareLink) return true
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  if (props.shareLink === null || props.shareLink === undefined || props.shareLink === '') return true
   return JSON.stringify(formState.value) !== lastSavedState.value
 })
 
@@ -118,7 +124,8 @@ const buttonLabel = computed(() => {
   if (props.mode === 'edit') {
     return 'Save Changes'
   }
-  if (!props.shareLink) return 'Create Link'
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  if (props.shareLink === null || props.shareLink === undefined || props.shareLink === '') return 'Create Link'
   if (hasChanges.value) return 'Save Changes'
   return copied.value ? 'Copied!' : 'Copy'
 })
@@ -129,13 +136,15 @@ const handleAction = async () => {
     return
   }
 
-  if (!props.shareLink) {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  if (props.shareLink === null || props.shareLink === undefined || props.shareLink === '') {
     emit('create', { ...formState.value })
   } else if (hasChanges.value) {
     emit('update', { ...formState.value })
     lastSavedState.value = JSON.stringify(formState.value)
   } else {
-    if (props.shareLink) {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (props.shareLink !== null && props.shareLink !== undefined && props.shareLink !== '') {
       await copy(props.shareLink)
       messageStore.success('Link copied to clipboard')
       emit('copy', props.shareLink)

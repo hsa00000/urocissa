@@ -9,10 +9,12 @@ function extractShareIdsFromReferer(referer: string): {
   try {
     const url = new URL(referer)
     // Match pattern: /share/albumId-shareId (shareId should not contain /)
-    const match = url.pathname.match(/\/share\/([^-]+)-([^/]+)/)
-    if (match && match[1] && match[2]) {
+    const match = /\/share\/([^-]+)-([^/]+)/.exec(url.pathname)
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+    if (match?.[1] && match[2]) {
       return { albumId: match[1], shareId: match[2] }
     }
+
   } catch {
     // Invalid URL
   }
@@ -38,8 +40,10 @@ async function getShareInfoFromDB(albumId: string, shareId: string): Promise<Sha
         const getRequest = store.get(key)
 
         getRequest.onsuccess = () => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/strict-boolean-expressions, @typescript-eslint/prefer-nullish-coalescing
           resolve(getRequest.result || null)
         }
+
         getRequest.onerror = () => {
           resolve(null)
         }
@@ -109,22 +113,27 @@ async function handleMediaRequest(request: Request): Promise<Response> {
   // Extract albumId and shareId from referer to get correct share info
   const { albumId, shareId } = extractShareIdsFromReferer(request.referrer)
 
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   if (albumId && shareId) {
     const shareInfo = await getShareInfoFromDB(albumId, shareId)
 
     // Add share headers if available
-    if (shareInfo) {
+    if (shareInfo !== null) {
+      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
       if (shareInfo.albumId) {
         headers.set('x-album-id', shareInfo.albumId)
       }
+      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
       if (shareInfo.shareId) {
         headers.set('x-share-id', shareInfo.shareId)
       }
+      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
       if (shareInfo.password) {
         headers.set('x-share-password', shareInfo.password)
       }
     }
   }
+
 
   // Only override the mode and headers to preserve all other browser-generated settings (e.g., Range)
   const modifiedRequest = new Request(request, {

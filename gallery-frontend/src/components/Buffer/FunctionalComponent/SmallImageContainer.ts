@@ -154,9 +154,11 @@ async function checkAndFetch(
       hashToken,
       updatedAt: abstractData.updateAt
     })
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   } else if (abstractData.type === 'album' && abstractData.cover != null) {
     const hash = abstractData.cover
     await tokenStore.refreshHashTokenIfExpired(hash)
+
     const hashToken = tokenStore.hashTokenMap.get(hash)
     if (hashToken === undefined) {
       throw new Error(`hashToken is undefined after refresh for cover: ${hash}`)

@@ -45,17 +45,19 @@ const getStores = () => ({
 /**
  * Handles errors specific to the Public Share / Album context.
  */
-async function handleShareError(error: AxiosError, stores: ReturnType<typeof getStores>) {
+function handleShareError(error: AxiosError, stores: ReturnType<typeof getStores>) {
   const { shareStore, modalStore, messageStore } = stores
   const status = error.response?.status
 
   // 1. Handle 401: Password Required / Stale Request
   if (status === 401) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unnecessary-condition
     const sentPassword = error.config?.headers?.[HEADERS.SHARE_PASSWORD]
     const currentPassword = shareStore.password
 
     // Check for "Zombie" requests (stale password sent vs current store state)
-    if (currentPassword && sentPassword !== currentPassword) {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (currentPassword !== null && currentPassword !== undefined && sentPassword !== currentPassword) {
       return // Ignore stale request
     }
 
@@ -122,10 +124,13 @@ async function handleAxiosResponseError(error: AxiosError) {
   if (!error.response) return Promise.reject(error)
 
   const stores = getStores()
-  const isSharePage = stores.shareStore.albumId && stores.shareStore.shareId
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  const isSharePage = stores.shareStore.albumId !== null && stores.shareStore.albumId !== undefined &&
+                      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+                      stores.shareStore.shareId !== null && stores.shareStore.shareId !== undefined
 
   if (isSharePage) {
-    await handleShareError(error, stores)
+    handleShareError(error, stores)
   } else {
     await handleGeneralError(error, stores)
   }
@@ -145,7 +150,8 @@ export function setupMainAxiosInterceptor() {
       config.headers.set(HEADERS.ALBUM_ID, shareStore.albumId)
       config.headers.set(HEADERS.SHARE_ID, shareStore.shareId)
 
-      if (shareStore.password) {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (shareStore.password !== null && shareStore.password !== undefined && shareStore.password !== '') {
         config.headers.set(HEADERS.SHARE_PASSWORD, shareStore.password)
       }
     }

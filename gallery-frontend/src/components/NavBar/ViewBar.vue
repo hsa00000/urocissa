@@ -90,8 +90,11 @@ const props = defineProps<{
 const constStore = useConstStore(props.isolationId)
 
 onMounted(() => {
-  constStore.loadViewBarOverlay()
+  constStore.loadViewBarOverlay().catch((error: unknown) => {
+    console.error('Failed to load viewBarOverlay:', error)
+  })
 })
+
 
 const share = shareStore.resolvedShare?.share ?? null
 </script>

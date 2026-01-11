@@ -64,7 +64,7 @@
         @click="toggleSetting(item.key)"
         link
       >
-        <template v-slot:append>
+        <template #append>
           <v-switch
             :model-value="model[item.key]"
             color="primary"
@@ -83,21 +83,12 @@
 <script setup lang="ts">
 import { watch } from 'vue'
 import { DURATIONS } from '@type/constants'
-
-export interface ShareFormData {
-  description: string
-  passwordRequired: boolean
-  password: string
-  expireEnabled: boolean
-  expDuration: number | null
-  showUpload: boolean
-  showDownload: boolean
-  showMetadata: boolean
-}
+import { ShareFormData } from '@type/types'
 
 const model = defineModel<ShareFormData>({ required: true })
 
 const settingsItems = [
+
   { title: 'Show Metadata', key: 'showMetadata' },
   { title: 'Allow Download', key: 'showDownload' },
   { title: 'Allow Upload', key: 'showUpload' }
@@ -123,9 +114,11 @@ watch(
 watch(
   () => model.value.expDuration,
   (newVal) => {
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     model.value.expireEnabled = !!newVal
   }
 )
+
 </script>
 
 <style scoped>
