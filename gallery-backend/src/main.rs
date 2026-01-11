@@ -93,14 +93,10 @@ async fn build_rocket() -> rocket::Rocket<rocket::Build> {
 
     #[cfg(not(feature = "embed-frontend"))]
     let app = {
-        // Modified: Use custom config and manage AppConfig as state
-        // Determine asset path: local "./assets" (prod) or "../gallery-frontend/dist/assets" (dev)
-        let prod_assets = std::path::Path::new("assets");
-        let asset_path = if prod_assets.exists() {
-            prod_assets.to_path_buf()
-        } else {
-            std::path::PathBuf::from("../gallery-frontend/dist/assets")
-        };
+        // Modified: Directly use the frontend dist folder as requested.
+        // This assumes that this configuration is used for development where the sibling directory exists.
+        // For production/standalone binaries, ensure 'embed-frontend' feature is enabled.
+        let asset_path = std::path::PathBuf::from("../gallery-frontend/dist/assets");
 
         info!("Serving assets from: {:?}", asset_path);
 
