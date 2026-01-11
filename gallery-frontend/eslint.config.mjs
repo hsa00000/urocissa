@@ -10,8 +10,10 @@ export default tseslint.config(
     ignores: [
       '**/node_modules/**/*',
       '**/dist/**/*',
+      '**/dev-dist/**/*',
       'src/script/lexer/MyParserCst.d.ts',
       '**/*.mjs',
+      'src/type/MyParserCst.d.ts'
     ]
   },
   eslint.configs.recommended,
