@@ -1,18 +1,29 @@
 <template>
   <v-col cols="12">
-    <v-list-subheader class="font-weight-bold text-high-emphasis">Change Password</v-list-subheader>
-    <v-card border flat class="rounded-lg">
+    <v-list-subheader class="text-high-emphasis font-weight-bold">
+      Change Password
+    </v-list-subheader>
+
+    <v-card border flat>
       <v-card-text>
-        <v-row dense>
+        <v-row>
           <v-col cols="12">
             <v-switch
               v-model="enabled"
               color="primary"
               label="Enable Password Protection"
-              hide-details
-              class="mb-4"
+              :hint="
+                !enabled
+                  ? 'Disabling this allows anyone to access your album without a password.'
+                  : undefined
+              "
+              persistent-hint
+              density="comfortable"
+              :hide-details="false"
             ></v-switch>
+          </v-col>
 
+          <v-col cols="12">
             <v-text-field
               v-model="oldPassword"
               label="Current Password"
@@ -20,15 +31,16 @@
               :append-inner-icon="showOldPassword ? 'mdi-eye' : 'mdi-eye-off'"
               prepend-icon="mdi-lock-check-outline"
               variant="outlined"
-              density="comfortable"
               :placeholder="oldPasswordPlaceholder"
               :rules="[rules.requiredIfAction]"
-              persistent-placeholder
-              class="mb-3"
-              @click:append-inner="showOldPassword = !showOldPassword"
               :disabled="!canInputOldPassword"
+              persistent-placeholder
+              density="comfortable"
+              @click:append-inner="showOldPassword = !showOldPassword"
             ></v-text-field>
+          </v-col>
 
+          <v-col cols="12">
             <v-text-field
               v-model="newPassword"
               label="New Password"
@@ -36,32 +48,31 @@
               :append-inner-icon="showNewPassword ? 'mdi-eye' : 'mdi-eye-off'"
               prepend-icon="mdi-lock-outline"
               variant="outlined"
-              density="comfortable"
-              persistent-placeholder
-              hide-details="auto"
-              :disabled="!enabled"
-              class="mb-3"
               :rules="[rules.requiredIfAction, rules.noLeadingTrailingSpaces]"
+              :disabled="!enabled"
+              persistent-placeholder
+              density="comfortable"
               @click:append-inner="showNewPassword = !showNewPassword"
             ></v-text-field>
-
-            <v-row justify="end" class="mt-2">
-              <v-col cols="auto">
-                <v-btn
-                  color="primary"
-                  variant="flat"
-                  :loading="loading"
-                  :disabled="!isValidAction"
-                  @click="savePassword"
-                  class="text-none"
-                >
-                  Update Password
-                </v-btn>
-              </v-col>
-            </v-row>
           </v-col>
         </v-row>
       </v-card-text>
+
+      <v-divider></v-divider>
+
+      <v-card-actions>
+        <v-spacer></v-spacer>
+        <v-btn
+          color="primary"
+          variant="flat"
+          :loading="loading"
+          :disabled="!isValidAction"
+          @click="savePassword"
+          class="text-none"
+        >
+          Update Password
+        </v-btn>
+      </v-card-actions>
     </v-card>
   </v-col>
 </template>
@@ -79,57 +90,47 @@ const configStore = useConfigStore('mainId')
 // --- State ---
 const enabled = ref(true)
 const oldPassword = ref('')
-const newPassword = ref('') // Renamed from 'password' for clarity
+const newPassword = ref('')
 const loading = ref(false)
 
 const showOldPassword = ref(false)
-const showNewPassword = ref(false) // Renamed from 'showPassword'
+const showNewPassword = ref(false)
 
 // --- Computed: Status Checks ---
-// Check if password is currently set on the server side
 const hasExistingPassword = computed(() => configStore.config?.hasPassword ?? false)
 
-// SIMPLE LOGIC:
-// You can only input an old password if one actually exists on the server.
-// It doesn't matter if you are enabling or disabling; if it exists, you might need to type it.
+// Logic: Users can only input old password if one exists on the server.
 const canInputOldPassword = computed(() => hasExistingPassword.value)
 
-// Determine user intent
+// User Intent
 const isDisabling = computed(() => !enabled.value)
 const isUpdating = computed(() => enabled.value && !!newPassword.value)
 
-// Determine if old password is required
-// Rule: If password exists and (disabling OR entering new password), old password is required
+// Rule Logic
 const isOldPasswordRequired = computed(() => {
   if (!hasExistingPassword.value) return false
   return isDisabling.value || isUpdating.value
 })
 
-// Whether the button is clickable
 const isValidAction = computed(() => {
-  // 1. If old password is required but not filled -> Invalid
   if (isOldPasswordRequired.value && !oldPassword.value) return false
-
-  // 2. If in enable mode but new password not filled -> Invalid (prevent sending empty new password)
   if (enabled.value && !newPassword.value) return false
-
   return true
 })
 
-// UI Placeholder logic
+// UI Helpers
 const oldPasswordPlaceholder = computed(() => {
   if (!hasExistingPassword.value) return 'Not required'
   return isDisabling.value ? 'Required to disable password' : 'Required to verify identity'
 })
 
-// --- Watchers ---
+// --- Watchers & Lifecycle ---
 onMounted(() => {
   if (configStore.config?.hasPassword !== undefined) {
     enabled.value = configStore.config.hasPassword
   }
 })
 
-// Sync local state with store config
 watch(
   () => configStore.config?.hasPassword,
   (val) => {
@@ -137,14 +138,13 @@ watch(
   }
 )
 
-// Reset fields if user toggles switch off
 watch(enabled, (val) => {
   if (!val) {
     newPassword.value = ''
   }
 })
 
-// --- Form Rules ---
+// --- Validation Rules ---
 const rules = {
   requiredIfAction: (v: string) => {
     return isOldPasswordRequired.value
@@ -152,6 +152,8 @@ const rules = {
       : true
   },
   noLeadingTrailingSpaces: (v: string) => {
+    // Optional chaining safeguard
+    if (!v) return true
     return v === v.trim() || 'Do not use spaces at the beginning or end of the password.'
   }
 }
@@ -163,22 +165,18 @@ const savePassword = async () => {
   loading.value = true
 
   await tryWithMessageStore('mainId', async () => {
-    // Prepare Payload: If disabling, send empty string; if enabling/changing, send new password
     const finalNewPassword = isDisabling.value ? '' : newPassword.value.trim()
 
-    // API Call
     await updatePassword(oldPassword.value, finalNewPassword)
 
-    // Update Local Store manually to reflect change immediately
     const newConfig = await getConfig()
     configStore.config = newConfig
 
-    // Success Handling
     messageStore.success(
       isDisabling.value ? 'Password disabled successfully' : 'Password updated successfully'
     )
 
-    // Cleanup
+    // Reset local form state
     oldPassword.value = ''
     newPassword.value = ''
     return true
