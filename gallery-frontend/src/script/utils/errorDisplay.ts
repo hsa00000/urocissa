@@ -11,8 +11,8 @@ export function errorDisplay(error: unknown): string {
     if (parsed.success) {
       // Prefer 'message' from AppError, fallback to 'error' from legacy/other
       const serverMsg = parsed.data.message ?? parsed.data.error
-      if (serverMsg) {
-          return serverMsg
+      if (serverMsg != null && serverMsg.length > 0) {
+        return serverMsg
       }
     }
 
