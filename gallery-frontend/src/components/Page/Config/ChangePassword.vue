@@ -4,32 +4,27 @@
       Change Password
     </v-list-subheader>
 
-    <v-card border flat>
+    <v-card border flat class="rounded-lg">
+      <v-list>
+        <v-list-item
+          title="Enable Password Protection"
+          subtitle="Turning this off makes your album public."
+        >
+          <template #append>
+            <v-switch v-model="enabled" color="primary" hide-details inset></v-switch>
+          </template>
+        </v-list-item>
+      </v-list>
+      <v-divider></v-divider>
       <v-card-text>
-        <v-row>
-          <v-col cols="12">
-            <v-switch
-              v-model="enabled"
-              color="primary"
-              label="Enable Password Protection"
-              :hint="
-                !enabled
-                  ? 'Disabling this allows anyone to access your album without a password.'
-                  : undefined
-              "
-              persistent-hint
-              density="comfortable"
-              :hide-details="false"
-            ></v-switch>
-          </v-col>
-
+        <v-row dense>
           <v-col cols="12">
             <v-text-field
               v-model="oldPassword"
+              prepend-icon="mdi-lock-outline"
               label="Current Password"
               :type="showOldPassword ? 'text' : 'password'"
               :append-inner-icon="showOldPassword ? 'mdi-eye' : 'mdi-eye-off'"
-              prepend-icon="mdi-lock-check-outline"
               variant="outlined"
               :placeholder="oldPasswordPlaceholder"
               :rules="[rules.requiredIfAction]"
@@ -42,38 +37,35 @@
 
           <v-col cols="12">
             <v-text-field
+              prepend-icon="mdi-lock"
               v-model="newPassword"
               label="New Password"
               :type="showNewPassword ? 'text' : 'password'"
               :append-inner-icon="showNewPassword ? 'mdi-eye' : 'mdi-eye-off'"
-              prepend-icon="mdi-lock-outline"
               variant="outlined"
               :rules="[rules.requiredIfAction, rules.noLeadingTrailingSpaces]"
               :disabled="!enabled"
               persistent-placeholder
               density="comfortable"
               @click:append-inner="showNewPassword = !showNewPassword"
-            ></v-text-field>
-          </v-col>
+            ></v-text-field
+          ></v-col>
         </v-row>
       </v-card-text>
-
-      <v-divider></v-divider>
-
-      <v-card-actions>
-        <v-spacer></v-spacer>
-        <v-btn
-          color="primary"
-          variant="flat"
-          :loading="loading"
-          :disabled="!isValidAction"
-          @click="savePassword"
-          class="text-none"
-        >
-          Update Password
-        </v-btn>
-      </v-card-actions>
     </v-card>
+    <v-card-actions>
+      <v-spacer></v-spacer>
+      <v-btn
+        color="primary"
+        variant="flat"
+        :loading="loading"
+        :disabled="!isValidAction"
+        @click="savePassword"
+        class="text-none"
+      >
+        Update Password
+      </v-btn>
+    </v-card-actions>
   </v-col>
 </template>
 

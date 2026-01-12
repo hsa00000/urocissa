@@ -2,36 +2,6 @@
   <v-col cols="12">
     <v-list-subheader class="font-weight-bold text-high-emphasis">Advanced Config</v-list-subheader>
     <v-card border flat class="rounded-lg">
-      <v-card-text>
-        <v-row dense>
-          <v-col cols="12">
-            <v-text-field
-              v-model="authKey"
-              label="JWT Authentication Key"
-              prepend-icon="mdi-key-outline"
-              placeholder="Enter JWT Key"
-              variant="outlined"
-              density="comfortable"
-              hide-details="auto"
-            ></v-text-field>
-          </v-col>
-
-          <v-col cols="12">
-            <v-text-field
-              v-model="discordHookUrl"
-              label="Discord Webhook URL"
-              prepend-icon="mdi-webhook"
-              placeholder="https://discord.com/api/..."
-              variant="outlined"
-              density="comfortable"
-              hide-details="auto"
-            ></v-text-field>
-          </v-col>
-        </v-row>
-      </v-card-text>
-
-      <v-divider></v-divider>
-
       <v-list lines="two">
         <v-list-item title="Read Only Mode" subtitle="Prevent modification of data">
           <template #append>
@@ -59,6 +29,35 @@
           </template>
         </v-list-item>
       </v-list>
+      <v-divider></v-divider>
+      <v-card-text>
+        <v-row>
+          <v-col cols="12">
+            <v-text-field
+              v-model="authKey"
+              label="JWT Authentication Key"
+              prepend-icon="mdi-key-outline"
+              placeholder="Enter JWT Key"
+              variant="outlined"
+              density="comfortable"
+              hide-details="auto"
+            ></v-text-field>
+          </v-col>
+
+          <v-divider></v-divider>
+          <v-col cols="12">
+            <v-text-field
+              v-model="discordHookUrl"
+              label="Discord Webhook URL"
+              prepend-icon="mdi-webhook"
+              placeholder="https://discord.com/api/..."
+              variant="outlined"
+              density="comfortable"
+              hide-details="auto"
+            ></v-text-field>
+          </v-col>
+        </v-row>
+      </v-card-text>
     </v-card>
   </v-col>
 </template>
