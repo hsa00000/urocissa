@@ -23,15 +23,13 @@ You can explore the features of Urocissa through the following demos:
 
 ### Standard Demo
 
-[https://demo.photoserver.tw](https://demo.photoserver.tw)\
-**Password:** `password`
+[https://demo.photoserver.tw](https://demo.photoserver.tw)
 
 This demo showcases the typical usage of Urocissa, allowing you to experience its core features and user interface.
 
 ### One-Million-Photo Demo
 
-[https://demo-million.photoserver.tw](https://demo-million.photoserver.tw)\
-**Password:** `password`
+[https://demo-million.photoserver.tw](https://demo-million.photoserver.tw)
 
 This demo demonstrates Urocissa's ability to manage 1,000,000 photos, showcasing the power and scalability of Urocissa. Since I don't have access to a million unique images, the photos in this demo are replaced with placeholders.
 
@@ -126,7 +124,7 @@ This script will launch Urocissa. You can access the app using the following lin
 
 [http://127.0.0.1:5673](http://127.0.0.1:5673)
 
-The default login password is `password`. If you want to change the default port or password, refer to the [Configuration Guide](docs/CONFIG.md).
+If you want to change the default port or configure a password, refer to the [Configuration Guide](docs/CONFIG.md).
 
 ### Quick Update with Docker
 

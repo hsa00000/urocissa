@@ -24,7 +24,7 @@ The configuration is divided into `public` and `private` sections.
     "disableImg": false
   },
   "private": {
-    "password": "password",
+    "password": null,
     "authKey": null
   }
 }
@@ -50,7 +50,7 @@ These settings control the server's public-facing behavior.
 
 These settings handle sensitive security and authentication data.
 
-| Setting    | Type           | Default      | Description                                                                                                                                                                                                                                                                                                                                     |
-| ---------- | -------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `password` | string         | `"password"` | The password required to log in to the web interface.                                                                                                                                                                                                                                                                                           |
-| `authKey`  | string \| null | `null`       | The secret key used for signing authentication tokens (JWT). <br> - If `null`, a random key is generated on every startup, which invalidates existing login sessions upon restart.<br> - Set this to a random string to persist sessions across server restarts.<br> **If you are unsure what this does, keeping it as `null` is recommended.** |
+| Setting    | Type           | Default | Description                                                                                                                                                                                                                                                                                                                                     |
+| ---------- | -------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `password` | string \| null | `null`  | The password required to log in to the web interface. If `null`, no password is set and you will need to configure one.                                                                                                                                                                                                                         |
+| `authKey`  | string \| null | `null`  | The secret key used for signing authentication tokens (JWT). <br> - If `null`, a random key is generated on every startup, which invalidates existing login sessions upon restart.<br> - Set this to a random string to persist sessions across server restarts.<br> **If you are unsure what this does, keeping it as `null` is recommended.** |
