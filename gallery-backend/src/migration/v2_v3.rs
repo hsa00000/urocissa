@@ -25,9 +25,9 @@ pub fn migrate_v2_to_v4(old_db_path: &str, write_txn: &redb::WriteTransaction) -
         redb_old::Database::open(old_db_path).context("Failed to open old database file.")?;
     let read_txn = old_db.begin_read()?;
 
-    let old_data_table = read_txn.open_table(redb_old::TableDefinition::<&str, V2Database>::new(
-        "database",
-    ))?;
+    let old_data_table = read_txn.open_table(
+        redb_old::TableDefinition::<&str, V2Database>::new("database"),
+    )?;
     let old_album_table =
         read_txn.open_table(redb_old::TableDefinition::<&str, V2Album>::new("album"))?;
 

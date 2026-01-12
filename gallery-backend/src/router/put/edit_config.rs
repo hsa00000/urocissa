@@ -80,35 +80,38 @@ pub async fn update_password_handler(
     spawn_blocking(move || -> Result<Status, AppError> {
         // 1. Get current config
         let mut current_config = APP_CONFIG.get().unwrap().read().unwrap().clone();
-        
+
         // 2. Verify old password
         if req_data.old_password != current_config.private.password {
             // Using ErrorKind::InvalidInput (HTTP 400) to prevent frontend redirect (which happens on 401)
-            return Err(AppError::new(ErrorKind::InvalidInput, "Incorrect current password"));
+            return Err(AppError::new(
+                ErrorKind::InvalidInput,
+                "Incorrect current password",
+            ));
         }
 
         // 3. Update password
         if let Some(pwd) = req_data.password {
-             let trimmed_pwd = pwd.trim().to_string();
-             if trimmed_pwd.is_empty() {
-                 current_config.private.password = None;
-             } else {
-                 current_config.private.password = Some(trimmed_pwd);
-             }
+            let trimmed_pwd = pwd.trim().to_string();
+            if trimmed_pwd.is_empty() {
+                current_config.private.password = None;
+            } else {
+                current_config.private.password = Some(trimmed_pwd);
+            }
         } else {
             // Explicitly requested to remove password?
             // If the frontend sends null/None, it usually means "don't change" or "remove"?
             // In our previous logic, we used empty string to remove.
             // Let's stick to: "If you call this endpoint, you are updating the password."
-            // If `password` is None, we'll treat it as "Remove password" for safety/clarity, 
+            // If `password` is None, we'll treat it as "Remove password" for safety/clarity,
             // OR we can decide based on frontend.
-            // Let's assume frontend sends Some("") to remove. 
+            // Let's assume frontend sends Some("") to remove.
             // If frontend sends None, we do nothing? No, this endpoint is specific for updating password.
             // Let's assume:
             // Some(pwd) -> update (or remove if empty)
             // None -> remove? Or Error?
             // Let's default to "None = Remove" to be consistent with "optional string".
-             current_config.private.password = None;
+            current_config.private.password = None;
         }
 
         // 4. Update
@@ -122,4 +125,3 @@ pub async fn update_password_handler(
     .await
     .or_raise(|| (ErrorKind::Internal, "Task join error"))?
 }
-

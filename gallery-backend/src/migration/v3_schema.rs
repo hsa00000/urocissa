@@ -1,9 +1,9 @@
 #![allow(clippy::struct_excessive_bools)]
 use arrayvec::ArrayString;
 use bitcode::{Decode, Encode};
+use redb::{TypeName, Value};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap, HashSet};
-use redb::{TypeName, Value};
 
 // ==================================================================================
 // Object Type & Schema

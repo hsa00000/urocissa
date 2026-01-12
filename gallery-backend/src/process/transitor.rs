@@ -1,8 +1,7 @@
 use crate::{
     operations::transitor::{hash_to_abstract_data, index_to_hash},
     public::{
-        db::tree_snapshot::read_tree_snapshot::MyCow,
-        structure::abstract_data::AbstractData,
+        db::tree_snapshot::read_tree_snapshot::MyCow, structure::abstract_data::AbstractData,
     },
 };
 use anyhow::{Result, anyhow};

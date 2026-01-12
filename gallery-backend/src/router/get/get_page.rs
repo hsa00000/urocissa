@@ -1,32 +1,35 @@
+use crate::public::error::{AppError, ErrorKind, ResultExt};
+use crate::router::AppResult;
 use rocket::fs::NamedFile;
 use rocket::http::Status;
 use rocket::response::{Redirect, content};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
-use crate::router::AppResult;
-use crate::public::error::{AppError, ErrorKind, ResultExt};
 
+#[cfg(feature = "embed-frontend")]
+use crate::public::embedded::FrontendAssets;
 #[cfg(feature = "embed-frontend")]
 use rocket::http::ContentType;
 #[cfg(feature = "embed-frontend")]
 use std::borrow::Cow;
-#[cfg(feature = "embed-frontend")]
-use crate::public::embedded::FrontendAssets;
 
 pub static INDEX_HTML: LazyLock<String> = LazyLock::new(|| {
     #[cfg(feature = "embed-frontend")]
     {
         if let Some(file) = FrontendAssets::get("index.html") {
-            return std::str::from_utf8(&file.data).expect("index.html is not valid UTF-8").to_string();
+            return std::str::from_utf8(&file.data)
+                .expect("index.html is not valid UTF-8")
+                .to_string();
         }
     }
-    
+
     let prod_path = Path::new("index.html");
     if prod_path.exists() {
         fs::read_to_string(prod_path).expect("Unable to read index.html from current directory")
     } else {
-        fs::read_to_string("../gallery-frontend/dist/index.html").expect("Unable to read index.html from dev path")
+        fs::read_to_string("../gallery-frontend/dist/index.html")
+            .expect("Unable to read index.html from dev path")
     }
 });
 
@@ -52,12 +55,10 @@ impl<'r> rocket::response::Responder<'r, 'static> for FrontendResponse {
         match self {
             FrontendResponse::File(f) => f.respond_to(request),
             #[cfg(feature = "embed-frontend")]
-            FrontendResponse::Embedded(ct, data) => {
-                rocket::response::Response::build()
-                    .header(ct)
-                    .sized_body(data.len(), std::io::Cursor::new(data))
-                    .ok()
-            }
+            FrontendResponse::Embedded(ct, data) => rocket::response::Response::build()
+                .header(ct)
+                .sized_body(data.len(), std::io::Cursor::new(data))
+                .ok(),
         }
     }
 }
@@ -72,7 +73,10 @@ async fn serve_file(filename: &str) -> AppResult<FrontendResponse> {
             return Ok(FrontendResponse::Embedded(ct, asset.data));
         }
         // If not found in embedded, fallback to error (or disk if you want mixed mode)
-        return Err(AppError::new(ErrorKind::NotFound, format!("Embedded file not found: {}", filename)));
+        return Err(AppError::new(
+            ErrorKind::NotFound,
+            format!("Embedded file not found: {}", filename),
+        ));
     }
 
     #[cfg(not(feature = "embed-frontend"))]
@@ -84,7 +88,6 @@ async fn serve_file(filename: &str) -> AppResult<FrontendResponse> {
             .or_raise(|| (ErrorKind::IO, format!("Failed to open {filename}")))
     }
 }
-
 
 #[get("/")]
 pub fn redirect_to_photo() -> content::RawHtml<String> {
@@ -224,6 +227,3 @@ pub async fn sregister_sw() -> AppResult<FrontendResponse> {
 pub async fn service_worker() -> AppResult<FrontendResponse> {
     serve_file("serviceWorker.js").await
 }
-
-
-

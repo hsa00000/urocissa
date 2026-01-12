@@ -5,9 +5,9 @@
 
 use arrayvec::ArrayString;
 use bitcode::{Decode, Encode};
+use redb_old::{TypeName, Value};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap, HashSet};
-use redb_old::{TypeName, Value};
 
 #[derive(Debug, Clone, Deserialize, Default, Serialize, Decode, Encode, PartialEq, Eq)]
 pub struct Database {
@@ -116,9 +116,7 @@ impl Value for Album {
     }
 }
 
-#[derive(
-    Debug, Clone, Deserialize, Default, Serialize, Decode, Encode, PartialEq, Eq, Hash,
-)]
+#[derive(Debug, Clone, Deserialize, Default, Serialize, Decode, Encode, PartialEq, Eq, Hash)]
 #[serde(rename_all = "camelCase")]
 pub struct OldShare {
     pub url: ArrayString<64>,

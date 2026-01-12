@@ -5,7 +5,7 @@ use rocket::http::ContentType;
 use rocket::serde::json::Json;
 
 // Import PublicConfig
-use crate::public::structure::config::{PublicConfig, APP_CONFIG};
+use crate::public::structure::config::{APP_CONFIG, PublicConfig};
 use crate::router::fairing::guard_auth::GuardAuth;
 use crate::router::fairing::guard_share::GuardShare;
 use serde::Serialize;
@@ -32,7 +32,6 @@ pub fn get_config_handler(auth: GuardResult<GuardShare>) -> AppResult<Json<Publi
     };
     Ok(Json(response))
 }
-
 
 #[get("/get/config/export")]
 pub fn export_config_handler(auth: GuardResult<GuardAuth>) -> AppResult<(ContentType, String)> {

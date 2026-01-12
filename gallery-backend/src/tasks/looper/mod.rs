@@ -30,7 +30,7 @@ pub fn start_expire_check_loop() {
                 }
                 _ = rx.recv() => {
                     // Received reset signal, restart the timer
-                    
+
                 }
             }
         }

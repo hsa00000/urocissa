@@ -6,11 +6,11 @@ use rocket::request::{FromRequest, Outcome};
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 
+use crate::public::error::{AppError, ErrorKind, ResultExt};
+use crate::public::structure::config::APP_CONFIG;
 use crate::router::claims::claims_timestamp::ClaimsTimestamp;
 use crate::router::fairing::VALIDATION;
-use crate::public::structure::config::APP_CONFIG;
-use crate::router::{AppResult, GuardError, GuardResult};
-use crate::public::error::{AppError, ErrorKind, ResultExt}; // Import AppError stuff
+use crate::router::{AppResult, GuardError, GuardResult}; // Import AppError stuff
 
 use super::VALIDATION_ALLOW_EXPIRED;
 use super::auth_utils::{extract_bearer_token, my_decode_token};
@@ -27,18 +27,22 @@ impl<'r> FromRequest<'r> for GuardTimestamp {
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         let token = match extract_bearer_token(req) {
             Ok(token) => token,
-            Err(err) => return Outcome::Error((
-                Status::Unauthorized,
-                AppError::from_err(ErrorKind::Auth, err)
-            )),
+            Err(err) => {
+                return Outcome::Error((
+                    Status::Unauthorized,
+                    AppError::from_err(ErrorKind::Auth, err),
+                ));
+            }
         };
 
         let claims: ClaimsTimestamp = match my_decode_token(token, &VALIDATION) {
             Ok(claims) => claims,
-            Err(err) => return Outcome::Error((
-                Status::Unauthorized,
-                AppError::from_err(ErrorKind::Auth, err)
-            )),
+            Err(err) => {
+                return Outcome::Error((
+                    Status::Unauthorized,
+                    AppError::from_err(ErrorKind::Auth, err),
+                ));
+            }
         };
 
         let query_timestamp = req.uri().query().and_then(|query| {
@@ -51,7 +55,10 @@ impl<'r> FromRequest<'r> for GuardTimestamp {
         let Some(query_timestamp) = query_timestamp else {
             return Outcome::Error((
                 Status::Unauthorized,
-                AppError::new(ErrorKind::Auth, "No valid 'timestamp' parameter found in the query"),
+                AppError::new(
+                    ErrorKind::Auth,
+                    "No valid 'timestamp' parameter found in the query",
+                ),
             ));
         };
 
@@ -60,7 +67,10 @@ impl<'r> FromRequest<'r> for GuardTimestamp {
                 "Timestamp does not match; received: {}; expected: {}",
                 query_timestamp, claims.timestamp
             );
-            return Outcome::Error((Status::Unauthorized, AppError::new(ErrorKind::Auth, "Timestamp mismatch")));
+            return Outcome::Error((
+                Status::Unauthorized,
+                AppError::new(ErrorKind::Auth, "Timestamp mismatch"),
+            ));
         }
 
         Outcome::Success(GuardTimestamp { claims })
@@ -93,15 +103,23 @@ pub async fn renew_timestamp_token(
         let token = token_request.into_inner().token;
         let token_data = match decode::<ClaimsTimestamp>(
             &token,
-            &DecodingKey::from_secret(&APP_CONFIG.get().unwrap().read().unwrap().get_jwt_secret_key()),
+            &DecodingKey::from_secret(
+                &APP_CONFIG
+                    .get()
+                    .unwrap()
+                    .read()
+                    .unwrap()
+                    .get_jwt_secret_key(),
+            ),
             &VALIDATION_ALLOW_EXPIRED,
         ) {
             Ok(data) => data,
             Err(err) => {
-                warn!(
-                    "Token renewal failed: unable to decode token, error: {err:#?}"
-                );
-                return Err(AppError::new(ErrorKind::Auth, "Unauthorized: Invalid token"));
+                warn!("Token renewal failed: unable to decode token, error: {err:#?}");
+                return Err(AppError::new(
+                    ErrorKind::Auth,
+                    "Unauthorized: Invalid token",
+                ));
             }
         };
 

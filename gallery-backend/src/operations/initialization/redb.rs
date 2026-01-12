@@ -1,5 +1,5 @@
-use std::fs;
 use crate::public::constant::storage::get_data_path;
+use std::fs;
 
 pub fn initialize_file() {
     let root = get_data_path();

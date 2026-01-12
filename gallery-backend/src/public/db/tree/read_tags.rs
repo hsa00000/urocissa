@@ -2,8 +2,8 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::{
     public::constant::redb::DATA_TABLE,
-    public::structure::{abstract_data::AbstractData, album::AlbumCombined},
     public::error::{AppError, ErrorKind, ResultExt}, // Import AppError stuff
+    public::structure::{abstract_data::AbstractData, album::AlbumCombined},
 };
 use anyhow::Result; // Use standard Result or alias? Standard Result<T, E> is fine.
 // But we want to return Result<Vec<...>, AppError>
@@ -60,7 +60,12 @@ impl Tree {
             .open_table(DATA_TABLE)
             .or_raise(|| (ErrorKind::Database, "Failed to open DATA_TABLE"))?
             .iter()
-            .or_raise(|| (ErrorKind::Database, "Failed to create iterator over DATA_TABLE"))?
+            .or_raise(|| {
+                (
+                    ErrorKind::Database,
+                    "Failed to create iterator over DATA_TABLE",
+                )
+            })?
             .par_bridge()
             .filter_map(|entry| {
                 entry
@@ -74,6 +79,11 @@ impl Tree {
                     .transpose()
             })
             .collect::<Result<Vec<_>, _>>()
-            .or_raise(|| (ErrorKind::Database, "Failed to collect album records in parallel"))
+            .or_raise(|| {
+                (
+                    ErrorKind::Database,
+                    "Failed to collect album records in parallel",
+                )
+            })
     }
 }

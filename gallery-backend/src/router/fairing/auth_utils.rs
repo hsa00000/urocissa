@@ -1,19 +1,19 @@
 // src/router/fairing/auth_utils.rs
 use crate::public::constant::redb::DATA_TABLE;
 use crate::public::db::tree::TREE;
+use crate::public::error::{AppError, ErrorKind};
 use crate::public::structure::abstract_data::AbstractData;
 use crate::public::structure::album::{ResolvedShare, Share};
 use crate::public::structure::config::APP_CONFIG;
 use crate::router::claims::claims::Claims;
 use anyhow::{Error, Result, anyhow};
 use arrayvec::ArrayString;
+use chrono::Utc;
 use jsonwebtoken::{DecodingKey, Validation, decode};
 use log::info;
 use redb::ReadableDatabase;
 use rocket::Request;
 use serde::de::DeserializeOwned;
-use chrono::Utc;
-use crate::public::error::{AppError, ErrorKind};
 
 // Error types for share validation are now handled by AppError
 
@@ -60,7 +60,15 @@ pub fn my_decode_token<T: DeserializeOwned>(token: &str, validation: &Validation
 /// Try to authenticate via JWT cookie and check if user is admin
 pub fn try_jwt_cookie_auth(req: &Request<'_>, validation: &Validation) -> Result<Claims> {
     // If no password is set, allow access as admin
-    if APP_CONFIG.get().unwrap().read().unwrap().private.password.is_none() {
+    if APP_CONFIG
+        .get()
+        .unwrap()
+        .read()
+        .unwrap()
+        .private
+        .password
+        .is_none()
+    {
         return Ok(Claims::new_admin());
     }
 
@@ -98,7 +106,10 @@ fn validate_share_access(share: &Share, req: &Request<'_>) -> Result<(), AppErro
         let now = Utc::now().timestamp_millis() / 1000;
 
         if now > share.exp {
-            return Err(AppError::new(ErrorKind::PermissionDenied, "Share link expired"));
+            return Err(AppError::new(
+                ErrorKind::PermissionDenied,
+                "Share link expired",
+            ));
         }
     }
 
@@ -106,11 +117,15 @@ fn validate_share_access(share: &Share, req: &Request<'_>) -> Result<(), AppErro
     if let Some(ref pwd) = share.password {
         // Check Header: x-share-password
         if let Some(header_pwd) = req.headers().get_one("x-share-password")
-            && header_pwd == pwd {
-                return Ok(());
-            }
+            && header_pwd == pwd
+        {
+            return Ok(());
+        }
 
-        return Err(AppError::new(ErrorKind::Auth, "Share password required or incorrect"));
+        return Err(AppError::new(
+            ErrorKind::Auth,
+            "Share password required or incorrect",
+        ));
     }
 
     Ok(())
@@ -126,22 +141,36 @@ fn resolve_share_internal(
             .context("Failed to begin read transaction")
     })?;
 
-    let table = read_txn
-        .open_table(DATA_TABLE)
-        .map_err(|e| AppError::from_err(ErrorKind::Database, e.into()).context("Failed to open data table"))?;
+    let table = read_txn.open_table(DATA_TABLE).map_err(|e| {
+        AppError::from_err(ErrorKind::Database, e.into()).context("Failed to open data table")
+    })?;
 
     let data_guard = table
         .get(album_id)
-        .map_err(|e| AppError::from_err(ErrorKind::Database, e.into()).context("Failed to get data from table"))?
-        .ok_or_else(|| AppError::new(ErrorKind::NotFound, format!("Album not found for id '{album_id}'")))?;
+        .map_err(|e| {
+            AppError::from_err(ErrorKind::Database, e.into())
+                .context("Failed to get data from table")
+        })?
+        .ok_or_else(|| {
+            AppError::new(
+                ErrorKind::NotFound,
+                format!("Album not found for id '{album_id}'"),
+            )
+        })?;
 
     let abstract_data = data_guard.value();
     let AbstractData::Album(mut album) = abstract_data else {
-        return Err(AppError::new(ErrorKind::InvalidInput, format!("Data with id '{album_id}' is not an album")));
+        return Err(AppError::new(
+            ErrorKind::InvalidInput,
+            format!("Data with id '{album_id}' is not an album"),
+        ));
     };
 
     let share = album.metadata.share_list.remove(share_id).ok_or_else(|| {
-        AppError::new(ErrorKind::NotFound, format!("Share '{share_id}' not found in album '{album_id}'"))
+        AppError::new(
+            ErrorKind::NotFound,
+            format!("Share '{share_id}' not found in album '{album_id}'"),
+        )
     })?;
 
     // Validate share access (password and expiration)
@@ -165,8 +194,9 @@ pub fn try_resolve_share_from_headers(req: &Request<'_>) -> Result<Option<Claims
     match (album_id, share_id) {
         (None, None) => Ok(None),
 
-        (Some(_), None) | (None, Some(_)) => Err(AppError::new(ErrorKind::InvalidInput, 
-            "Both x-album-id and x-share-id must be provided together"
+        (Some(_), None) | (None, Some(_)) => Err(AppError::new(
+            ErrorKind::InvalidInput,
+            "Both x-album-id and x-share-id must be provided together",
         )),
 
         (Some(album_id), Some(share_id)) => resolve_share_internal(album_id, share_id, req),
@@ -181,14 +211,14 @@ pub fn try_resolve_share_from_query(req: &Request<'_>) -> Result<Option<Claims>,
     match (album_id, share_id) {
         (None, None) => Ok(None),
 
-        (Some(_), None) | (None, Some(_)) => Err(AppError::new(ErrorKind::InvalidInput,
-            "Both albumId and shareId must be provided together"
+        (Some(_), None) | (None, Some(_)) => Err(AppError::new(
+            ErrorKind::InvalidInput,
+            "Both albumId and shareId must be provided together",
         )),
 
         (Some(album_id), Some(share_id)) => resolve_share_internal(album_id, share_id, req),
     }
 }
-
 
 /// Try to authorize upload via share headers with upload permission
 pub fn try_authorize_upload_via_share(req: &Request<'_>) -> bool {

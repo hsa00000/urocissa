@@ -3,7 +3,7 @@ use crate::{
     public::constant::ROW_BATCH_NUMBER,
     public::structure::response::row::{DisplayElement, Row},
 };
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 
 impl TreeSnapshot {
     pub fn read_row(&'static self, row_index: usize, timestamp: i64) -> Result<Row> {

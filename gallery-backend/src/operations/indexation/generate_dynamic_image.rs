@@ -13,15 +13,17 @@ pub fn generate_dynamic_image(abstract_data: &AbstractData) -> Result<DynamicIma
         PathBuf::from(abstract_data.thumbnail_path())
     };
 
-    let dynamic_image =
-        decode_image(&img_path).context(format!("failed to decode image: {}", img_path.display()))?;
+    let dynamic_image = decode_image(&img_path)
+        .context(format!("failed to decode image: {}", img_path.display()))?;
 
     Ok(dynamic_image)
 }
 
 fn decode_image(file_path: &PathBuf) -> Result<DynamicImage> {
-    let file_in_memory =
-        read(file_path).context(format!("failed to read file into memory: {}", file_path.display()))?;
+    let file_in_memory = read(file_path).context(format!(
+        "failed to read file into memory: {}",
+        file_path.display()
+    ))?;
 
     let decoders = vec![image_crate_decoder];
 

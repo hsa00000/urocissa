@@ -1,19 +1,19 @@
 use crate::operations::indexation::generate_dynamic_image::generate_dynamic_image;
 use crate::operations::indexation::generate_image_hash::{generate_phash, generate_thumbhash};
 use crate::operations::open_db::open_data_table;
+use crate::public::error::{AppError, ErrorKind, ResultExt};
 use crate::public::structure::abstract_data::AbstractData;
 use crate::router::{AppResult, GuardResult};
 use crate::tasks::batcher::flush_tree::FlushTreeTask;
-use crate::public::error::{AppError, ErrorKind, ResultExt};
 
 use crate::router::fairing::guard_auth::GuardAuth;
 use crate::router::fairing::guard_read_only_mode::GuardReadOnlyMode;
 use crate::tasks::INDEX_COORDINATOR;
 use anyhow::Result;
 use arrayvec::ArrayString;
+use log::info;
 use rocket::form::{Errors, Form};
 use rocket::fs::TempFile;
-use log::info;
 
 #[derive(FromForm, Debug)]
 pub struct RegenerateThumbnailForm<'r> {
@@ -51,7 +51,11 @@ pub async fn regenerate_thumbnail_with_frame(
         .map_err(|_| AppError::new(ErrorKind::InvalidInput, "Invalid hash length or format"))?;
 
     let root = crate::public::constant::storage::get_data_path();
-    let file_path = root.join(format!("object/compressed/{}/{}.jpg", &hash[0..2], hash.as_str()));
+    let file_path = root.join(format!(
+        "object/compressed/{}/{}.jpg",
+        &hash[0..2],
+        hash.as_str()
+    ));
 
     inner_form
         .frame
@@ -68,8 +72,8 @@ pub async fn regenerate_thumbnail_with_frame(
 
         let mut abstract_data = access_guard.value();
 
-        let dyn_img =
-            generate_dynamic_image(&abstract_data).or_raise(|| (ErrorKind::Internal, "Failed to decode DynamicImage"))?;
+        let dyn_img = generate_dynamic_image(&abstract_data)
+            .or_raise(|| (ErrorKind::Internal, "Failed to decode DynamicImage"))?;
 
         abstract_data.set_thumbhash(generate_thumbhash(&dyn_img));
         abstract_data.set_phash(generate_phash(&dyn_img));
@@ -88,4 +92,3 @@ pub async fn regenerate_thumbnail_with_frame(
     info!("Regenerating thumbnail successfully");
     Ok(())
 }
-

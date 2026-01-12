@@ -1,9 +1,6 @@
 use crate::{
     operations::open_db::open_data_table,
-    public::{
-        error_data::handle_error,
-        structure::abstract_data::AbstractData,
-    },
+    public::{error_data::handle_error, structure::abstract_data::AbstractData},
     tasks::{BATCH_COORDINATOR, batcher::flush_tree::FlushTreeTask},
 };
 use anyhow::Result;
@@ -59,17 +56,19 @@ fn deduplicate_task(task: &DeduplicateTask) -> Result<Option<AbstractData>> {
             }
         }
         if let Some(album_id) = task.presigned_album_id_opt
-            && let Some(albums) = data_exist.albums_mut() {
-                albums.insert(album_id);
-            }
+            && let Some(albums) = data_exist.albums_mut()
+        {
+            albums.insert(album_id);
+        }
         BATCH_COORDINATOR.execute_batch_detached(FlushTreeTask::insert(vec![data_exist]));
         warn!("File already exists in the database:\n{:#?}", abstract_data);
         Ok(None)
     } else {
         if let Some(album_id) = task.presigned_album_id_opt
-            && let Some(albums) = abstract_data.albums_mut() {
-                albums.insert(album_id);
-            }
+            && let Some(albums) = abstract_data.albums_mut()
+        {
+            albums.insert(album_id);
+        }
         Ok(Some(abstract_data))
     }
 }

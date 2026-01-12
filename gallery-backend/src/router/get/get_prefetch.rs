@@ -2,6 +2,7 @@ use crate::public::db::query_snapshot::QUERY_SNAPSHOT;
 use crate::public::db::tree::TREE;
 use crate::public::db::tree::VERSION_COUNT_TIMESTAMP;
 use crate::public::db::tree_snapshot::TREE_SNAPSHOT;
+use crate::public::error::{AppError, ErrorKind, ResultExt};
 use crate::public::structure::album::ResolvedShare;
 use crate::public::structure::expression::{AlbumFilterValue, Expression};
 use crate::public::structure::response::database_timestamp::DatabaseTimestamp;
@@ -11,7 +12,6 @@ use crate::router::GuardResult;
 use crate::router::claims::claims_timestamp::ClaimsTimestamp;
 use crate::router::fairing::guard_share::GuardShare;
 use crate::tasks::BATCH_COORDINATOR;
-use crate::public::error::{AppError, ErrorKind, ResultExt};
 
 use crate::tasks::batcher::flush_query_snapshot::FlushQuerySnapshotTask;
 use crate::tasks::batcher::flush_tree_snapshot::FlushTreeSnapshotTask;
@@ -112,7 +112,12 @@ fn filter_items(
 ) -> Result<Vec<ReducedData>, AppError> {
     let filter_items_start_time = Instant::now();
 
-    let tree_guard = TREE.in_memory.read().map_err(|err| AppError::new(ErrorKind::Internal, format!("Failed to read tree in memory: {err:?}")))?;
+    let tree_guard = TREE.in_memory.read().map_err(|err| {
+        AppError::new(
+            ErrorKind::Internal,
+            format!("Failed to read tree in memory: {err:?}"),
+        )
+    })?;
     let reduced_data_vector: Vec<ReducedData> = match (expression_option, resolved_share_option) {
         // If we have a resolved share then it must have a filter expression
         (Some(expr), Some(resolved_share)) => {
@@ -304,11 +309,14 @@ pub async fn prefetch(
 
     // Execute on blocking thread
     let job_handle = tokio::task::spawn_blocking(move || {
-        execute_prefetch_logic(combined_expression_option, locate.as_ref(), resolved_share_option)
+        execute_prefetch_logic(
+            combined_expression_option,
+            locate.as_ref(),
+            resolved_share_option,
+        )
     })
     .await
     .or_raise(|| (ErrorKind::Internal, "Failed to join blocking task"))??;
 
     Ok(job_handle)
 }
-

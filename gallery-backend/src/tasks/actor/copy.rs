@@ -45,7 +45,9 @@ fn copy_task(abstract_data: AbstractData) -> Result<AbstractData> {
 
     copy_with_retry(&source_path, &dest_path).with_context(|| {
         format!(
-            "failed to copy file from {} to {}", source_path.display(), dest_path.display()
+            "failed to copy file from {} to {}",
+            source_path.display(),
+            dest_path.display()
         )
     })?; // If it fails three times, it goes into the Err branch
 

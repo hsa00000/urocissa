@@ -1,11 +1,7 @@
 use mini_executor::BatchTask;
 
 use crate::{
-    public::{
-        constant::redb::DATA_TABLE,
-        db::tree::TREE,
-        structure::abstract_data::AbstractData,
-    },
+    public::{constant::redb::DATA_TABLE, db::tree::TREE, structure::abstract_data::AbstractData},
     tasks::{BATCH_COORDINATOR, batcher::update_tree::UpdateTreeTask},
 };
 

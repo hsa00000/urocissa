@@ -12,7 +12,7 @@ pub fn check_ffmpeg_and_ffprobe() {
     if let Ok(exe_path) = std::env::current_exe()
         && let Some(exe_dir) = exe_path.parent()
     {
-         bin_dirs.push(exe_dir.join("bin"));
+        bin_dirs.push(exe_dir.join("bin"));
     }
 
     // Prepend local bin directories to PATH for this process
@@ -25,14 +25,13 @@ pub fn check_ffmpeg_and_ffprobe() {
             }
         }
         let new_path = env::join_paths(paths).unwrap();
-        
+
         // SAFETY: Modifying PATH env var is generally unsafe in multi-threaded context,
         // but this is initialization code running before any threads are spawned.
         unsafe {
             env::set_var("PATH", new_path);
         }
     }
-
 
     for command in &["ffmpeg", "ffprobe"] {
         match Command::new(command).arg("-version").output() {

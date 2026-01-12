@@ -1,4 +1,4 @@
-use crate::router::{fairing::guard_auth::GuardAuth, AppResult, AppError, ErrorKind};
+use crate::router::{AppError, AppResult, ErrorKind, fairing::guard_auth::GuardAuth};
 use rocket::get;
 // use rocket::http::Status;
 use rocket::serde::json::Json;
@@ -16,53 +16,56 @@ pub struct FsCompletion {
 #[get("/get/path-completion?<path>")]
 pub fn get_fs_completion(_auth: GuardAuth, path: Option<String>) -> AppResult<Json<FsCompletion>> {
     let query = path.unwrap_or_default();
-    
+
     // If empty, return roots separated from current directory contents
     if query.trim().is_empty() {
         let roots = get_roots();
         let mut children = Vec::new();
-        
+
         // Add contents of current directory (./)
         // We ignore errors here as we have a fallback (roots)
         if let Ok(entries) = fs::read_dir(".") {
             for entry in entries.filter_map(std::result::Result::ok) {
                 let path = entry.path();
                 if path.is_dir()
-                    && let Some(path_str) = path.to_str() {
-                        children.push(path_str.to_string());
-                    }
+                    && let Some(path_str) = path.to_str()
+                {
+                    children.push(path_str.to_string());
+                }
             }
         }
 
         // Sort children
         children.sort_by_key(|a| a.to_lowercase());
         children.truncate(50);
-        
+
         return Ok(Json(FsCompletion {
             roots,
             children,
-            is_default: true
+            is_default: true,
         }));
     }
-    
+
     let path_obj = PathBuf::from(&query);
-    
+
     // Determine directory to list and the prefix to filter by
     // If query ends with separator, we list the contents of that directory
     // If not, we list the parent directory and filter by the file name
-    let (dir_to_read, prefix) = if query.ends_with('/') || (cfg!(windows) && query.ends_with('\\')) {
+    let (dir_to_read, prefix) = if query.ends_with('/') || (cfg!(windows) && query.ends_with('\\'))
+    {
         (path_obj.as_path(), "")
     } else {
         match path_obj.parent() {
-            Some(p) if !p.as_os_str().is_empty() => {
-                (p, path_obj.file_name().and_then(|s| s.to_str()).unwrap_or(""))
-            },
+            Some(p) if !p.as_os_str().is_empty() => (
+                p,
+                path_obj.file_name().and_then(|s| s.to_str()).unwrap_or(""),
+            ),
             _ => {
                 // Parent is empty (e.g. "foo" or "C").
                 // Search BOTH roots and current directory.
-                
+
                 let mut matches = Vec::new();
-                
+
                 // 1. Search Roots
                 let roots = get_roots();
                 for root in roots {
@@ -70,7 +73,7 @@ pub fn get_fs_completion(_auth: GuardAuth, path: Option<String>) -> AppResult<Js
                         matches.push(root);
                     }
                 }
-                
+
                 // 2. Search Current Directory
                 if let Ok(entries) = fs::read_dir(".") {
                     for entry in entries.filter_map(std::result::Result::ok) {
@@ -79,9 +82,10 @@ pub fn get_fs_completion(_auth: GuardAuth, path: Option<String>) -> AppResult<Js
                             // Check prefix match
                             let name = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
                             if name.to_lowercase().starts_with(&query.to_lowercase())
-                                && let Some(path_str) = path.to_str() {
-                                    matches.push(path_str.to_string());
-                                }
+                                && let Some(path_str) = path.to_str()
+                            {
+                                matches.push(path_str.to_string());
+                            }
                         }
                     }
                 }
@@ -89,18 +93,18 @@ pub fn get_fs_completion(_auth: GuardAuth, path: Option<String>) -> AppResult<Js
                 // Sort and limit
                 matches.sort_by_key(|a| a.to_lowercase());
                 matches.truncate(50);
-                
+
                 if matches.is_empty() {
                     return Err(AppError::new(ErrorKind::NotFound, "Directory not found"));
                 }
-                
-                // We return everything in 'children' because 'roots' is specifically for 
-                // the "default view" (unfiltered list of drives). 
+
+                // We return everything in 'children' because 'roots' is specifically for
+                // the "default view" (unfiltered list of drives).
                 // When filtering, a flat list of matches is usually better UX.
                 return Ok(Json(FsCompletion {
                     roots: vec![],
                     children: matches,
-                    is_default: false
+                    is_default: false,
                 }));
             }
         }
@@ -108,14 +112,14 @@ pub fn get_fs_completion(_auth: GuardAuth, path: Option<String>) -> AppResult<Js
 
     let entries = fs::read_dir(dir_to_read).map_err(|e| {
         if e.kind() == std::io::ErrorKind::NotFound {
-             AppError::new(ErrorKind::NotFound, "Directory not found")
+            AppError::new(ErrorKind::NotFound, "Directory not found")
         } else {
-             AppError::from_err(ErrorKind::IO, e.into())
+            AppError::from_err(ErrorKind::IO, e.into())
         }
     })?;
 
     let mut suggestions = Vec::new();
-    
+
     for entry in entries.filter_map(std::result::Result::ok) {
         let path = entry.path();
         if path.is_dir() {
@@ -145,7 +149,7 @@ pub fn get_fs_completion(_auth: GuardAuth, path: Option<String>) -> AppResult<Js
     Ok(Json(FsCompletion {
         roots: vec![],
         children: suggestions,
-        is_default: false
+        is_default: false,
     }))
 }
 
@@ -164,4 +168,3 @@ fn get_roots() -> Vec<String> {
         vec!["/".to_string()]
     }
 }
-

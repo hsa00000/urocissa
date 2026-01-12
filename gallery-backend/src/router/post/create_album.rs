@@ -16,9 +16,9 @@ use crate::public::structure::abstract_data::AbstractData;
 use crate::router::GuardResult;
 use crate::tasks::actor::album::AlbumSelfUpdateTask;
 
+use crate::public::error::{AppError, ErrorKind, ResultExt};
 use crate::public::structure::album::Album;
 use crate::router::AppResult;
-use crate::public::error::{AppError, ErrorKind, ResultExt};
 use crate::router::fairing::guard_auth::GuardAuth;
 use crate::router::fairing::guard_read_only_mode::GuardReadOnlyMode;
 use crate::tasks::BATCH_COORDINATOR;
@@ -89,17 +89,18 @@ async fn create_album_elements(
     elements_index: Vec<usize>,
     timestamp: i64,
 ) -> Result<(), AppError> {
-    let element_batch = tokio::task::spawn_blocking(move || -> Result<Vec<AbstractData>, AppError> {
-        let tree_snapshot = open_tree_snapshot_table(timestamp)
-             .or_raise(|| (ErrorKind::Database, "Failed to open tree snapshot"))?;
-        let data_table = open_data_table();
-        elements_index
-            .into_par_iter()
-            .map(|idx| index_edit_album_insert(&tree_snapshot, &data_table, idx, album_id))
-            .collect()
-    })
-    .await
-    .or_raise(|| (ErrorKind::Internal, "Failed to join blocking task"))??;
+    let element_batch =
+        tokio::task::spawn_blocking(move || -> Result<Vec<AbstractData>, AppError> {
+            let tree_snapshot = open_tree_snapshot_table(timestamp)
+                .or_raise(|| (ErrorKind::Database, "Failed to open tree snapshot"))?;
+            let data_table = open_data_table();
+            elements_index
+                .into_par_iter()
+                .map(|idx| index_edit_album_insert(&tree_snapshot, &data_table, idx, album_id))
+                .collect()
+        })
+        .await
+        .or_raise(|| (ErrorKind::Internal, "Failed to join blocking task"))??;
 
     BATCH_COORDINATOR
         .execute_batch_waiting(FlushTreeTask::insert(element_batch))
@@ -123,11 +124,15 @@ pub fn index_edit_album_insert(
     index: usize,
     album_id: ArrayString<64>,
 ) -> Result<AbstractData, AppError> {
-    let mut abstract_data = index_to_abstract_data(tree_snapshot, data_table, index)
-        .or_raise(|| (ErrorKind::Database, format!("Failed to convert index {index} to abstract data")))?;
+    let mut abstract_data =
+        index_to_abstract_data(tree_snapshot, data_table, index).or_raise(|| {
+            (
+                ErrorKind::Database,
+                format!("Failed to convert index {index} to abstract data"),
+            )
+        })?;
     if let Some(albums) = abstract_data.albums_mut() {
         albums.insert(album_id);
     }
     Ok(abstract_data)
 }
-

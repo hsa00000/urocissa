@@ -26,14 +26,17 @@ fn read_exif(file_path: &Path) -> Result<exif::Exif> {
     let exif_reader = exif::Reader::new();
 
     // Reading the file into a buffered reader
-    let file =
-        std::fs::File::open(file_path).context(format!("failed to open file {}", file_path.display()))?;
+    let file = std::fs::File::open(file_path)
+        .context(format!("failed to open file {}", file_path.display()))?;
     let mut bufreader = io::BufReader::with_capacity(1024 * 1024, &file);
 
     // Parsing EXIF data
     let exif = exif_reader
         .read_from_container(&mut bufreader)
-        .context(format!("failed to read EXIF metadata from {}", file_path.display()))?;
+        .context(format!(
+            "failed to read EXIF metadata from {}",
+            file_path.display()
+        ))?;
 
     Ok(exif)
 }

@@ -130,8 +130,7 @@ impl TaskRow {
             .ok()
             .and_then(|v| v.parse().ok())
             .unwrap_or(4);
-        let cols = terminal_size()
-            .map_or(DEFAULT_COLS, |(Width(w), _)| w as usize);
+        let cols = terminal_size().map_or(DEFAULT_COLS, |(Width(w), _)| w as usize);
 
         // Calculate path column width and truncate
         let prefix_w = COL_STATUS + 3 + COL_HASH + 3;
@@ -290,8 +289,7 @@ impl Dashboard {
 impl Component for Dashboard {
     fn draw_unchecked(&self, _: Dimensions, _: DrawMode) -> Result<Lines> {
         // Determine terminal width, defaulting to 120 columns if unavailable
-        let cols = terminal_size()
-            .map_or(120, |(Width(w), _)| w as usize);
+        let cols = terminal_size().map_or(120, |(Width(w), _)| w as usize);
         let sep = "─".repeat(cols);
         let mut lines: Vec<Line> = Vec::new();
 

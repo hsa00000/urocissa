@@ -7,4 +7,3 @@ pub mod tui;
 
 #[cfg(feature = "embed-frontend")]
 pub mod embedded;
-

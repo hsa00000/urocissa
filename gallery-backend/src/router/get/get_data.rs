@@ -3,16 +3,15 @@
 use crate::operations::open_db::{open_data_table, open_tree_snapshot_table};
 use crate::operations::resolve_show_download_and_metadata;
 use crate::operations::transitor::{
-    abstract_data_to_database_timestamp_return,
-    hash_to_abstract_data, index_to_hash,
+    abstract_data_to_database_timestamp_return, hash_to_abstract_data, index_to_hash,
 };
 use crate::public::db::tree_snapshot::TREE_SNAPSHOT;
 use crate::public::structure::response::database_timestamp::DataBaseTimestampReturn;
 use crate::public::structure::response::row::{Row, ScrollBarData};
 
+use crate::public::error::{AppError, ErrorKind, ResultExt};
 use crate::router::fairing::guard_timestamp::GuardTimestamp;
 use crate::router::{AppResult, GuardResult};
-use crate::public::error::{AppError, ErrorKind, ResultExt};
 use anyhow::Result;
 use log::info;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
@@ -36,7 +35,7 @@ pub async fn get_data(
         let data_table = open_data_table();
         let tree_snapshot = open_tree_snapshot_table(timestamp)
             .or_raise(|| (ErrorKind::Database, "Failed to open tree snapshot table"))?;
-        
+
         end = end.min(tree_snapshot.len());
 
         if start >= end {
@@ -46,11 +45,19 @@ pub async fn get_data(
         let database_timestamp_return_list: Result<Vec<_>, AppError> = (start..end)
             .into_par_iter()
             .map(|index| {
-                let hash = index_to_hash(&tree_snapshot, index)
-                    .or_raise(|| (ErrorKind::Database, format!("Failed to map index {index} to hash")))?;
+                let hash = index_to_hash(&tree_snapshot, index).or_raise(|| {
+                    (
+                        ErrorKind::Database,
+                        format!("Failed to map index {index} to hash"),
+                    )
+                })?;
 
-                let abstract_data = hash_to_abstract_data(&data_table, hash)
-                     .or_raise(|| (ErrorKind::Database, format!("Failed to retrieve data for hash {hash}")))?;
+                let abstract_data = hash_to_abstract_data(&data_table, hash).or_raise(|| {
+                    (
+                        ErrorKind::Database,
+                        format!("Failed to retrieve data for hash {hash}"),
+                    )
+                })?;
 
                 let database_timestamp_return = abstract_data_to_database_timestamp_return(
                     abstract_data,
@@ -79,7 +86,8 @@ pub async fn get_rows(
     let _ = auth;
     tokio::task::spawn_blocking(move || {
         let start_time = Instant::now();
-        let filtered_rows = TREE_SNAPSHOT.read_row(index, timestamp)
+        let filtered_rows = TREE_SNAPSHOT
+            .read_row(index, timestamp)
             .or_raise(|| (ErrorKind::Database, "Failed to read row from snapshot"))?;
         let duration = format!("{:?}", start_time.elapsed());
         info!(duration = &*duration; "Read rows: index = {index}");
@@ -99,4 +107,3 @@ pub fn get_scroll_bar(
     let scrollbar_data = TREE_SNAPSHOT.read_scrollbar(timestamp);
     Json(scrollbar_data)
 }
-

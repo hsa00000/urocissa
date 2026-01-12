@@ -2,8 +2,7 @@ use crate::operations::open_db::open_data_table;
 use crate::router::{AppResult, GuardResult};
 // use crate::public::error::AppError;
 use crate::{
-    public::structure::abstract_data::AbstractData,
-    router::fairing::guard_auth::GuardAuth,
+    public::structure::abstract_data::AbstractData, router::fairing::guard_auth::GuardAuth,
 };
 use redb::ReadableTable;
 use rocket::get;
@@ -63,4 +62,3 @@ pub fn get_export(auth: GuardResult<GuardAuth>) -> AppResult<ByteStream![Vec<u8>
     };
     Ok(byte_stream)
 }
-

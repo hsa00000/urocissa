@@ -1,11 +1,11 @@
 // src/router/delete/delete_data.rs
 use crate::operations::open_db::{open_data_table, open_tree_snapshot_table};
 use crate::process::transitor::index_to_abstract_data;
+use crate::public::error::{AppError, ErrorKind, ResultExt};
 use crate::public::structure::abstract_data::AbstractData;
 use crate::router::fairing::guard_auth::GuardAuth;
 use crate::router::fairing::guard_read_only_mode::GuardReadOnlyMode;
 use crate::router::{AppResult, GuardResult};
-use crate::public::error::{AppError, ErrorKind, ResultExt};
 use crate::tasks::actor::album::AlbumSelfUpdateTask;
 use crate::tasks::batcher::flush_tree::FlushTreeTask;
 use crate::tasks::batcher::update_tree::UpdateTreeTask;
@@ -74,8 +74,13 @@ fn process_deletes(
     let mut abstract_data_to_remove = Vec::new();
 
     for index in delete_list {
-        let abstract_data = index_to_abstract_data(&tree_snapshot, &data_table, index)
-            .or_raise(|| (ErrorKind::Database, format!("Failed to retrieve data at index {index}")))?;
+        let abstract_data =
+            index_to_abstract_data(&tree_snapshot, &data_table, index).or_raise(|| {
+                (
+                    ErrorKind::Database,
+                    format!("Failed to retrieve data at index {index}"),
+                )
+            })?;
 
         let affected_albums = match &abstract_data {
             AbstractData::Image(img) => img.metadata.albums.iter().copied().collect(),
@@ -89,4 +94,3 @@ fn process_deletes(
 
     Ok((abstract_data_to_remove, all_affected_album_ids))
 }
-

@@ -1,7 +1,7 @@
 // src/router/claims/claims_hash.rs
 use arrayvec::ArrayString;
 use chrono::Utc;
-use jsonwebtoken::{encode, EncodingKey, Header};
+use jsonwebtoken::{EncodingKey, Header, encode};
 use serde::{Deserialize, Serialize};
 
 use crate::public::structure::config::APP_CONFIG;

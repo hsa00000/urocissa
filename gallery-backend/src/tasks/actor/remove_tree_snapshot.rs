@@ -1,6 +1,5 @@
 use crate::public::{
-    db::tree_snapshot::TREE_SNAPSHOT,
-    structure::response::reduced_data::ReducedData,
+    db::tree_snapshot::TREE_SNAPSHOT, structure::response::reduced_data::ReducedData,
 };
 use anyhow::Result;
 use mini_executor::Task;

@@ -1,15 +1,15 @@
+use crate::public::error::{AppError, ErrorKind};
 use crate::router::fairing::guard_auth::GuardAuth;
 use crate::router::fairing::guard_read_only_mode::GuardReadOnlyMode;
 use crate::router::{AppResult, GuardResult};
-use crate::public::error::{AppError, ErrorKind};
 use crate::tasks::BATCH_COORDINATOR;
 use crate::tasks::batcher::update_tree::UpdateTreeTask;
 use crate::{
     public::structure::abstract_data::AbstractData, tasks::batcher::flush_tree::FlushTreeTask,
 };
 
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use log::info;
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 #[get("/put/generate_random_data?<number>")]
 pub async fn generate_random_data(
@@ -31,4 +31,3 @@ pub async fn generate_random_data(
     info!("Insert random data complete");
     Ok(())
 }
-

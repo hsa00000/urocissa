@@ -3,10 +3,7 @@ use crate::{
     public::{
         constant::runtime::WORKER_RAYON_POOL,
         error_data::handle_error,
-        structure::{
-            abstract_data::AbstractData,
-            guard::PendingGuard,
-        },
+        structure::{abstract_data::AbstractData, guard::PendingGuard},
         tui::DASHBOARD,
     },
     tasks::{BATCH_COORDINATOR, batcher::flush_tree::FlushTreeTask},
@@ -43,7 +40,8 @@ pub fn video_task(mut abstract_data: AbstractData) -> Result<()> {
     match generate_compressed_video(&mut abstract_data) {
         Ok(()) => {
             abstract_data.set_pending(false);
-            BATCH_COORDINATOR.execute_batch_detached(FlushTreeTask::insert(vec![abstract_data.clone()]));
+            BATCH_COORDINATOR
+                .execute_batch_detached(FlushTreeTask::insert(vec![abstract_data.clone()]));
 
             DASHBOARD.advance_task_state(&hash);
         }

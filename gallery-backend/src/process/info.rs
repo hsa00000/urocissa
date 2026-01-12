@@ -27,8 +27,8 @@ pub fn process_image_info(abstract_data: &mut AbstractData) -> Result<()> {
     }
 
     // Decode image to DynamicImage
-    let mut dynamic_image =
-        generate_dynamic_image(abstract_data).context("failed to decode image into DynamicImage")?;
+    let mut dynamic_image = generate_dynamic_image(abstract_data)
+        .context("failed to decode image into DynamicImage")?;
 
     // Measure & possibly fix width/height
     let (width, height) = generate_image_width_height(&dynamic_image);
@@ -73,8 +73,8 @@ pub fn process_video_info(abstract_data: &mut AbstractData) -> Result<()> {
     }
 
     // Get logical dimensions and fix if rotated
-    let (width, height) =
-        generate_video_width_height(abstract_data).context("failed to obtain video width/height")?;
+    let (width, height) = generate_video_width_height(abstract_data)
+        .context("failed to obtain video width/height")?;
     abstract_data.set_width(width);
     abstract_data.set_height(height);
     fix_video_width_height(abstract_data);

@@ -1,9 +1,9 @@
 use crate::public::db::tree::TREE;
 use crate::public::db::tree::read_tags::TagInfo;
+use crate::public::error::AppError; // Import AppError
 use crate::public::structure::album::Share;
 use crate::router::fairing::guard_auth::GuardAuth;
 use crate::router::{AppResult, GuardResult};
-use crate::public::error::AppError; // Import AppError
 use arrayvec::ArrayString;
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
@@ -32,7 +32,9 @@ pub struct AlbumInfo {
 pub async fn get_albums(auth: GuardResult<GuardAuth>) -> AppResult<Json<Vec<AlbumInfo>>> {
     let _ = auth?;
     tokio::task::spawn_blocking(move || {
-        let album_list = TREE.read_albums().map_err(|e| e.context("Failed to read albums"))?;
+        let album_list = TREE
+            .read_albums()
+            .map_err(|e| e.context("Failed to read albums"))?;
         let album_info_list = album_list
             .into_iter()
             .map(|album| AlbumInfo {
@@ -46,4 +48,3 @@ pub async fn get_albums(auth: GuardResult<GuardAuth>) -> AppResult<Json<Vec<Albu
     .await
     .map_err(|e| AppError::from(anyhow::Error::from(e)))?
 }
-

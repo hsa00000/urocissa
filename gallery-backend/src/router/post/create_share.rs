@@ -1,8 +1,8 @@
 use crate::public::db::tree::TREE;
+use crate::public::error::{AppError, ErrorKind};
 use crate::public::structure::abstract_data::AbstractData;
 use crate::public::structure::album::Share;
 use crate::router::AppResult;
-use crate::public::error::{AppError, ErrorKind};
 use crate::router::fairing::guard_auth::GuardAuth;
 use crate::router::fairing::guard_read_only_mode::GuardReadOnlyMode;
 use crate::{public::constant::redb::DATA_TABLE, router::GuardResult};
@@ -37,10 +37,14 @@ pub async fn create_share(
     let _ = read_only_mode?;
     tokio::task::spawn_blocking(move || {
         let create_share = create_share.into_inner();
-        let txn = TREE.in_disk.begin_write().map_err(|e| AppError::from_err(ErrorKind::Database, e.into()))?;
+        let txn = TREE
+            .in_disk
+            .begin_write()
+            .map_err(|e| AppError::from_err(ErrorKind::Database, e.into()))?;
         match create_and_insert_share(&txn, create_share) {
             Ok(link) => {
-                txn.commit().map_err(|e| AppError::from_err(ErrorKind::Database, e.into()))?;
+                txn.commit()
+                    .map_err(|e| AppError::from_err(ErrorKind::Database, e.into()))?;
                 Ok(link)
             }
             Err(err) => Err(err),
@@ -51,7 +55,9 @@ pub async fn create_share(
 }
 
 fn create_and_insert_share(txn: &WriteTransaction, create_share: CreateShare) -> AppResult<String> {
-    let mut data_table = txn.open_table(DATA_TABLE).map_err(|e| AppError::from_err(ErrorKind::Database, e.into()))?;
+    let mut data_table = txn
+        .open_table(DATA_TABLE)
+        .map_err(|e| AppError::from_err(ErrorKind::Database, e.into()))?;
 
     let album_opt = data_table
         .get(&*create_share.album_id)
@@ -72,7 +78,8 @@ fn create_and_insert_share(txn: &WriteTransaction, create_share: CreateShare) ->
                 .take(64)
                 .map(char::from)
                 .collect();
-            let share_id = ArrayString::<64>::from(&link).map_err(|_| AppError::new(ErrorKind::Internal, "Failed to create share ID"))?;
+            let share_id = ArrayString::<64>::from(&link)
+                .map_err(|_| AppError::new(ErrorKind::Internal, "Failed to create share ID"))?;
             let share = Share {
                 url: share_id,
                 description: create_share.description,
@@ -83,10 +90,11 @@ fn create_and_insert_share(txn: &WriteTransaction, create_share: CreateShare) ->
                 exp: create_share.exp,
             };
             album.metadata.share_list.insert(share_id, share);
-            data_table.insert(&*create_share.album_id, AbstractData::Album(album)).map_err(|e| AppError::from_err(ErrorKind::Database, e.into()))?;
+            data_table
+                .insert(&*create_share.album_id, AbstractData::Album(album))
+                .map_err(|e| AppError::from_err(ErrorKind::Database, e.into()))?;
             Ok(link)
         }
         None => Err(AppError::new(ErrorKind::NotFound, "Album not found")),
     }
 }
-

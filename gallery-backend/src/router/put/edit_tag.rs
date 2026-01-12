@@ -1,11 +1,11 @@
 use crate::operations::open_db::{open_data_table, open_tree_snapshot_table};
 use crate::operations::transitor::index_to_hash;
 use crate::public::db::tree::read_tags::TagInfo;
+use crate::public::error::{AppError, ErrorKind, ResultExt};
 use crate::public::structure::abstract_data::AbstractData;
 use crate::router::fairing::guard_auth::GuardAuth;
 use crate::router::fairing::guard_read_only_mode::GuardReadOnlyMode;
 use crate::router::{AppResult, GuardResult};
-use crate::public::error::{AppError, ErrorKind, ResultExt};
 use crate::tasks::BATCH_COORDINATOR;
 use crate::tasks::batcher::flush_tree::FlushTreeTask;
 use crate::tasks::batcher::update_tree::UpdateTreeTask;
@@ -38,10 +38,17 @@ pub async fn edit_tag(
         let mut data_to_flush: Vec<AbstractData> = Vec::new();
 
         for &index in &json_data.index_array {
-            let hash = index_to_hash(&tree_snapshot, index)
-                .or_raise(|| (ErrorKind::Database, format!("Failed to get hash for index {index}")))?;
+            let hash = index_to_hash(&tree_snapshot, index).or_raise(|| {
+                (
+                    ErrorKind::Database,
+                    format!("Failed to get hash for index {index}"),
+                )
+            })?;
 
-            if let Some(guard) = data_table.get(&*hash).or_raise(|| (ErrorKind::Database, "Failed to get data"))? {
+            if let Some(guard) = data_table
+                .get(&*hash)
+                .or_raise(|| (ErrorKind::Database, "Failed to get data"))?
+            {
                 let mut abstract_data = guard.value();
 
                 // Apply tag additions and removals (only regular tags)
@@ -76,4 +83,3 @@ pub async fn edit_tag(
 
     Ok(Json(vec_tags_info))
 }
-

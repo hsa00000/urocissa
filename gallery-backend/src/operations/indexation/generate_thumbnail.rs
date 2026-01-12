@@ -32,8 +32,10 @@ pub fn generate_thumbnail_for_image(
     })?;
 
     // Ensure the directory exists
-    std::fs::create_dir_all(parent_path)
-        .context(format!("failed to create directory tree {}", parent_path.display()))?;
+    std::fs::create_dir_all(parent_path).context(format!(
+        "failed to create directory tree {}",
+        parent_path.display()
+    ))?;
 
     // Persist the thumbnail as JPEG
     thumbnail_image

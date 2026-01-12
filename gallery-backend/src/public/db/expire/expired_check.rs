@@ -1,7 +1,7 @@
 use chrono::Utc;
 
 // Import necessary modules and items
-use super::{Expire, EXPIRE_TABLE_DEFINITION};
+use super::{EXPIRE_TABLE_DEFINITION, Expire};
 use log::info;
 use redb::{ReadableDatabase, ReadableTable, ReadableTableMetadata};
 

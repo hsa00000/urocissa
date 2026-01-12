@@ -1,7 +1,7 @@
 use anyhow::{Error, Result};
 use log::warn;
 use std::fs::File;
-use std::path::{Path};
+use std::path::Path;
 use std::thread::sleep;
 use std::time::Duration;
 

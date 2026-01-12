@@ -5,14 +5,12 @@ use super::{Prefetch, QuerySnapshot};
 
 use crate::public::constant::storage::get_data_path;
 
-static QUERY_SNAPSHOT_IN_DISK: LazyLock<redb::Database> =
-    LazyLock::new(|| {
-        let path = get_data_path().join("db/cache_db.redb");
-        redb::Database::create(path).unwrap()
-    });
+static QUERY_SNAPSHOT_IN_DISK: LazyLock<redb::Database> = LazyLock::new(|| {
+    let path = get_data_path().join("db/cache_db.redb");
+    redb::Database::create(path).unwrap()
+});
 
-static QUERY_SNAPSHOT_IN_MEMORY: LazyLock<DashMap<u64, Prefetch>> =
-    LazyLock::new(DashMap::new);
+static QUERY_SNAPSHOT_IN_MEMORY: LazyLock<DashMap<u64, Prefetch>> = LazyLock::new(DashMap::new);
 
 impl QuerySnapshot {
     pub fn new() -> Self {

@@ -12,8 +12,6 @@ pub fn initialize() {
     // Ensure storage folders exist before trying to download FFmpeg into them
     initialize_folder();
 
-
     check_ffmpeg_and_ffprobe();
     initialize_file();
 }
-

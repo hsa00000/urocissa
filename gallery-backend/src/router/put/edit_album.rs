@@ -2,12 +2,12 @@ use crate::operations::open_db::{open_data_table, open_tree_snapshot_table};
 use crate::process::transitor::index_to_abstract_data;
 use crate::public::constant::redb::DATA_TABLE;
 use crate::public::db::tree::TREE;
+use crate::public::error::{AppError, ErrorKind, ResultExt};
 use crate::public::structure::abstract_data::AbstractData;
 use crate::router::fairing::guard_auth::GuardAuth;
 use crate::router::fairing::guard_read_only_mode::GuardReadOnlyMode;
 use crate::router::fairing::guard_share::GuardShare;
 use crate::router::{AppResult, GuardResult};
-use crate::public::error::{AppError, ErrorKind, ResultExt};
 use crate::tasks::actor::album::AlbumSelfUpdateTask;
 use crate::tasks::batcher::flush_tree::FlushTreeTask;
 use crate::tasks::batcher::update_tree::UpdateTreeTask;
@@ -48,8 +48,8 @@ pub async fn edit_album(
     let _ = auth?;
     let _ = read_only_mode?;
 
-    let (to_flush, unique_affected_albums) =
-        tokio::task::spawn_blocking(move || -> Result<(Vec<_>, Vec<ArrayString<64>>), AppError> {
+    let (to_flush, unique_affected_albums) = tokio::task::spawn_blocking(
+        move || -> Result<(Vec<_>, Vec<ArrayString<64>>), AppError> {
             let tree_snapshot = open_tree_snapshot_table(json_data.timestamp)
                 .or_raise(|| (ErrorKind::Database, "Failed to open tree snapshot"))?;
             let data_table = open_data_table();
@@ -57,7 +57,12 @@ pub async fn edit_album(
             let mut to_flush = Vec::with_capacity(json_data.index_array.len());
             for &index in &json_data.index_array {
                 let mut abstract_data = index_to_abstract_data(&tree_snapshot, &data_table, index)
-                    .or_raise(|| (ErrorKind::Database, format!("Failed to retrieve data at index {index}")))?;
+                    .or_raise(|| {
+                        (
+                            ErrorKind::Database,
+                            format!("Failed to retrieve data at index {index}"),
+                        )
+                    })?;
 
                 if let Some(albums) = abstract_data.albums_mut() {
                     for album_id in &json_data.add_albums_array {
@@ -81,9 +86,10 @@ pub async fn edit_album(
                 .collect();
 
             Ok((to_flush, unique_affected_albums))
-        })
-        .await
-        .or_raise(|| (ErrorKind::Internal, "Failed to join blocking task"))??;
+        },
+    )
+    .await
+    .or_raise(|| (ErrorKind::Internal, "Failed to join blocking task"))??;
 
     BATCH_COORDINATOR
         .execute_batch_waiting(FlushTreeTask::insert(to_flush))
@@ -133,18 +139,28 @@ pub async fn set_album_cover(
         let album_id = set_album_cover_inner.album_id;
         let cover_hash = set_album_cover_inner.cover_hash;
 
-        let txn = TREE.in_disk.begin_write().or_raise(|| (ErrorKind::Database, "Failed to begin transaction"))?;
+        let txn = TREE
+            .in_disk
+            .begin_write()
+            .or_raise(|| (ErrorKind::Database, "Failed to begin transaction"))?;
         {
-            let mut data_table = txn.open_table(DATA_TABLE).or_raise(|| (ErrorKind::Database, "Failed to open data table"))?;
+            let mut data_table = txn
+                .open_table(DATA_TABLE)
+                .or_raise(|| (ErrorKind::Database, "Failed to open data table"))?;
 
-            let album = data_table.get(&*album_id)
+            let album = data_table
+                .get(&*album_id)
                 .or_raise(|| (ErrorKind::Database, "Failed to get album"))?
                 .ok_or_else(|| AppError::new(ErrorKind::NotFound, "Album not found"))?
                 .value();
             let AbstractData::Album(mut album) = album else {
-                return Err(AppError::new(ErrorKind::InvalidInput, "Expected Album but got different type"));
+                return Err(AppError::new(
+                    ErrorKind::InvalidInput,
+                    "Expected Album but got different type",
+                ));
             };
-            let database = data_table.get(&*cover_hash)
+            let database = data_table
+                .get(&*cover_hash)
                 .or_raise(|| (ErrorKind::Database, "Failed to get cover image"))?
                 .ok_or_else(|| AppError::new(ErrorKind::NotFound, "Cover image not found"))?
                 .value();
@@ -154,7 +170,8 @@ pub async fn set_album_cover(
                 .insert(&*album_id, AbstractData::Album(album))
                 .or_raise(|| (ErrorKind::Database, "Failed to update album"))?;
         }
-        txn.commit().or_raise(|| (ErrorKind::Database, "Failed to commit transaction"))?;
+        txn.commit()
+            .or_raise(|| (ErrorKind::Database, "Failed to commit transaction"))?;
         Ok(())
     })
     .await
@@ -189,16 +206,25 @@ pub async fn set_album_title(
         let set_album_title_inner = set_album_title.into_inner();
         let album_id = set_album_title_inner.album_id;
 
-        let txn = TREE.in_disk.begin_write().or_raise(|| (ErrorKind::Database, "Failed to begin transaction"))?;
+        let txn = TREE
+            .in_disk
+            .begin_write()
+            .or_raise(|| (ErrorKind::Database, "Failed to begin transaction"))?;
         {
-            let mut data_table = txn.open_table(DATA_TABLE).or_raise(|| (ErrorKind::Database, "Failed to open data table"))?;
+            let mut data_table = txn
+                .open_table(DATA_TABLE)
+                .or_raise(|| (ErrorKind::Database, "Failed to open data table"))?;
 
-            let album = data_table.get(&*album_id)
+            let album = data_table
+                .get(&*album_id)
                 .or_raise(|| (ErrorKind::Database, "Failed to get album"))?
                 .ok_or_else(|| AppError::new(ErrorKind::NotFound, "Album not found"))?
                 .value();
             let AbstractData::Album(mut album) = album else {
-                return Err(AppError::new(ErrorKind::InvalidInput, "Expected Album but got different type"));
+                return Err(AppError::new(
+                    ErrorKind::InvalidInput,
+                    "Expected Album but got different type",
+                ));
             };
 
             album.metadata.title = set_album_title_inner.title;
@@ -206,7 +232,8 @@ pub async fn set_album_title(
                 .insert(&*album_id, AbstractData::Album(album))
                 .or_raise(|| (ErrorKind::Database, "Failed to update album"))?;
         }
-        txn.commit().or_raise(|| (ErrorKind::Database, "Failed to commit transaction"))?;
+        txn.commit()
+            .or_raise(|| (ErrorKind::Database, "Failed to commit transaction"))?;
         Ok(())
     })
     .await
@@ -219,4 +246,3 @@ pub async fn set_album_title(
 
     Ok(())
 }
-

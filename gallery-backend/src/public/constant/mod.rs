@@ -13,8 +13,7 @@ pub const MAX_COPY_RETRIES: u32 = 3;
 
 pub const MAX_DELETE_ATTEMPTS: u64 = 5;
 
-pub const SHOULD_SWAP_WIDTH_HEIGHT_ROTATION: &[&str] =
-    &["90", "-90", "270", "-270"];
+pub const SHOULD_SWAP_WIDTH_HEIGHT_ROTATION: &[&str] = &["90", "-90", "270", "-270"];
 
 pub const VALID_IMAGE_EXTENSIONS: &[&str] = &[
     "jpg", "jpeg", "jfif", "jpe", "png", "tif", "tiff", "webp", "bmp",

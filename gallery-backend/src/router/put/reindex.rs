@@ -7,10 +7,10 @@ use crate::process::info::regenerate_metadata_for_image;
 use crate::process::info::regenerate_metadata_for_video;
 use crate::public::constant::PROCESS_BATCH_NUMBER;
 use crate::public::db::tree_snapshot::TREE_SNAPSHOT;
+use crate::public::error::{ErrorKind, ResultExt};
 use crate::public::structure::abstract_data::AbstractData;
 use crate::router::AppResult;
 use crate::router::GuardResult;
-use crate::public::error::{ErrorKind, ResultExt};
 use crate::router::fairing::guard_auth::GuardAuth;
 use crate::router::fairing::guard_read_only_mode::GuardReadOnlyMode;
 use crate::tasks::BATCH_COORDINATOR;
@@ -19,9 +19,9 @@ use crate::tasks::actor::album::AlbumSelfUpdateTask;
 use crate::tasks::batcher::flush_tree::FlushTreeTask;
 use crate::tasks::batcher::update_tree::UpdateTreeTask;
 
+use log::{error, info};
 use rocket::serde::json::Json;
 use serde::Deserialize;
-use log::{info, error};
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -74,15 +74,12 @@ pub async fn reindex(
                             }
                             AbstractData::Album(_) => {
                                 // album_self_update already will commit
-                                INDEX_COORDINATOR
-                                    .execute_detached(AlbumSelfUpdateTask::new(hash));
+                                INDEX_COORDINATOR.execute_detached(AlbumSelfUpdateTask::new(hash));
                                 None
                             }
                         }
                     } else {
-                        error!(
-                            "Reindex failed: cannot find data with hash/id: {hash}"
-                        );
+                        error!("Reindex failed: cannot find data with hash/id: {hash}");
                         None
                     }
                 })
@@ -92,8 +89,7 @@ pub async fn reindex(
     })
     .await
     .or_raise(|| (ErrorKind::Internal, "Failed to join blocking task"))?;
-    
+
     BATCH_COORDINATOR.execute_batch_detached(UpdateTreeTask);
     Ok(Status::Ok)
 }
-

@@ -1,8 +1,8 @@
-use chrono::Utc;
 use crate::public::db::expire::{EXPIRE, EXPIRE_TABLE_DEFINITION};
 use crate::public::db::tree::VERSION_COUNT_TIMESTAMP;
 use crate::tasks::BATCH_COORDINATOR;
 use crate::tasks::batcher::expire_check::ExpireCheckTask;
+use chrono::Utc;
 use mini_executor::BatchTask;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
@@ -21,8 +21,8 @@ fn update_expire_task() {
 
     if last_timestamp > 0 {
         let expire_write_txn = EXPIRE.in_disk.begin_write().unwrap();
-        let new_expire_time =
-            current_timestamp.saturating_add(i64::try_from(Duration::from_secs(60 * 60).as_millis()).unwrap());
+        let new_expire_time = current_timestamp
+            .saturating_add(i64::try_from(Duration::from_secs(60 * 60).as_millis()).unwrap());
         {
             let mut expire_table = expire_write_txn
                 .open_table(EXPIRE_TABLE_DEFINITION)

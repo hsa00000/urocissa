@@ -1,6 +1,6 @@
 // src/router/claims/claims_timestamp.rs
 use chrono::Utc;
-use jsonwebtoken::{encode, EncodingKey, Header};
+use jsonwebtoken::{EncodingKey, Header, encode};
 use serde::{Deserialize, Serialize};
 
 use crate::public::structure::album::ResolvedShare;

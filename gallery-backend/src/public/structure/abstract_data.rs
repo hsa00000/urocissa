@@ -1,8 +1,8 @@
+use chrono::Utc;
 use std::collections::{BTreeMap, HashSet};
 use std::fs::metadata;
 use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
-use chrono::Utc;
 use std::time::UNIX_EPOCH;
 
 use anyhow::{Context, Result};
@@ -266,7 +266,8 @@ impl AbstractData {
             .ok_or_else(|| anyhow::anyhow!("Extension is not valid UTF-8: {}", path.display()))?
             .to_ascii_lowercase();
 
-        let md = metadata(path).with_context(|| format!("Failed to read metadata: {}", path.display()))?;
+        let md = metadata(path)
+            .with_context(|| format!("Failed to read metadata: {}", path.display()))?;
         let size = md.len();
 
         let modified_millis = md
@@ -388,9 +389,9 @@ impl AbstractData {
             }
             AbstractData::Album(_) => String::new(),
         };
-        
+
         if relative_path.is_empty() {
-             return String::new();
+            return String::new();
         }
 
         crate::public::constant::storage::get_data_path()
@@ -413,7 +414,11 @@ impl AbstractData {
     pub fn thumbnail_path(&self) -> String {
         let hash = self.hash();
         crate::public::constant::storage::get_data_path()
-            .join(format!("object/compressed/{}/{}.jpg", &hash.as_str()[0..2], hash))
+            .join(format!(
+                "object/compressed/{}/{}.jpg",
+                &hash.as_str()[0..2],
+                hash
+            ))
             .to_string_lossy()
             .into_owned()
     }

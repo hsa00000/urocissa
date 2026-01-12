@@ -42,22 +42,21 @@ pub fn album_task(album_id: ArrayString<64>) -> Result<()> {
     {
         let mut data_table = txn.open_table(DATA_TABLE)?;
 
-        let album_opt = data_table
-            .get(&*album_id)
-            .unwrap()
-            .and_then(|guard| {
-                let abstract_data = guard.value();
-                match abstract_data {
-                    AbstractData::Album(album) => Some(album),
-                    _ => None,
-                }
-            });
+        let album_opt = data_table.get(&*album_id).unwrap().and_then(|guard| {
+            let abstract_data = guard.value();
+            match abstract_data {
+                AbstractData::Album(album) => Some(album),
+                _ => None,
+            }
+        });
 
         if let Some(mut album) = album_opt {
             album.object.pending = true;
             album.self_update();
             album.object.pending = false;
-            data_table.insert(&*album_id, AbstractData::Album(album)).unwrap();
+            data_table
+                .insert(&*album_id, AbstractData::Album(album))
+                .unwrap();
         } else {
             // Album has been deleted
             let ref_data = TREE.in_memory.read().unwrap();

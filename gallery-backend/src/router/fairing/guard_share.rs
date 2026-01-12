@@ -6,9 +6,9 @@ use super::VALIDATION;
 use super::auth_utils::{
     try_jwt_cookie_auth, try_resolve_share_from_headers, try_resolve_share_from_query,
 };
+use crate::public::error::{AppError, ErrorKind};
 use crate::router::GuardError;
 use crate::router::claims::claims::Claims;
-use crate::public::error::{AppError, ErrorKind};
 
 pub struct GuardShare {
     pub claims: Claims,
@@ -45,11 +45,9 @@ impl<'r> FromRequest<'r> for GuardShare {
             Err(err) => {
                 return Outcome::Error((
                     Status::Unauthorized,
-                    AppError::from_err(ErrorKind::Auth, err)
-                        .context("Authentication error")
+                    AppError::from_err(ErrorKind::Auth, err).context("Authentication error"),
                 ));
             }
         }
     }
 }
-

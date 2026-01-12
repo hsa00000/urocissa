@@ -1,9 +1,9 @@
 use crate::public::constant::storage::get_data_path;
 use crate::public::constant::{VALID_IMAGE_EXTENSIONS, VALID_VIDEO_EXTENSIONS};
+use crate::public::error::{AppError, ErrorKind, ResultExt};
 use crate::router::fairing::guard_read_only_mode::GuardReadOnlyMode;
 use crate::router::fairing::guard_upload::GuardUpload;
 use crate::router::{AppResult, GuardResult};
-use crate::public::error::{AppError, ErrorKind, ResultExt};
 use crate::workflow::index_for_watch;
 use anyhow::Result;
 use arrayvec::ArrayString;
@@ -26,7 +26,9 @@ pub struct UploadForm<'r> {
 }
 
 fn get_filename(file: &TempFile<'_>) -> String {
-    file.name().map(std::string::ToString::to_string).unwrap_or_default()
+    file.name()
+        .map(std::string::ToString::to_string)
+        .unwrap_or_default()
 }
 
 #[post("/upload?<presigned_album_id_opt>", data = "<form>")]
@@ -53,13 +55,19 @@ pub async fn upload(
     };
 
     let album_id: Option<ArrayString<64>> = match presigned_album_id_opt {
-        Some(s) => Some(ArrayString::from(&s).map_err(|_| AppError::new(ErrorKind::InvalidInput, "Album ID exceeds 64 bytes"))?),
+        Some(s) => Some(
+            ArrayString::from(&s)
+                .map_err(|_| AppError::new(ErrorKind::InvalidInput, "Album ID exceeds 64 bytes"))?,
+        ),
         None => None,
     };
 
     // Ensure strict 1:1 mapping between files and metadata
     if inner_form.files.len() != inner_form.last_modified.len() {
-        return Err(AppError::new(ErrorKind::InvalidInput, "Mismatch between file count and timestamp count."));
+        return Err(AppError::new(
+            ErrorKind::InvalidInput,
+            "Mismatch between file count and timestamp count.",
+        ));
     }
 
     for (i, file) in inner_form.files.iter_mut().enumerate() {
@@ -76,7 +84,10 @@ pub async fn upload(
                 .or_raise(|| (ErrorKind::Internal, "Failed to index file"))?;
         } else {
             error!("Rejected invalid file type: {}", extension);
-            return Err(AppError::new(ErrorKind::InvalidInput, format!("Invalid file type: {extension}")));
+            return Err(AppError::new(
+                ErrorKind::InvalidInput,
+                format!("Invalid file type: {extension}"),
+            ));
         }
     }
 
@@ -95,12 +106,14 @@ async fn save_file(
     let unique_id = Uuid::new_v4();
     let root = get_data_path();
     let upload_dir = root.join("upload");
-    
+
     // Ensure upload directory exists (though it should be created at init)
     if !upload_dir.exists() {
-         std::fs::create_dir_all(&upload_dir).map_err(|e| AppError::new(ErrorKind::IO, format!("Failed to create upload dir: {e}")))?;
+        std::fs::create_dir_all(&upload_dir).map_err(|e| {
+            AppError::new(ErrorKind::IO, format!("Failed to create upload dir: {e}"))
+        })?;
     }
-    
+
     let tmp_path = upload_dir.join(format!("{filename}-{unique_id}.tmp"));
 
     // Move to a temp location first to avoid blocking the async runtime with IO
@@ -147,5 +160,3 @@ fn get_extension(file: &TempFile<'_>) -> Result<String, AppError> {
             AppError::new(ErrorKind::InvalidInput, "Missing or unknown file extension")
         })
 }
-
-

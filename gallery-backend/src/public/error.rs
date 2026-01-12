@@ -86,7 +86,7 @@ impl AppError {
         self.context.push(ctx.into());
         self
     }
-    
+
     pub fn from_err(kind: ErrorKind, err: anyhow::Error) -> Self {
         Self {
             kind,
@@ -147,14 +147,16 @@ impl<'r> Responder<'r, 'static> for AppError {
 
         // Log the error
         log::error!("API Error: {self}");
-        
-        // Also trigger the old handler for Discord notifications if needed
-        crate::public::error_data::handle_app_error(&self); 
 
-        rocket::serde::json::Json(self).respond_to(req).map(|mut res| {
-            res.set_status(status);
-            res
-        })
+        // Also trigger the old handler for Discord notifications if needed
+        crate::public::error_data::handle_app_error(&self);
+
+        rocket::serde::json::Json(self)
+            .respond_to(req)
+            .map(|mut res| {
+                res.set_status(status);
+                res
+            })
     }
 }
 
@@ -164,10 +166,11 @@ pub trait ResultExt<T> {
     where
         F: FnOnce() -> (ErrorKind, S),
         S: Into<String>;
-        
+
     #[allow(dead_code)]
     fn with_context<S>(self, ctx: S) -> Result<T, AppError>
-    where S: Into<String>;
+    where
+        S: Into<String>;
 }
 
 impl<T, E> ResultExt<T> for Result<T, E>
@@ -190,18 +193,17 @@ where
             }
         })
     }
-    
+
     fn with_context<S>(self, ctx: S) -> Result<T, AppError>
-    where S: Into<String>
+    where
+        S: Into<String>,
     {
-         self.map_err(|e| {
-            AppError {
-                kind: ErrorKind::Internal,
-                message: "An unexpected error occurred".to_string(),
-                status: ErrorStatus::Permanent,
-                context: vec![ctx.into()],
-                source: Some(e.into()),
-            }
+        self.map_err(|e| AppError {
+            kind: ErrorKind::Internal,
+            message: "An unexpected error occurred".to_string(),
+            status: ErrorStatus::Permanent,
+            context: vec![ctx.into()],
+            source: Some(e.into()),
         })
     }
 }
@@ -209,7 +211,7 @@ where
 // Extension trait for Option
 #[allow(dead_code)]
 pub trait OptionExt<T> {
-     fn or_raise<F, S>(self, op: F) -> Result<T, AppError>
+    fn or_raise<F, S>(self, op: F) -> Result<T, AppError>
     where
         F: FnOnce() -> (ErrorKind, S),
         S: Into<String>;
@@ -222,8 +224,8 @@ impl<T> OptionExt<T> for Option<T> {
         S: Into<String>,
     {
         self.ok_or_else(|| {
-             let (kind, msg) = op();
-             AppError::new(kind, msg)
+            let (kind, msg) = op();
+            AppError::new(kind, msg)
         })
     }
 }

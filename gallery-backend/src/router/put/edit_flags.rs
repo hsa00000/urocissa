@@ -1,10 +1,10 @@
 use crate::operations::open_db::{open_data_table, open_tree_snapshot_table};
 use crate::operations::transitor::index_to_hash;
+use crate::public::error::{AppError, ErrorKind, ResultExt};
 use crate::public::structure::abstract_data::AbstractData;
 use crate::router::fairing::guard_auth::GuardAuth;
 use crate::router::fairing::guard_read_only_mode::GuardReadOnlyMode;
 use crate::router::{AppResult, GuardResult};
-use crate::public::error::{AppError, ErrorKind, ResultExt};
 use crate::tasks::BATCH_COORDINATOR;
 use crate::tasks::actor::album::AlbumSelfUpdateTask;
 use crate::tasks::batcher::flush_tree::FlushTreeTask;
@@ -39,8 +39,8 @@ pub async fn edit_flags(
     // Check if trashed flag is being modified
     let is_trashed_involved = json_data.is_trashed.is_some();
 
-    let affected_album_ids = tokio::task::spawn_blocking(
-        move || -> Result<HashSet<ArrayString<64>>, AppError> {
+    let affected_album_ids =
+        tokio::task::spawn_blocking(move || -> Result<HashSet<ArrayString<64>>, AppError> {
             let data_table = open_data_table();
             let tree_snapshot = open_tree_snapshot_table(json_data.timestamp)
                 .or_raise(|| (ErrorKind::Database, "Failed to open tree snapshot"))?;
@@ -49,19 +49,25 @@ pub async fn edit_flags(
             let mut data_to_flush: Vec<AbstractData> = Vec::new();
 
             for &index in &json_data.index_array {
-                let hash = index_to_hash(&tree_snapshot, index)
-                    .or_raise(|| (ErrorKind::Database, format!("Failed to get hash for index {index}")))?;
+                let hash = index_to_hash(&tree_snapshot, index).or_raise(|| {
+                    (
+                        ErrorKind::Database,
+                        format!("Failed to get hash for index {index}"),
+                    )
+                })?;
 
-                if let Some(guard) = data_table.get(&*hash).or_raise(|| (ErrorKind::Database, "Failed to get data"))? {
+                if let Some(guard) = data_table
+                    .get(&*hash)
+                    .or_raise(|| (ErrorKind::Database, "Failed to get data"))?
+                {
                     let mut abstract_data = guard.value();
 
                     // If trashed is involved, record the albums this data belongs to
-                    if is_trashed_involved
-                        && let Some(albums) = abstract_data.albums() {
-                            for album_id in albums {
-                                affected_album_ids.insert(*album_id);
-                            }
+                    if is_trashed_involved && let Some(albums) = abstract_data.albums() {
+                        for album_id in albums {
+                            affected_album_ids.insert(*album_id);
                         }
+                    }
 
                     // Apply flag changes
                     if let Some(is_favorite) = json_data.is_favorite {
@@ -84,10 +90,9 @@ pub async fn edit_flags(
             }
 
             Ok(affected_album_ids)
-        },
-    )
-    .await
-    .or_raise(|| (ErrorKind::Internal, "Failed to join blocking task"))??;
+        })
+        .await
+        .or_raise(|| (ErrorKind::Internal, "Failed to join blocking task"))??;
 
     // Wait for the in-memory Tree to be updated
     BATCH_COORDINATOR
@@ -104,4 +109,3 @@ pub async fn edit_flags(
 
     Ok(Json(()))
 }
-

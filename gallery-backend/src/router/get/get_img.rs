@@ -35,26 +35,39 @@ pub async fn compressed_file(
     {
         Some("mp4") => SeekStream::from_path(&compressed_file_path)
             .map(CompressedFileResponse::SeekStream)
-            .or_raise(|| (ErrorKind::IO, format!(
-                "Failed to open MP4 file: {}",
-                compressed_file_path.display()
-            )))?,
+            .or_raise(|| {
+                (
+                    ErrorKind::IO,
+                    format!(
+                        "Failed to open MP4 file: {}",
+                        compressed_file_path.display()
+                    ),
+                )
+            })?,
         Some("jpg") => {
-            let named_file = NamedFile::open(&compressed_file_path)
-                .await
-                .or_raise(|| (ErrorKind::IO, format!(
-                    "Failed to open JPG file: {}",
-                    compressed_file_path.display()
-                )))?;
+            let named_file = NamedFile::open(&compressed_file_path).await.or_raise(|| {
+                (
+                    ErrorKind::IO,
+                    format!(
+                        "Failed to open JPG file: {}",
+                        compressed_file_path.display()
+                    ),
+                )
+            })?;
             CompressedFileResponse::NamedFile(named_file)
         }
         Some(ext) => {
-            return Err(AppError::new(ErrorKind::InvalidInput, format!("Unsupported file extension: {ext}"))
-                .context(format!("File path: {}", compressed_file_path.display())));
+            return Err(AppError::new(
+                ErrorKind::InvalidInput,
+                format!("Unsupported file extension: {ext}"),
+            )
+            .context(format!("File path: {}", compressed_file_path.display())));
         }
         None => {
-            return Err(AppError::new(ErrorKind::InvalidInput, "File has no extension")
-                .context(format!("File path: {}", compressed_file_path.display())));
+            return Err(
+                AppError::new(ErrorKind::InvalidInput, "File has no extension")
+                    .context(format!("File path: {}", compressed_file_path.display())),
+            );
         }
     };
 
@@ -74,6 +87,13 @@ pub async fn imported_file(
     NamedFile::open(&imported_file_path)
         .await
         .map(CompressedFileResponse::NamedFile)
-        .or_raise(|| (ErrorKind::IO, format!("Error opening imported file: {}", imported_file_path.display())))
+        .or_raise(|| {
+            (
+                ErrorKind::IO,
+                format!(
+                    "Error opening imported file: {}",
+                    imported_file_path.display()
+                ),
+            )
+        })
 }
-

@@ -9,9 +9,7 @@ pub fn blake3_hasher(mut file: File) -> Result<ArrayString<64>> {
     let mut buffer = vec![0u8; 512 * 1024];
 
     loop {
-        let n = file
-            .read(&mut buffer)
-            .context("Failed to read file")?;
+        let n = file.read(&mut buffer).context("Failed to read file")?;
         if n == 0 {
             break;
         }

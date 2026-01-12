@@ -19,8 +19,7 @@ use redb::{ReadableDatabase, ReadableTable, ReadableTableMetadata};
 
 /// Executes the migration from V3 to V4
 pub fn migrate_v3_to_v4(old_db_path: &str, write_txn: &redb::WriteTransaction) -> Result<()> {
-    let old_db =
-        redb::Database::open(old_db_path).context("Failed to open old database file.")?;
+    let old_db = redb::Database::open(old_db_path).context("Failed to open old database file.")?;
     let read_txn = old_db.begin_read()?;
 
     let table_def = redb::TableDefinition::<&str, AbstractDataOld>::new("database");

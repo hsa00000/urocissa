@@ -71,8 +71,10 @@ fn index_task(mut abstract_data: AbstractData) -> Result<AbstractData> {
     DASHBOARD.add_task(
         hash,
         newest_path.clone(),
-        FileType::try_from(abstract_data.ext_type())
-            .context(format!("unsupported file type: {}", abstract_data.ext_type()))?,
+        FileType::try_from(abstract_data.ext_type()).context(format!(
+            "unsupported file type: {}",
+            abstract_data.ext_type()
+        ))?,
     );
 
     // Branch processing based on file type

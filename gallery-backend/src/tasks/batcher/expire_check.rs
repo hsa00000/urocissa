@@ -64,9 +64,7 @@ fn expire_check_task() {
                         error!("Failed to delete query cache table: {timestamp}");
                     }
                     Err(err) => {
-                        error!(
-                            "Failed to delete query cache table: {timestamp}, error: {err:#?}"
-                        );
+                        error!("Failed to delete query cache table: {timestamp}, error: {err:#?}");
                     }
                 }
 

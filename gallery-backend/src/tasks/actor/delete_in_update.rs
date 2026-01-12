@@ -1,5 +1,5 @@
-use crate::public::constant::storage::get_data_path;
 use crate::public::constant::MAX_DELETE_ATTEMPTS;
+use crate::public::constant::storage::get_data_path;
 use crate::public::error_data::handle_error;
 use anyhow::Context;
 use anyhow::Result;
@@ -68,7 +68,8 @@ fn delete_in_upload_task(path: &PathBuf) -> Result<()> {
             }
             Err(err) => {
                 return Err(err).context(format!(
-                    "Failed deleting {} after {attempts} attempts", path.display()
+                    "Failed deleting {} after {attempts} attempts",
+                    path.display()
                 ));
             }
         }
