@@ -209,7 +209,7 @@ fn main() {
         info!("Rocket thread starting.");
         if let Err(e) = ROCKET_RUNTIME.block_on(async {
             let rocket = build_rocket().ignite().await?;
-            let _port = rocket.config().port;
+
             let shutdown_handle = rocket.shutdown();
 
             // Manually handle Ctrl-C to trigger graceful shutdown
@@ -223,7 +223,10 @@ fn main() {
             // Open browser after server starts listening
             let launch_future = rocket.launch();
             #[cfg(feature = "auto-open-browser")]
-            open_browser(port);
+            {
+                let port = rocket.config().port;
+                open_browser(port);
+            }
             launch_future.await.map_err(anyhow::Error::from)
         }) {
             error!("Rocket thread exited with an error: {}", e);
