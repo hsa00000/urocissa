@@ -90,6 +90,7 @@ const form = ref<VForm | null>(null)
 const localSettings = reactive<AppConfig>({
   readOnlyMode: false,
   disableImg: false,
+  hasPassword: false,
   authKey: '',
   discordHookUrl: '',
   syncPaths: [],
