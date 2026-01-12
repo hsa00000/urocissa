@@ -226,6 +226,8 @@ export const TokenResponseSchema = z.object({
 export const serverErrorSchema = z.object({
   kind: z.string().optional(),
   message: z.string().optional(),
+  status: z.string().optional(),
+  context: z.array(z.string()).optional(),
   error: z.string().optional(),
   chain: z.array(z.string()).optional()
 })
