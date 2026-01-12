@@ -254,7 +254,7 @@ pub fn construct_migrated_config() -> AppConfig {
     if let Ok(pwd) = std::env::var("PASSWORD")
         && !pwd.trim().is_empty()
     {
-        config.private.password = pwd;
+        config.private.password = Some(pwd);
         println!("Migrated PASSWORD from environment into PrivateConfig");
     }
 

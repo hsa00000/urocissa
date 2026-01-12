@@ -9,7 +9,7 @@ export interface AppConfig {
   // App settings
   readOnlyMode: boolean
   disableImg: boolean
-  password: string
+  // password is handled separately now
   authKey?: string | null
   discordHookUrl?: string | null
   syncPaths: string[]
@@ -20,8 +20,15 @@ export const getConfig = async (): Promise<AppConfig> => {
   return response.data
 }
 
-export const updateConfig = async (config: AppConfig & { oldPassword?: string }): Promise<void> => {
+export const updateConfig = async (config: AppConfig): Promise<void> => {
   await axios.put('/put/config', config)
+}
+
+export const updatePassword = async (oldPassword: string, newPassword?: string): Promise<void> => {
+    await axios.put('/put/config/password', {
+        oldPassword,
+        password: newPassword
+    })
 }
 
 export const exportConfig = async (): Promise<AppConfig> => {

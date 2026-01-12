@@ -7,11 +7,17 @@ use crate::router::claims::claims::Claims;
 
 #[post("/post/authenticate", data = "<password>")]
 pub fn authenticate(password: Json<String>) -> AppResult<Json<String>> {
-    let input_password = password.into_inner();
+    // Trim input password to match storage behavior
+    let input_password = password.into_inner().trim().to_string();
 
     let current_password = APP_CONFIG.get().unwrap().read().unwrap().private.password.clone();
 
-    if input_password == current_password {
+    let is_valid = match current_password {
+        Some(pwd) => input_password == pwd,
+        None => true,
+    };
+
+    if is_valid {
         let token = Claims::new_admin().encode();
         Ok(Json(token))
     } else {

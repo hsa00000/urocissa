@@ -25,6 +25,7 @@ pub fn generate_put_routes() -> Vec<Route> {
         regenerate_thumbnail::regenerate_thumbnail_with_frame,
         reindex::reindex,
         edit_config::update_config_handler,
+        edit_config::update_password_handler,
         rotate_image::rotate_image
     ]
 }

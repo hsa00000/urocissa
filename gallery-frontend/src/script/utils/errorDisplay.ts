@@ -9,7 +9,11 @@ export function errorDisplay(error: unknown): string {
 
     const parsed = serverErrorSchema.safeParse(error.response?.data)
     if (parsed.success) {
-      return `${message}: ${parsed.data.error}`
+      // Prefer 'message' from AppError, fallback to 'error' from legacy/other
+      const serverMsg = parsed.data.message ?? parsed.data.error
+      if (serverMsg) {
+          return serverMsg
+      }
     }
 
     return message

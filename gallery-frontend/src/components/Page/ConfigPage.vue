@@ -15,10 +15,7 @@
               <v-col cols="12">
                 <v-form ref="form" v-model="valid" @submit.prevent="save" :disabled="loading">
                   <v-row>
-                    <ChangePassword
-                      v-model:password="localSettings.password"
-                      v-model:old-password="oldPassword"
-                    />
+                    <ChangePassword />
 
                     <StorageAndSync v-model:sync-paths="localSettings.syncPaths" />
 
@@ -87,15 +84,12 @@ const messageStore = useMessageStore('mainId')
 // UI State
 const loading = ref(false)
 const valid = ref(false)
-const oldPassword = ref('')
 const form = ref<VForm | null>(null)
-
 
 // Local State
 const localSettings = reactive<AppConfig>({
   readOnlyMode: false,
   disableImg: false,
-  password: '',
   authKey: '',
   discordHookUrl: '',
   syncPaths: [],
@@ -128,8 +122,6 @@ const initData = async () => {
 
 const resetToStore = () => {
   syncLocalWithStore()
-  localSettings.password = ''
-  oldPassword.value = ''
   form.value?.resetValidation()
 }
 
@@ -142,25 +134,12 @@ const save = async () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload: any = { ...localSettings }
 
-    // Only send password if user intends to change it
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/strict-boolean-expressions
-    if (!payload.password) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      delete payload.password
-    } else {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      payload.oldPassword = oldPassword.value
-    }
-
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     const result = await configStore.updateConfig(payload)
 
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     if (!result) return false
 
-    // Reset password fields on success
-    oldPassword.value = ''
-    localSettings.password = ''
     // Reset validation state
     form.value?.resetValidation()
     return true
@@ -171,7 +150,6 @@ const save = async () => {
   }
   loading.value = false
 }
-
 
 onMounted(initData)
 

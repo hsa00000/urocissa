@@ -39,7 +39,7 @@ pub struct PublicConfig {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct PrivateConfig {
-    pub password: String,
+    pub password: Option<String>,
     pub auth_key: Option<String>,
 }
 
@@ -69,7 +69,7 @@ impl Default for AppConfig {
             },
 
             private: PrivateConfig {
-                password: "password".to_string(),
+                password: None,
                 auth_key: None,
             },
         }
