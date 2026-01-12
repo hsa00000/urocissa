@@ -20,6 +20,7 @@ pub struct UpdateConfigRequest {
     #[serde(flatten)]
     pub public: PublicConfig,
     pub auth_key: Option<String>,
+    pub discord_hook_url: Option<String>,
 }
 
 #[put("/put/config", data = "<req>")]
@@ -41,6 +42,15 @@ pub async fn update_config_handler(
         // 2. Update private fields if they are present in the request
         if let Some(key) = req_data.auth_key {
             current_private.auth_key = Some(key);
+        }
+
+        if let Some(hook) = req_data.discord_hook_url {
+            let trimmed = hook.trim();
+            if trimmed.is_empty() {
+                current_private.discord_hook_url = None;
+            } else {
+                current_private.discord_hook_url = Some(trimmed.to_string());
+            }
         }
 
         // 3. Construct the new full config
