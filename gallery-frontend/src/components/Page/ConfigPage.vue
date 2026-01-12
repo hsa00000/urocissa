@@ -24,6 +24,7 @@
                       v-model:discord-hook-url="localSettings.discordHookUrl"
                       v-model:read-only-mode="localSettings.readOnlyMode"
                       v-model:disable-img="localSettings.disableImg"
+                      v-model:has-discord-hook="localSettings.hasDiscordHook"
                     />
 
                     <v-col cols="12">
@@ -91,6 +92,7 @@ const localSettings = reactive<AppConfig>({
   readOnlyMode: false,
   disableImg: false,
   hasPassword: false,
+  hasDiscordHook: false,
   authKey: '',
   discordHookUrl: '',
   syncPaths: [],

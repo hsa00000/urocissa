@@ -19,6 +19,7 @@ pub struct PublicConfigResponse {
     #[serde(flatten)]
     pub public: PublicConfig,
     pub has_password: bool,
+    pub has_discord_hook: bool,
 }
 
 #[get("/get/config")]
@@ -29,6 +30,7 @@ pub fn get_config_handler(auth: GuardResult<GuardShare>) -> AppResult<Json<Publi
     let response = PublicConfigResponse {
         public: config.public.clone(),
         has_password: config.private.password.is_some(),
+        has_discord_hook: config.private.discord_hook_url.is_some(),
     };
     Ok(Json(response))
 }

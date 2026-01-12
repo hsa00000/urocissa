@@ -12,6 +12,7 @@ export interface AppConfig {
   // password is handled separately now
   authKey?: string | null
   hasPassword: boolean
+  hasDiscordHook: boolean
   discordHookUrl?: string | null
   syncPaths: string[]
 }
