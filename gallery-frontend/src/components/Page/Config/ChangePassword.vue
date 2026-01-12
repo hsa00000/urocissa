@@ -21,20 +21,19 @@
               prepend-icon="mdi-lock-check-outline"
               variant="outlined"
               density="comfortable"
-              :placeholder="
-                enabled ? 'Required if changing password' : 'Required to disable password'
-              "
+              :placeholder="oldPasswordPlaceholder"
               :rules="[rules.requiredIfAction]"
               persistent-placeholder
               class="mb-3"
               @click:append-inner="showOldPassword = !showOldPassword"
+              :disabled="!canInputOldPassword"
             ></v-text-field>
 
             <v-text-field
-              v-model="password"
+              v-model="newPassword"
               label="New Password"
-              :type="showPassword ? 'text' : 'password'"
-              :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
+              :type="showNewPassword ? 'text' : 'password'"
+              :append-inner-icon="showNewPassword ? 'mdi-eye' : 'mdi-eye-off'"
               prepend-icon="mdi-lock-outline"
               variant="outlined"
               density="comfortable"
@@ -42,7 +41,8 @@
               hide-details="auto"
               :disabled="!enabled"
               class="mb-3"
-              @click:append-inner="showPassword = !showPassword"
+              :rules="[rules.requiredIfAction, rules.noLeadingTrailingSpaces]"
+              @click:append-inner="showNewPassword = !showNewPassword"
             ></v-text-field>
 
             <v-row justify="end" class="mt-2">
@@ -67,89 +67,122 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
-import { updatePassword } from '@/api/config'
+import { ref, watch, computed, onMounted } from 'vue'
+import { updatePassword, getConfig } from '@/api/config'
 import { useMessageStore } from '@/store/messageStore'
+import { useConfigStore } from '@/store/configStore'
 import { tryWithMessageStore } from '@/script/utils/try_catch'
 
 const messageStore = useMessageStore('mainId')
-const password = ref('')
-const oldPassword = ref('')
+const configStore = useConfigStore('mainId')
+
+// --- State ---
 const enabled = ref(true)
+const oldPassword = ref('')
+const newPassword = ref('') // Renamed from 'password' for clarity
 const loading = ref(false)
 
-const showPassword = ref(false)
 const showOldPassword = ref(false)
+const showNewPassword = ref(false) // Renamed from 'showPassword'
 
-// Reset fields when enabled changes
+// --- Computed: Status Checks ---
+// Check if password is currently set on the server side
+const hasExistingPassword = computed(() => configStore.config?.hasPassword ?? false)
+
+// SIMPLE LOGIC:
+// You can only input an old password if one actually exists on the server.
+// It doesn't matter if you are enabling or disabling; if it exists, you might need to type it.
+const canInputOldPassword = computed(() => hasExistingPassword.value)
+
+// Determine user intent
+const isDisabling = computed(() => !enabled.value)
+const isUpdating = computed(() => enabled.value && !!newPassword.value)
+
+// Determine if old password is required
+// Rule: If password exists and (disabling OR entering new password), old password is required
+const isOldPasswordRequired = computed(() => {
+  if (!hasExistingPassword.value) return false
+  return isDisabling.value || isUpdating.value
+})
+
+// Whether the button is clickable
+const isValidAction = computed(() => {
+  // 1. If old password is required but not filled -> Invalid
+  if (isOldPasswordRequired.value && !oldPassword.value) return false
+
+  // 2. If in enable mode but new password not filled -> Invalid (prevent sending empty new password)
+  if (enabled.value && !newPassword.value) return false
+
+  return true
+})
+
+// UI Placeholder logic
+const oldPasswordPlaceholder = computed(() => {
+  if (!hasExistingPassword.value) return 'Not required'
+  return isDisabling.value ? 'Required to disable password' : 'Required to verify identity'
+})
+
+// --- Watchers ---
+onMounted(() => {
+  if (configStore.config?.hasPassword !== undefined) {
+    enabled.value = configStore.config.hasPassword
+  }
+})
+
+// Sync local state with store config
+watch(
+  () => configStore.config?.hasPassword,
+  (val) => {
+    if (val !== undefined) enabled.value = val
+  }
+)
+
+// Reset fields if user toggles switch off
 watch(enabled, (val) => {
   if (!val) {
-    password.value = ''
-    oldPassword.value = ''
+    newPassword.value = ''
   }
 })
 
-const isValidAction = computed(() => {
-  // Valid if:
-  // 1. Disable: oldPassword required
-  // 2. Enable/Update: if new password typed, oldPassword required
-  if (!enabled.value) {
-    return !!oldPassword.value
-  }
-  if (password.value) {
-    return !!oldPassword.value
-  }
-  return false // If enabled but no new password, nothing to update (unless we want to enforce re-enabling?)
-  // But currently backend doesn't support "re-enable without changing"?
-  // Actually if password is None in backend, and we send Some("pwd"), it sets it.
-  // If we send Some(""), it removes it.
-})
-
+// --- Form Rules ---
 const rules = {
   requiredIfAction: (v: string) => {
-    if (!enabled.value) return !!v || 'Required to disable password'
-    if (password.value) return !!v || 'Required to change password'
-    return true
+    return isOldPasswordRequired.value
+      ? !!v || 'Current password is required to save changes'
+      : true
+  },
+  noLeadingTrailingSpaces: (v: string) => {
+    return v === v.trim() || 'Do not use spaces at the beginning or end of the password.'
   }
 }
 
+// --- Actions ---
 const savePassword = async () => {
   if (!isValidAction.value) return
 
   loading.value = true
-  const success = await tryWithMessageStore('mainId', async () => {
-    // If disabled, we send empty string to remove password (as per backend logic we decided: Some("") -> None)
-    // Wait, backend logic:
-    // if let Some(pwd) = req_data.password { if pwd.trim().is_empty() { None } ... }
-    // So sending "" works for disabling.
 
-    let newPwd = undefined
+  await tryWithMessageStore('mainId', async () => {
+    // Prepare Payload: If disabling, send empty string; if enabling/changing, send new password
+    const finalNewPassword = isDisabling.value ? '' : newPassword.value.trim()
 
-    if (!enabled.value) {
-      newPwd = ''
-    } else {
-      // If enabled, we only send if user typed something (to update)
-      if (password.value) {
-        newPwd = password.value
-      } else {
-        // User didn't type new password, do nothing?
-        return true
-      }
-    }
+    // API Call
+    await updatePassword(oldPassword.value, finalNewPassword)
 
-    await updatePassword(oldPassword.value, newPwd)
+    // Update Local Store manually to reflect change immediately
+    const newConfig = await getConfig()
+    configStore.config = newConfig
 
-    // Reset fields
+    // Success Handling
+    messageStore.success(
+      isDisabling.value ? 'Password disabled successfully' : 'Password updated successfully'
+    )
+
+    // Cleanup
     oldPassword.value = ''
-    password.value = ''
+    newPassword.value = ''
     return true
   })
-
-  if (success === true) {
-    messageStore.success(
-      enabled.value ? 'Password updated successfully' : 'Password disabled successfully'
-    )
-  }
 
   loading.value = false
 }

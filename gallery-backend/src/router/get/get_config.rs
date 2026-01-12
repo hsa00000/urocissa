@@ -8,15 +8,29 @@ use rocket::serde::json::Json;
 use crate::public::structure::config::{PublicConfig, APP_CONFIG};
 use crate::router::fairing::guard_auth::GuardAuth;
 use crate::router::fairing::guard_share::GuardShare;
+use serde::Serialize;
 
 use crate::router::{AppResult, GuardResult};
 // use crate::public::error::{AppError, ErrorKind, ResultExt};
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PublicConfigResponse {
+    #[serde(flatten)]
+    pub public: PublicConfig,
+    pub has_password: bool,
+}
+
 #[get("/get/config")]
-pub fn get_config_handler(auth: GuardResult<GuardShare>) -> AppResult<Json<PublicConfig>> {
+pub fn get_config_handler(auth: GuardResult<GuardShare>) -> AppResult<Json<PublicConfigResponse>> {
     let _ = auth?;
     // Only return the public part
-    Ok(Json(APP_CONFIG.get().unwrap().read().unwrap().public.clone()))
+    let config = APP_CONFIG.get().unwrap().read().unwrap();
+    let response = PublicConfigResponse {
+        public: config.public.clone(),
+        has_password: config.private.password.is_some(),
+    };
+    Ok(Json(response))
 }
 
 
