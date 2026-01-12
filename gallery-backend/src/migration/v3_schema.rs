@@ -2,7 +2,8 @@
 use arrayvec::ArrayString;
 use bitcode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
+use redb::{TypeName, Value};
 
 // ==================================================================================
 // Object Type & Schema
@@ -143,9 +144,6 @@ pub enum AbstractData {
     Video(VideoCombined),
     Album(AlbumCombined),
 }
-
-use redb::{TypeName, Value};
-use std::collections::HashMap;
 
 // Implement Value trait for Redb compatibility
 impl Value for AbstractData {
