@@ -43,19 +43,6 @@
               hide-details="auto"
             ></v-text-field>
           </v-col>
-
-          <v-divider></v-divider>
-          <v-col cols="12">
-            <v-text-field
-              v-model="discordHookUrl"
-              label="Discord Webhook URL"
-              prepend-icon="mdi-webhook"
-              placeholder="https://discord.com/api/..."
-              variant="outlined"
-              density="comfortable"
-              hide-details="auto"
-            ></v-text-field>
-          </v-col>
         </v-row>
       </v-card-text>
     </v-card>
@@ -64,7 +51,6 @@
 
 <script setup lang="ts">
 const authKey = defineModel<string | null>('authKey')
-const discordHookUrl = defineModel<string | null>('discordHookUrl')
 const readOnlyMode = defineModel<boolean>('readOnlyMode')
 const disableImg = defineModel<boolean>('disableImg')
 </script>

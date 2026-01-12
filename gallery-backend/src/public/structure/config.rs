@@ -2,6 +2,7 @@
 
 use anyhow::Context;
 use base64::{Engine as _, engine::general_purpose};
+use log::{info, warn};
 use rand::{TryRngCore, rngs::OsRng};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
@@ -9,10 +10,8 @@ use std::fs::{self, File};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::{OnceLock, RwLock};
-use log::{info, warn};
 
 const CONFIG_FILE: &str = "config.json";
-
 
 pub static FALLBACK_SECRET_KEY: OnceLock<String> = OnceLock::new();
 
@@ -31,7 +30,6 @@ pub struct PublicConfig {
     pub port: u16,
     pub limits: HashMap<String, String>,
     pub sync_paths: HashSet<PathBuf>,
-    pub discord_hook_url: Option<String>,
     pub read_only_mode: bool,
     pub disable_img: bool,
 }
@@ -41,6 +39,7 @@ pub struct PublicConfig {
 pub struct PrivateConfig {
     pub password: Option<String>,
     pub auth_key: Option<String>,
+    pub discord_hook_url: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -63,7 +62,6 @@ impl Default for AppConfig {
                 port: 5673,
                 limits,
                 sync_paths: HashSet::new(),
-                discord_hook_url: None,
                 read_only_mode: false,
                 disable_img: false,
             },
@@ -71,6 +69,7 @@ impl Default for AppConfig {
             private: PrivateConfig {
                 password: None,
                 auth_key: None,
+                discord_hook_url: None,
             },
         }
     }
@@ -108,15 +107,12 @@ impl AppConfig {
             } else {
                 crate::migration::cleanup_legacy_config_files();
             }
-            info!(
-                "Migration completed. New configuration saved to {CONFIG_FILE}"
-            );
+            info!("Migration completed. New configuration saved to {CONFIG_FILE}");
             cfg
         } else {
             info!("Loading configuration from {CONFIG_FILE}");
             Self::load_from_file()
         };
-
 
         if config
             .private
@@ -136,9 +132,7 @@ impl AppConfig {
 
     fn load_from_file() -> AppConfig {
         let file_content = fs::read_to_string(CONFIG_FILE).unwrap_or_else(|e| {
-            warn!(
-                "Failed to read config file {CONFIG_FILE}: {e}, using defaults"
-            );
+            warn!("Failed to read config file {CONFIG_FILE}: {e}, using defaults");
             "{}".to_string()
         });
 
@@ -148,9 +142,7 @@ impl AppConfig {
                 config
             }
             Err(e) => {
-                warn!(
-                    "Failed to deserialize config from {CONFIG_FILE}: {e:?}, using defaults"
-                );
+                warn!("Failed to deserialize config from {CONFIG_FILE}: {e:?}, using defaults");
                 AppConfig::default()
             }
         }
@@ -195,7 +187,6 @@ impl AppConfig {
         info!("Configuration updated successfully");
         Ok(())
     }
-
 
     fn save_update(config: &AppConfig) -> anyhow::Result<()> {
         let mut file = File::create(CONFIG_FILE)

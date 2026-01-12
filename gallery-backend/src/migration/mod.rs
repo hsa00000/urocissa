@@ -76,9 +76,7 @@ fn needs_migration() -> MigrationType {
     });
 
     if let Ok(true) = is_v4 {
-        println!(
-            "[WARN] Found V4-compatible database at {OLD_DB_PATH}. Moving to {NEW_DB_PATH}."
-        );
+        println!("[WARN] Found V4-compatible database at {OLD_DB_PATH}. Moving to {NEW_DB_PATH}.");
         if let Err(e) = std::fs::rename(OLD_DB_PATH, NEW_DB_PATH) {
             eprintln!("[ERROR] Failed to move V4 database: {e}");
         }
@@ -268,8 +266,8 @@ pub fn construct_migrated_config() -> AppConfig {
     if let Ok(hook) = std::env::var("DISCORD_HOOK_URL")
         && !hook.trim().is_empty()
     {
-        config.public.discord_hook_url = Some(hook);
-        println!("Migrated DISCORD_HOOK_URL from environment into PublicConfig");
+        config.private.discord_hook_url = Some(hook);
+        println!("Migrated DISCORD_HOOK_URL from environment into PrivateConfig");
     }
 
     if let Ok(sync_paths_str) = std::env::var("SYNC_PATH") {
@@ -287,10 +285,13 @@ pub fn construct_migrated_config() -> AppConfig {
     }
 
     if let Ok(upload_path) = fs::canonicalize(PathBuf::from("./upload")) {
-        config.public.sync_paths.retain(|p| match fs::canonicalize(p) {
-            Ok(c) => c != upload_path,
-            Err(_) => p != &upload_path,
-        });
+        config
+            .public
+            .sync_paths
+            .retain(|p| match fs::canonicalize(p) {
+                Ok(c) => c != upload_path,
+                Err(_) => p != &upload_path,
+            });
     }
 
     config
