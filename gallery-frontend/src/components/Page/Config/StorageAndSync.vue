@@ -1,31 +1,28 @@
 <template>
   <v-col cols="12">
-    <v-list-subheader class="font-weight-bold text-high-emphasis">
-      Storage & Sync
-    </v-list-subheader>
-
     <v-card border flat class="rounded-lg">
-      <v-card-item
-        density="compact"
-        prepend-icon="mdi-folder-network-outline"
-        class="border-b"
-      >
-        <v-card-title class="text-body-1 font-weight-medium">
-          Monitored Paths
-        </v-card-title>
-
-        <template #append>
-          <v-btn
-            variant="tonal"
-            prepend-icon="mdi-plus"
-            class="text-none font-weight-medium"
-            @click="showFilePicker = true"
-          >
-            Add Path
-          </v-btn>
-        </template>
-      </v-card-item>
-
+      <v-card-title>Paths</v-card-title>
+      <v-divider></v-divider>
+      <v-list>
+        <v-list-item
+          title="Monitored Paths"
+          subtitle="Turning this off makes your album public."
+          prepend-icon="mdi-folder-network-outline"
+          prepend-gap="8"
+        >
+          <template #append>
+            <v-btn
+              variant="tonal"
+              prepend-icon="mdi-plus"
+              class="text-none font-weight-medium"
+              @click="showFilePicker = true"
+            >
+              Add Path
+            </v-btn>
+          </template>
+        </v-list-item>
+      </v-list>
+      <v-divider></v-divider>
       <v-list v-if="syncPaths.length > 0" lines="one">
         <template v-for="(path, index) in syncPaths" :key="index">
           <v-list-item :title="path">
@@ -39,9 +36,7 @@
               ></v-btn>
             </template>
           </v-list-item>
-          <v-divider
-            v-if="index !== syncPaths.length - 1"
-          ></v-divider>
+          <v-divider v-if="index !== syncPaths.length - 1"></v-divider>
         </template>
       </v-list>
 
@@ -66,7 +61,7 @@ const syncPaths = defineModel<string[]>('syncPaths', { required: true })
 const showFilePicker = ref(false)
 
 const removePath = (path: string) => {
-  syncPaths.value = syncPaths.value.filter(p => p !== path)
+  syncPaths.value = syncPaths.value.filter((p) => p !== path)
 }
 
 const onFilePickerSelect = (path: string) => {

@@ -1,24 +1,18 @@
 <template>
   <PageTemplate>
     <template #content>
-      <v-container
-        fluid
-        class="fill-height align-start justify-center overflow-y-auto bg-surface-light"
-      >
-        <v-row justify="center">
-          <v-col cols="12" sm="10" md="8" lg="6" xl="5">
+      <v-container fluid class="fill-height overflow-y-auto bg-surface-light">
+        <v-row justify="center" no-gutters>
+          <v-col cols="12" md="8" lg="6">
             <v-row>
               <v-col cols="12">
                 <h1 class="text-h4 font-weight-bold">Config</h1>
               </v-col>
-
+              <ChangePassword />
+              <StorageAndSync v-model:sync-paths="localSettings.syncPaths" />
               <v-col cols="12">
                 <v-form ref="form" v-model="valid" @submit.prevent="save" :disabled="loading">
                   <v-row>
-                    <ChangePassword />
-
-                    <StorageAndSync v-model:sync-paths="localSettings.syncPaths" />
-
                     <AdvancedConfig
                       v-model:auth-key="localSettings.authKey"
                       v-model:discord-hook-url="localSettings.discordHookUrl"

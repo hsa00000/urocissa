@@ -1,22 +1,21 @@
 <template>
   <v-col cols="12">
-    <v-list-subheader class="text-high-emphasis font-weight-bold">
-      Change Password
-    </v-list-subheader>
-
     <v-card border flat class="rounded-lg">
+      <v-card-title>Password</v-card-title>
+      <v-divider></v-divider>
       <v-list>
         <v-list-item
+          @click="enabled = !enabled"
           title="Enable Password Protection"
           subtitle="Turning this off makes your album public."
         >
           <template #append>
-            <v-switch v-model="enabled" color="primary" hide-details inset></v-switch>
+            <v-switch v-model="enabled" @click.stop color="primary" hide-details inset></v-switch>
           </template>
         </v-list-item>
       </v-list>
       <v-divider></v-divider>
-      <v-card-text>
+      <v-container>
         <v-row dense>
           <v-col cols="12">
             <v-text-field
@@ -50,22 +49,21 @@
               @click:append-inner="showNewPassword = !showNewPassword"
             ></v-text-field
           ></v-col>
+          <v-col cols="12" class="d-flex justify-end">
+            <v-btn
+              color="primary"
+              variant="flat"
+              :loading="loading"
+              :disabled="!isValidAction"
+              @click="savePassword"
+              class="text-none"
+            >
+              Update Password
+            </v-btn>
+          </v-col>
         </v-row>
-      </v-card-text>
+      </v-container>
     </v-card>
-    <v-card-actions>
-      <v-spacer></v-spacer>
-      <v-btn
-        color="primary"
-        variant="flat"
-        :loading="loading"
-        :disabled="!isValidAction"
-        @click="savePassword"
-        class="text-none"
-      >
-        Update Password
-      </v-btn>
-    </v-card-actions>
   </v-col>
 </template>
 
