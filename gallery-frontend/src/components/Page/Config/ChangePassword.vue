@@ -3,17 +3,17 @@
     <v-card border flat class="rounded-lg">
       <v-card-title>Password</v-card-title>
       <v-divider></v-divider>
-      <v-list>
-        <v-list-item
-          @click="enabled = !enabled"
-          title="Enable Password Protection"
-          subtitle="Turning this off makes your album public."
-        >
-          <template #append>
-            <v-switch v-model="enabled" @click.stop color="primary" hide-details inset></v-switch>
-          </template>
-        </v-list-item>
-      </v-list>
+
+      <v-list-item
+        @click="enabled = !enabled"
+        title="Enable Password Protection"
+        subtitle="Turning this off makes your album public."
+      >
+        <template #append>
+          <v-switch v-model="enabled" @click.stop color="primary" hide-details inset></v-switch>
+        </template>
+      </v-list-item>
+
       <v-divider></v-divider>
       <v-container>
         <v-row dense>

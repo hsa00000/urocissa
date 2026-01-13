@@ -1,56 +1,51 @@
 <template>
   <v-col cols="12">
-    <v-list-subheader class="font-weight-bold text-high-emphasis">Advanced Config</v-list-subheader>
     <v-card border flat class="rounded-lg">
-      <v-list lines="two">
-        <v-list-item
-          title="Read Only Mode"
-          subtitle="Prevent modification of data"
-          @click="readOnlyMode = !readOnlyMode"
-        >
-          <template #append>
-            <v-switch
-              v-model="readOnlyMode"
-              color="primary"
-              hide-details
-              inset
-              @click.stop
-            ></v-switch>
-          </template>
-        </v-list-item>
+      <v-card-title>Advanced Settings</v-card-title>
+      <v-divider></v-divider>
 
-        <v-divider></v-divider>
-
-        <v-list-item
-          title="Disable Processing"
-          subtitle="Skip image generation and analysis"
-          @click="disableImg = !disableImg"
-        >
-          <template #append>
-            <v-switch
-              v-model="disableImg"
-              color="primary"
-              hide-details
-              inset
-              @click.stop
-            ></v-switch>
-          </template>
-        </v-list-item>
-
-        <v-divider></v-divider>
-        <v-list-item @click="hasDiscordHook = !hasDiscordHook" :ripple="!hasDiscordHook">
-          <v-text-field
-            class="py-2"
-            v-model="discordHookUrl"
-            label="Discord Webhook URL"
-            prepend-icon="mdi-webhook"
-            placeholder="https://discord.com/api/..."
-            variant="outlined"
-            density="compact"
+      <v-list-item
+        title="Read Only Mode"
+        subtitle="Prevent modification of data"
+        @click="readOnlyMode = !readOnlyMode"
+      >
+        <template #append>
+          <v-switch
+            v-model="readOnlyMode"
+            color="primary"
             hide-details
-            :disabled="!(hasDiscordHook ?? false)"
+            inset
             @click.stop
-          ></v-text-field>
+          ></v-switch>
+        </template>
+      </v-list-item>
+
+      <v-divider></v-divider>
+
+      <v-list-item
+        title="Disable Processing"
+        subtitle="Skip image generation and analysis"
+        @click="disableImg = !disableImg"
+      >
+        <template #append>
+          <v-switch v-model="disableImg" color="primary" hide-details inset @click.stop></v-switch>
+        </template>
+      </v-list-item>
+
+      <v-divider></v-divider>
+
+      <v-card-text @click="hasDiscordHook = !hasDiscordHook" :ripple="!hasDiscordHook">
+        <v-text-field
+          v-model="discordHookUrl"
+          label="Discord Webhook URL"
+          prepend-icon="mdi-webhook"
+          placeholder="https://discord.com/api/..."
+          variant="outlined"
+          density="compact"
+          hide-details
+          :disabled="!(hasDiscordHook ?? false)"
+          @click.stop
+        >
           <template #append>
             <v-switch
               v-model="hasDiscordHook"
@@ -60,26 +55,24 @@
               density="compact"
               class="ml-4"
               @click.stop
-            ></v-switch>
-          </template>
-        </v-list-item>
+            ></v-switch></template
+        ></v-text-field>
+      </v-card-text>
 
-        <v-divider></v-divider>
+      <v-divider></v-divider>
 
-        <v-list-item>
-          <v-text-field
-            class="pt-2"
-            v-model="authKey"
-            label="JWT Authentication Key"
-            prepend-icon="mdi-key-outline"
-            placeholder="Enter JWT Key"
-            variant="outlined"
-            density="compact"
-            hide-details
-            inset
-          ></v-text-field>
-        </v-list-item>
-      </v-list>
+      <v-card-text>
+        <v-text-field
+          v-model="authKey"
+          label="JWT Authentication Key"
+          prepend-icon="mdi-key-outline"
+          placeholder="Enter JWT Key"
+          variant="outlined"
+          density="compact"
+          hide-details
+          inset
+        ></v-text-field>
+      </v-card-text>
     </v-card>
   </v-col>
 </template>

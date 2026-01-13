@@ -3,24 +3,24 @@
     <v-card border flat class="rounded-lg">
       <v-card-title>Paths</v-card-title>
       <v-divider></v-divider>
-      <v-list>
-        <v-list-item
-          title="Monitored Paths"
-          subtitle="Turning this off makes your album public."
-          prepend-icon="mdi-folder-network-outline"
-        >
-          <template #append>
-            <v-btn
-              variant="tonal"
-              prepend-icon="mdi-plus"
-              class="text-none font-weight-medium"
-              @click="showFilePicker = true"
-            >
-              Add Path
-            </v-btn>
-          </template>
-        </v-list-item>
-      </v-list>
+
+      <v-list-item
+        title="Monitored Paths"
+        subtitle="Turning this off makes your album public."
+        prepend-icon="mdi-folder-network-outline"
+      >
+        <template #append>
+          <v-btn
+            variant="tonal"
+            prepend-icon="mdi-plus"
+            class="text-none font-weight-medium"
+            @click="showFilePicker = true"
+          >
+            Add Path
+          </v-btn>
+        </template>
+      </v-list-item>
+
       <v-divider></v-divider>
       <v-list v-if="syncPaths.length > 0" lines="one">
         <template v-for="(path, index) in syncPaths" :key="index">
@@ -46,9 +46,8 @@
         text="Add a path to start syncing your files."
       ></v-empty-state>
     </v-card>
-
-    <ServerFilePicker v-model="showFilePicker" @select="onFilePickerSelect" />
   </v-col>
+  <ServerFilePicker v-model="showFilePicker" @select="onFilePickerSelect" />
 </template>
 
 <script setup lang="ts">
