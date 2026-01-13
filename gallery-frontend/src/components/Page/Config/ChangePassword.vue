@@ -1,8 +1,8 @@
 <template>
   <v-col cols="12">
     <v-card border flat class="rounded-lg">
-      <v-card-title>Password</v-card-title>
-      <v-divider></v-divider>
+      <v-card-title class="font-weight-bold">Password</v-card-title>
+      <v-divider thickness="4" variant="double"></v-divider>
 
       <v-list-item
         @click="enabled = !enabled"
@@ -15,40 +15,41 @@
       </v-list-item>
 
       <v-divider></v-divider>
+      <v-list-item>
+        <v-text-field
+          class="pt-2"
+          v-model="oldPassword"
+          prepend-icon="mdi-lock-outline"
+          label="Current Password"
+          :type="showOldPassword ? 'text' : 'password'"
+          :append-inner-icon="showOldPassword ? 'mdi-eye' : 'mdi-eye-off'"
+          variant="outlined"
+          :placeholder="oldPasswordPlaceholder"
+          :rules="[rules.requiredIfAction]"
+          :disabled="!canInputOldPassword"
+          persistent-placeholder
+          density="compact"
+          @click:append-inner="showOldPassword = !showOldPassword"
+        ></v-text-field>
+      </v-list-item>
+      <v-list-item>
+        <v-text-field
+          class="pt-2"
+          prepend-icon="mdi-lock"
+          v-model="newPassword"
+          label="New Password"
+          :type="showNewPassword ? 'text' : 'password'"
+          :append-inner-icon="showNewPassword ? 'mdi-eye' : 'mdi-eye-off'"
+          variant="outlined"
+          :rules="[rules.requiredIfAction, rules.noLeadingTrailingSpaces]"
+          :disabled="!enabled"
+          persistent-placeholder
+          density="compact"
+          @click:append-inner="showNewPassword = !showNewPassword"
+        ></v-text-field
+      ></v-list-item>
       <v-container>
-        <v-row dense>
-          <v-col cols="12">
-            <v-text-field
-              v-model="oldPassword"
-              prepend-icon="mdi-lock-outline"
-              label="Current Password"
-              :type="showOldPassword ? 'text' : 'password'"
-              :append-inner-icon="showOldPassword ? 'mdi-eye' : 'mdi-eye-off'"
-              variant="outlined"
-              :placeholder="oldPasswordPlaceholder"
-              :rules="[rules.requiredIfAction]"
-              :disabled="!canInputOldPassword"
-              persistent-placeholder
-              density="comfortable"
-              @click:append-inner="showOldPassword = !showOldPassword"
-            ></v-text-field>
-          </v-col>
-
-          <v-col cols="12">
-            <v-text-field
-              prepend-icon="mdi-lock"
-              v-model="newPassword"
-              label="New Password"
-              :type="showNewPassword ? 'text' : 'password'"
-              :append-inner-icon="showNewPassword ? 'mdi-eye' : 'mdi-eye-off'"
-              variant="outlined"
-              :rules="[rules.requiredIfAction, rules.noLeadingTrailingSpaces]"
-              :disabled="!enabled"
-              persistent-placeholder
-              density="comfortable"
-              @click:append-inner="showNewPassword = !showNewPassword"
-            ></v-text-field
-          ></v-col>
+        <v-row>
           <v-col cols="12" class="d-flex justify-end">
             <v-btn
               color="primary"

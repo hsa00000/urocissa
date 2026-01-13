@@ -11,6 +11,7 @@ export interface AppConfig {
   disableImg: boolean
   // password is handled separately now
   authKey?: string | null
+  hasAuthKey: boolean
   hasPassword: boolean
   hasDiscordHook: boolean
   discordHookUrl?: string | null

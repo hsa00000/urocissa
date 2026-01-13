@@ -20,6 +20,7 @@ pub struct PublicConfigResponse {
     pub public: PublicConfig,
     pub has_password: bool,
     pub has_discord_hook: bool,
+    pub has_auth_key: bool,
 }
 
 #[get("/get/config")]
@@ -31,6 +32,7 @@ pub fn get_config_handler(auth: GuardResult<GuardShare>) -> AppResult<Json<Publi
         public: config.public.clone(),
         has_password: config.private.password.is_some(),
         has_discord_hook: config.private.discord_hook_url.is_some(),
+        has_auth_key: config.private.auth_key.is_some(),
     };
     Ok(Json(response))
 }

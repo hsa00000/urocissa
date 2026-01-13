@@ -1,13 +1,14 @@
 <template>
   <v-col cols="12">
     <v-card border flat class="rounded-lg">
-      <v-card-title>Paths</v-card-title>
-      <v-divider></v-divider>
+      <v-card-title class="font-weight-bold">Paths</v-card-title>
+      <v-divider thickness="4" variant="double"></v-divider>
 
       <v-list-item
         title="Monitored Paths"
         subtitle="Turning this off makes your album public."
         prepend-icon="mdi-folder-network-outline"
+        lines="two"
       >
         <template #append>
           <v-btn

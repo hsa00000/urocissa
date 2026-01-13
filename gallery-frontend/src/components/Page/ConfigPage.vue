@@ -5,22 +5,20 @@
         <v-row justify="center" no-gutters>
           <v-col cols="12" md="8" lg="6">
             <v-row>
-              <v-col cols="12">
-                <h1 class="text-h4 font-weight-bold">Config</h1>
-              </v-col>
               <ChangePassword />
               <StorageAndSync v-model:sync-paths="localSettings.syncPaths" />
+              <AdvancedConfig
+                v-model:auth-key="localSettings.authKey"
+                v-model:has-auth-key="localSettings.hasAuthKey"
+                v-model:discord-hook-url="localSettings.discordHookUrl"
+                v-model:read-only-mode="localSettings.readOnlyMode"
+                v-model:disable-img="localSettings.disableImg"
+                v-model:has-discord-hook="localSettings.hasDiscordHook"
+              />
+
               <v-col cols="12">
                 <v-form ref="form" v-model="valid" @submit.prevent="save" :disabled="loading">
                   <v-row>
-                    <AdvancedConfig
-                      v-model:auth-key="localSettings.authKey"
-                      v-model:discord-hook-url="localSettings.discordHookUrl"
-                      v-model:read-only-mode="localSettings.readOnlyMode"
-                      v-model:disable-img="localSettings.disableImg"
-                      v-model:has-discord-hook="localSettings.hasDiscordHook"
-                    />
-
                     <v-col cols="12">
                       <v-row justify="end">
                         <v-col cols="auto">
@@ -86,6 +84,7 @@ const localSettings = reactive<AppConfig>({
   readOnlyMode: false,
   disableImg: false,
   hasPassword: false,
+  hasAuthKey: false,
   hasDiscordHook: false,
   authKey: '',
   discordHookUrl: '',
