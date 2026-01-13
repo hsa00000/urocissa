@@ -38,6 +38,11 @@ await constStore.loadTheme()
 const vuetify = createVuetify({
   components,
   directives,
+  defaults: {
+    global: {
+      prependGap: 8
+    }
+  },
   theme: {
     // 'light' | 'dark' | 'system'
     defaultTheme: constStore.theme === 'light' ? 'light' : 'dark'

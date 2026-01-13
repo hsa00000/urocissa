@@ -8,7 +8,6 @@
           title="Monitored Paths"
           subtitle="Turning this off makes your album public."
           prepend-icon="mdi-folder-network-outline"
-          prepend-gap="8"
         >
           <template #append>
             <v-btn
