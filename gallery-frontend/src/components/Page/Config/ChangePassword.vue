@@ -1,7 +1,7 @@
 <template>
   <v-col cols="12">
     <v-card border flat class="rounded-lg">
-      <v-card-title class="font-weight-bold">Password</v-card-title>
+      <v-card-title class="font-weight-bold">Change Password</v-card-title>
       <v-divider thickness="4" variant="double"></v-divider>
 
       <v-list-item

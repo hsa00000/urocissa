@@ -6,7 +6,7 @@
 
       <v-list-item
         title="Read Only Mode"
-        subtitle="Prevent modification of data"
+        subtitle="Prevent modification of data and settings"
         @click="readOnlyMode = !readOnlyMode"
       >
         <template #append>
@@ -24,7 +24,7 @@
 
       <v-list-item
         title="Disable Processing"
-        subtitle="Skip image generation and analysis"
+        subtitle="Skip frontend image rendering for debugging"
         @click="disableImg = !disableImg"
       >
         <template #append>
@@ -35,10 +35,22 @@
       <v-divider></v-divider>
 
       <v-list-item
+        title="Discord Notifications"
+        subtitle="Send backend error messages to Discord Webhook"
         @click="hasDiscordHook = !hasDiscordHook"
-        :ripple="!hasDiscordHook"
-        :class="{ 'cursor-default': hasDiscordHook }"
       >
+        <template #append>
+          <v-switch
+            v-model="hasDiscordHook"
+            color="primary"
+            hide-details
+            inset
+            @click.stop
+          ></v-switch>
+        </template>
+      </v-list-item>
+
+      <v-list-item>
         <v-text-field
           v-model="discordHookUrl"
           label="Discord Webhook URL"
@@ -50,27 +62,20 @@
           :disabled="!(hasDiscordHook ?? false)"
           @click.stop
           class="py-2"
-        >
-          <template #append>
-            <v-switch
-              v-model="hasDiscordHook"
-              color="primary"
-              hide-details
-              inset
-              density="compact"
-              class="ml-4"
-              @click.stop
-            ></v-switch></template
         ></v-text-field>
       </v-list-item>
 
       <v-divider></v-divider>
-
       <v-list-item
+        title="JWT Authentication Key"
+        subtitle="Provide a key for JWT authentication"
         @click="hasAuthKey = !hasAuthKey"
-        :ripple="!hasAuthKey"
-        :class="{ 'cursor-default': hasAuthKey }"
       >
+        <template #append>
+          <v-switch v-model="hasAuthKey" color="primary" hide-details inset @click.stop></v-switch>
+        </template>
+      </v-list-item>
+      <v-list-item>
         <v-text-field
           v-model="authKey"
           label="JWT Authentication Key"
@@ -83,17 +88,7 @@
           @click.stop
           class="py-2"
         >
-          <template #append>
-            <v-switch
-              v-model="hasAuthKey"
-              color="primary"
-              hide-details
-              inset
-              density="compact"
-              class="ml-4"
-              @click.stop
-            ></v-switch> </template
-        ></v-text-field>
+        </v-text-field>
       </v-list-item>
     </v-card>
   </v-col>

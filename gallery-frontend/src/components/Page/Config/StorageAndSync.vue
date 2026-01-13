@@ -6,7 +6,7 @@
 
       <v-list-item
         title="Monitored Paths"
-        subtitle="Turning this off makes your album public."
+        subtitle="Automatically detect changed files in folders and index them"
         prepend-icon="mdi-folder-network-outline"
         lines="two"
       >
