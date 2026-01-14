@@ -53,12 +53,12 @@
       <v-list-item>
         <v-text-field
           v-model="discordHookUrl"
+          :rules="[(v) => !(hasDiscordHook ?? false) || !!v || 'Discord Webhook URL is required']"
           label="Discord Webhook URL"
           prepend-icon="mdi-webhook"
           placeholder="https://discord.com/api/..."
           variant="outlined"
           density="compact"
-          hide-details
           :disabled="!(hasDiscordHook ?? false)"
           @click.stop
           class="py-2"
@@ -78,12 +78,12 @@
       <v-list-item>
         <v-text-field
           v-model="authKey"
+          :rules="[(v) => !(hasAuthKey ?? false) || !!v || 'JWT Authentication Key is required']"
           label="JWT Authentication Key"
           prepend-icon="mdi-key-outline"
           placeholder="Enter JWT Key"
           variant="outlined"
           density="compact"
-          hide-details
           :disabled="!(hasAuthKey ?? false)"
           @click.stop
           class="py-2"
@@ -130,6 +130,21 @@ watch(hasAuthKey, (newValue) => {
 
 const save = async () => {
   loading.value = true
+
+  if (hasAuthKey.value === true && (authKey.value == null || authKey.value.trim() === '')) {
+    messageStore.error('JWT Authentication Key is required when enabled')
+    loading.value = false
+    return
+  }
+
+  if (
+    hasDiscordHook.value === true &&
+    (discordHookUrl.value == null || discordHookUrl.value.trim() === '')
+  ) {
+    messageStore.error('Discord Webhook URL is required when enabled')
+    loading.value = false
+    return
+  }
 
   const payload: Partial<AppConfig> = {
     readOnlyMode: readOnlyMode.value,
