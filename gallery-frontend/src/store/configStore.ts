@@ -35,10 +35,19 @@ export const useConfigStore = (isolationId: IsolationId) =>
           this.config = data
         })
       },
-      async updateConfig(newConfig: AppConfig & { oldPassword?: string }) {
+      async updateConfig(newConfig: Partial<AppConfig>) {
         return await tryWithMessageStore(isolationId, async () => {
           await updateConfig(newConfig)
-          this.config = newConfig
+          
+          // Merge updates into local state
+          if (this.config) {
+            Object.assign(this.config, newConfig)
+          } else {
+             // Should verify if we need to fetch full config if it was undefined
+             // But usually updateConfig is called after fetchConfig
+             const data = await getConfig()
+             this.config = data
+          }
           return true
         })
       }

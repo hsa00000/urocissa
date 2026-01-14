@@ -6,9 +6,12 @@ use rocket::put;
 use rocket::serde::json::Json;
 use tokio::task::spawn_blocking;
 
+use std::collections::{HashMap, HashSet};
+use std::path::PathBuf;
+
 // Import PublicConfig
 use crate::public::error::{AppError, ErrorKind, ResultExt};
-use crate::public::structure::config::{APP_CONFIG, AppConfig, PublicConfig};
+use crate::public::structure::config::{APP_CONFIG, AppConfig};
 use crate::router::fairing::guard_auth::GuardAuth;
 use crate::router::fairing::guard_read_only_mode::GuardReadOnlyMode;
 use crate::router::{AppResult, GuardResult};
@@ -16,9 +19,13 @@ use serde::Deserialize;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct UpdateConfigRequest {
-    #[serde(flatten)]
-    pub public: PublicConfig,
+pub struct PartialUpdateConfigRequest {
+    pub address: Option<String>,
+    pub port: Option<u16>,
+    pub limits: Option<HashMap<String, String>>,
+    pub sync_paths: Option<HashSet<PathBuf>>,
+    pub read_only_mode: Option<bool>,
+    pub disable_img: Option<bool>,
     pub auth_key: Option<String>,
     pub discord_hook_url: Option<String>,
 }
@@ -27,40 +34,54 @@ pub struct UpdateConfigRequest {
 pub async fn update_config_handler(
     _auth: GuardAuth,
     read_only: GuardResult<GuardReadOnlyMode>,
-    req: Json<UpdateConfigRequest>,
+    req: Json<PartialUpdateConfigRequest>,
 ) -> AppResult<Status> {
     let _ = read_only?;
     let req_data = req.into_inner();
 
     spawn_blocking(move || -> Result<Status, AppError> {
-        // 1. Get the current private config to preserve fields not being updated
-        let mut current_private = {
+        // 1. Get the current full config
+        let mut current_config = {
             let read_lock = APP_CONFIG.get().unwrap().read().unwrap();
-            read_lock.private.clone()
+            read_lock.clone()
         };
 
-        // 2. Update private fields if they are present in the request
+        // 2. Apply updates to PublicConfig fields
+        if let Some(address) = req_data.address {
+            current_config.public.address = address;
+        }
+        if let Some(port) = req_data.port {
+            current_config.public.port = port;
+        }
+        if let Some(limits) = req_data.limits {
+            current_config.public.limits = limits;
+        }
+        if let Some(sync_paths) = req_data.sync_paths {
+            current_config.public.sync_paths = sync_paths;
+        }
+        if let Some(read_only_mode) = req_data.read_only_mode {
+            current_config.public.read_only_mode = read_only_mode;
+        }
+        if let Some(disable_img) = req_data.disable_img {
+            current_config.public.disable_img = disable_img;
+        }
+
+        // 3. Apply updates to PrivateConfig fields
         if let Some(key) = req_data.auth_key {
-            current_private.auth_key = Some(key);
+            current_config.private.auth_key = Some(key);
         }
 
         if let Some(hook) = req_data.discord_hook_url {
             let trimmed = hook.trim();
             if trimmed.is_empty() {
-                current_private.discord_hook_url = None;
+                current_config.private.discord_hook_url = None;
             } else {
-                current_private.discord_hook_url = Some(trimmed.to_string());
+                current_config.private.discord_hook_url = Some(trimmed.to_string());
             }
         }
 
-        // 3. Construct the new full config
-        let new_full_config = AppConfig {
-            public: req_data.public,
-            private: current_private,
-        };
-
-        // 4. Update using the full config
-        AppConfig::update(new_full_config).map_err(|e| {
+        // 4. Update using the modified full config
+        AppConfig::update(current_config).map_err(|e| {
             error!("Failed to update config: {e}");
             AppError::from_err(ErrorKind::Internal, e)
         })?;

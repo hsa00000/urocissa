@@ -46,6 +46,12 @@
         title="No sync paths"
         text="Add a path to start syncing your files."
       ></v-empty-state>
+
+      <v-card-actions class="justify-end px-4 pb-4">
+        <v-btn color="primary" variant="flat" :loading="loading" @click="save" class="text-none">
+          Save Paths
+        </v-btn>
+      </v-card-actions>
     </v-card>
   </v-col>
   <ServerFilePicker v-model="showFilePicker" @select="onFilePickerSelect" />
@@ -54,10 +60,15 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import ServerFilePicker from './ServerFilePicker.vue'
+import { useConfigStore } from '@/store/configStore'
+import { useMessageStore } from '@/store/messageStore'
 
 const syncPaths = defineModel<string[]>('syncPaths', { required: true })
+const configStore = useConfigStore('mainId')
+const messageStore = useMessageStore('mainId')
 
 const showFilePicker = ref(false)
+const loading = ref(false)
 
 const removePath = (path: string) => {
   syncPaths.value = syncPaths.value.filter((p) => p !== path)
@@ -67,5 +78,17 @@ const onFilePickerSelect = (path: string) => {
   if (path && !syncPaths.value.includes(path)) {
     syncPaths.value = [...syncPaths.value, path]
   }
+}
+
+const save = async () => {
+  loading.value = true
+  const success = await configStore.updateConfig({
+    syncPaths: syncPaths.value
+  })
+
+  if (success) {
+    messageStore.success('Paths saved successfully')
+  }
+  loading.value = false
 }
 </script>

@@ -90,12 +90,20 @@
         >
         </v-text-field>
       </v-list-item>
+      <v-card-actions class="justify-end px-4 pb-4">
+        <v-btn color="primary" variant="flat" :loading="loading" @click="save" class="text-none">
+          Save Advanced Settings
+        </v-btn>
+      </v-card-actions>
     </v-card>
   </v-col>
 </template>
 
 <script setup lang="ts">
-import { watch } from 'vue'
+import { ref, watch } from 'vue'
+import { useConfigStore } from '@/store/configStore'
+import { useMessageStore } from '@/store/messageStore'
+import type { AppConfig } from '@/api/config'
 
 const authKey = defineModel<string | null>('authKey')
 const discordHookUrl = defineModel<string | null>('discordHookUrl')
@@ -103,6 +111,10 @@ const readOnlyMode = defineModel<boolean>('readOnlyMode')
 const disableImg = defineModel<boolean>('disableImg')
 const hasDiscordHook = defineModel<boolean>('hasDiscordHook')
 const hasAuthKey = defineModel<boolean>('hasAuthKey')
+
+const configStore = useConfigStore('mainId')
+const messageStore = useMessageStore('mainId')
+const loading = ref(false)
 
 watch(hasDiscordHook, (newValue) => {
   if (!(newValue ?? false)) {
@@ -115,4 +127,41 @@ watch(hasAuthKey, (newValue) => {
     authKey.value = ''
   }
 })
+
+const save = async () => {
+  loading.value = true
+
+  const payload: Partial<AppConfig> = {
+    readOnlyMode: readOnlyMode.value,
+    disableImg: disableImg.value
+  }
+
+  // Handle Auth Key logic
+  // If disabled, send empty string to clear.
+  // If enabled and user typed something, send it.
+  // If enabled and empty (unchanged), don't send it (preserve existing).
+  if (!hasAuthKey.value) {
+    payload.authKey = ''
+  } else if (authKey.value) {
+    payload.authKey = authKey.value
+  }
+
+  // Handle Discord Hook logic
+  if (!hasDiscordHook.value) {
+    payload.discordHookUrl = ''
+  } else if (discordHookUrl.value) {
+    payload.discordHookUrl = discordHookUrl.value
+  }
+
+  const success = await configStore.updateConfig(payload)
+
+  if (success) {
+    messageStore.success('Advanced settings saved successfully')
+    // Clear sensitive inputs after save if we want, or keep them.
+    // Usually good to clear authKey if it's write-only, but keeping it allows correction.
+    // Given the API doesn't return it, maybe clear it?
+    // Let's leave it as is for now.
+  }
+  loading.value = false
+}
 </script>

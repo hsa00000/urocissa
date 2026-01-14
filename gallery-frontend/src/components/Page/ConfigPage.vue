@@ -15,39 +15,6 @@
                 v-model:disable-img="localSettings.disableImg"
                 v-model:has-discord-hook="localSettings.hasDiscordHook"
               />
-
-              <v-col cols="12">
-                <v-form ref="form" v-model="valid" @submit.prevent="save" :disabled="loading">
-                  <v-row>
-                    <v-col cols="12">
-                      <v-row justify="end">
-                        <v-col cols="auto">
-                          <v-btn
-                            variant="text"
-                            class="text-none"
-                            @click="resetToStore"
-                            :disabled="loading"
-                          >
-                            Reset
-                          </v-btn>
-                        </v-col>
-                        <v-col cols="auto">
-                          <v-btn
-                            color="primary"
-                            variant="flat"
-                            type="submit"
-                            :loading="loading"
-                            :disabled="!valid || loading"
-                            class="text-none"
-                          >
-                            Save Changes
-                          </v-btn>
-                        </v-col>
-                      </v-row>
-                    </v-col>
-                  </v-row>
-                </v-form>
-              </v-col>
             </v-row>
           </v-col>
         </v-row>
@@ -66,18 +33,12 @@ import ChangePassword from './Config/ChangePassword.vue'
 import StorageAndSync from './Config/StorageAndSync.vue'
 import AdvancedConfig from './Config/AdvancedConfig.vue'
 import { tryWithMessageStore } from '@/script/utils/try_catch'
-import { useMessageStore } from '@/store/messageStore'
-
-import { VForm } from 'vuetify/components'
 
 const configStore = useConfigStore('mainId')
 const initializedStore = useInitializedStore('mainId')
-const messageStore = useMessageStore('mainId')
 
 // UI State
 const loading = ref(false)
-const valid = ref(false)
-const form = ref<VForm | null>(null)
 
 // Local State
 const localSettings = reactive<AppConfig>({
@@ -113,37 +74,6 @@ const initData = async () => {
     initializedStore.initialized = true
   }
 
-  loading.value = false
-}
-
-const resetToStore = () => {
-  syncLocalWithStore()
-  form.value?.resetValidation()
-}
-
-const save = async () => {
-  const { valid: isValid } = (await form.value?.validate()) ?? { valid: false }
-  if (!isValid) return
-
-  loading.value = true
-  const success = await tryWithMessageStore('mainId', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const payload: any = { ...localSettings }
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    const result = await configStore.updateConfig(payload)
-
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-    if (!result) return false
-
-    // Reset validation state
-    form.value?.resetValidation()
-    return true
-  })
-
-  if (success === true) {
-    messageStore.success('Settings saved successfully.')
-  }
   loading.value = false
 }
 
