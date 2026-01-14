@@ -53,13 +53,14 @@
       <v-list-item>
         <v-text-field
           v-model="discordHookUrl"
-          :rules="[(v) => !(hasDiscordHook ?? false) || !!v || 'Discord Webhook URL is required']"
+          :rules="[(v) => !hasDiscordHook || !!v || 'Discord Webhook URL is required']"
           label="Discord Webhook URL"
           prepend-icon="mdi-webhook"
           placeholder="https://discord.com/api/..."
           variant="outlined"
           density="compact"
-          :disabled="!(hasDiscordHook ?? false)"
+          hide-details
+          :disabled="!hasDiscordHook"
           @click.stop
           class="py-2"
         ></v-text-field>
@@ -78,13 +79,14 @@
       <v-list-item>
         <v-text-field
           v-model="authKey"
-          :rules="[(v) => !(hasAuthKey ?? false) || !!v || 'JWT Authentication Key is required']"
+          :rules="[(v) => !hasAuthKey || !!v || 'JWT Authentication Key is required']"
           label="JWT Authentication Key"
           prepend-icon="mdi-key-outline"
           placeholder="Enter JWT Key"
           variant="outlined"
           density="compact"
-          :disabled="!(hasAuthKey ?? false)"
+          hide-details
+          :disabled="!hasAuthKey"
           @click.stop
           class="py-2"
         >
@@ -105,25 +107,25 @@ import { useConfigStore } from '@/store/configStore'
 import { useMessageStore } from '@/store/messageStore'
 import type { AppConfig } from '@/api/config'
 
-const authKey = defineModel<string | null>('authKey')
-const discordHookUrl = defineModel<string | null>('discordHookUrl')
-const readOnlyMode = defineModel<boolean>('readOnlyMode')
-const disableImg = defineModel<boolean>('disableImg')
-const hasDiscordHook = defineModel<boolean>('hasDiscordHook')
-const hasAuthKey = defineModel<boolean>('hasAuthKey')
+const authKey = defineModel<string | null>('authKey', { required: true })
+const discordHookUrl = defineModel<string | null>('discordHookUrl', { required: true })
+const readOnlyMode = defineModel<boolean>('readOnlyMode', { required: true })
+const disableImg = defineModel<boolean>('disableImg', { required: true })
+const hasDiscordHook = defineModel<boolean>('hasDiscordHook', { required: true })
+const hasAuthKey = defineModel<boolean>('hasAuthKey', { required: true })
 
 const configStore = useConfigStore('mainId')
 const messageStore = useMessageStore('mainId')
 const loading = ref(false)
 
 watch(hasDiscordHook, (newValue) => {
-  if (!(newValue ?? false)) {
+  if (!newValue) {
     discordHookUrl.value = ''
   }
 })
 
 watch(hasAuthKey, (newValue) => {
-  if (!(newValue ?? false)) {
+  if (!newValue) {
     authKey.value = ''
   }
 })
@@ -131,14 +133,14 @@ watch(hasAuthKey, (newValue) => {
 const save = async () => {
   loading.value = true
 
-  if (hasAuthKey.value === true && (authKey.value == null || authKey.value.trim() === '')) {
+  if (hasAuthKey.value && (authKey.value == null || authKey.value.trim() === '')) {
     messageStore.error('JWT Authentication Key is required when enabled')
     loading.value = false
     return
   }
 
   if (
-    hasDiscordHook.value === true &&
+    hasDiscordHook.value &&
     (discordHookUrl.value == null || discordHookUrl.value.trim() === '')
   ) {
     messageStore.error('Discord Webhook URL is required when enabled')
@@ -152,18 +154,18 @@ const save = async () => {
   }
 
   // Handle Auth Key logic
-  // If disabled, send empty string to clear.
+  // If disabled, send null to clear.
   // If enabled and user typed something, send it.
   // If enabled and empty (unchanged), don't send it (preserve existing).
-  if (hasAuthKey.value !== true) {
-    payload.authKey = ''
+  if (!hasAuthKey.value) {
+    payload.authKey = null
   } else if (authKey.value != null && authKey.value !== '') {
     payload.authKey = authKey.value
   }
 
   // Handle Discord Hook logic
-  if (hasDiscordHook.value !== true) {
-    payload.discordHookUrl = ''
+  if (!hasDiscordHook.value) {
+    payload.discordHookUrl = null
   } else if (discordHookUrl.value != null && discordHookUrl.value !== '') {
     payload.discordHookUrl = discordHookUrl.value
   }
