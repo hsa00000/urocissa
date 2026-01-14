@@ -10,11 +10,11 @@ export interface AppConfig {
   readOnlyMode: boolean
   disableImg: boolean
   // password is handled separately now
-  authKey?: string | null
+  authKey: string | null
   hasAuthKey: boolean
   hasPassword: boolean
   hasDiscordHook: boolean
-  discordHookUrl?: string | null
+  discordHookUrl: string | null
   syncPaths: string[]
 }
 

@@ -5,7 +5,7 @@
         <v-row justify="center" no-gutters>
           <v-col cols="12" md="8" lg="6">
             <v-row>
-              <ChangePassword />
+              <ChangePassword v-model:has-password="localSettings.hasPassword" />
               <StorageAndSync v-model:sync-paths="localSettings.syncPaths" />
               <AdvancedConfig
                 v-model:auth-key="localSettings.authKey"
