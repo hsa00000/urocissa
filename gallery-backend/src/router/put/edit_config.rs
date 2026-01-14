@@ -68,7 +68,12 @@ pub async fn update_config_handler(
 
         // 3. Apply updates to PrivateConfig fields
         if let Some(key) = req_data.auth_key {
-            current_config.private.auth_key = Some(key);
+            let trimmed = key.trim();
+            if trimmed.is_empty() {
+                current_config.private.auth_key = None;
+            } else {
+                current_config.private.auth_key = Some(trimmed.to_string());
+            }
         }
 
         if let Some(hook) = req_data.discord_hook_url {

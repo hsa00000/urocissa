@@ -28,7 +28,7 @@
         @click="disableImg = !disableImg"
       >
         <template #append>
-          <v-switch v-model="disableImg" color="primary" hide-details inset @click.stop></v-switch>
+          <v-switch v-model="disableImg" color="primary" inset @click.stop></v-switch>
         </template>
       </v-list-item>
 
@@ -53,13 +53,13 @@
       <v-list-item>
         <v-text-field
           v-model="discordHookUrl"
-          :rules="[(v) => !hasDiscordHook || !!v || 'Discord Webhook URL is required']"
+          :key="hasDiscordHook.toString()"
+          :rules="[(v) => !hasDiscordHook || !!v || 'Required']"
           label="Discord Webhook URL"
           prepend-icon="mdi-webhook"
           placeholder="https://discord.com/api/..."
           variant="outlined"
           density="compact"
-          hide-details
           :disabled="!hasDiscordHook"
           @click.stop
           class="py-2"
@@ -69,7 +69,7 @@
       <v-divider></v-divider>
       <v-list-item
         title="JWT Authentication Key"
-        subtitle="Provide a key for JWT authentication"
+        subtitle="Disable 則使用隨機產生的金鑰"
         @click="hasAuthKey = !hasAuthKey"
       >
         <template #append>
@@ -79,13 +79,13 @@
       <v-list-item>
         <v-text-field
           v-model="authKey"
-          :rules="[(v) => !hasAuthKey || !!v || 'JWT Authentication Key is required']"
+          :key="hasAuthKey.toString()"
+          :rules="[(v) => !hasAuthKey || !!v || 'Required']"
           label="JWT Authentication Key"
           prepend-icon="mdi-key-outline"
           placeholder="Enter JWT Key"
           variant="outlined"
           density="compact"
-          hide-details
           :disabled="!hasAuthKey"
           @click.stop
           class="py-2"
@@ -154,14 +154,14 @@ const save = async () => {
   }
 
   if (!hasAuthKey.value) {
-    payload.authKey = null
+    payload.authKey = ''
   } else if (authKey.value != null && authKey.value !== '') {
     payload.authKey = authKey.value
   }
 
   // Handle Discord Hook logic
   if (!hasDiscordHook.value) {
-    payload.discordHookUrl = null
+    payload.discordHookUrl = ''
   } else if (discordHookUrl.value != null && discordHookUrl.value !== '') {
     payload.discordHookUrl = discordHookUrl.value
   }
