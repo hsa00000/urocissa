@@ -69,7 +69,7 @@
       <v-divider></v-divider>
       <v-list-item
         title="JWT Authentication Key"
-        subtitle="Disable 則使用隨機產生的金鑰"
+        subtitle="Disable to use a randomly generated key"
         @click="hasAuthKey = !hasAuthKey"
       >
         <template #append>
