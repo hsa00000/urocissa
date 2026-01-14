@@ -69,11 +69,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, onMounted } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { updatePassword, getConfig } from '@/api/config'
 import { useMessageStore } from '@/store/messageStore'
 import { useConfigStore } from '@/store/configStore'
 import { tryWithMessageStore } from '@/script/utils/try_catch'
+
+const hasPassword = defineModel<boolean>('hasPassword', { required: true })
 
 const messageStore = useMessageStore('mainId')
 const configStore = useConfigStore('mainId')
@@ -88,7 +90,7 @@ const showOldPassword = ref(false)
 const showNewPassword = ref(false)
 
 // --- Computed: Status Checks ---
-const hasExistingPassword = computed(() => configStore.config?.hasPassword ?? false)
+const hasExistingPassword = computed(() => hasPassword.value)
 
 // Logic: Users can only input old password if one exists on the server.
 const canInputOldPassword = computed(() => hasExistingPassword.value)
@@ -116,17 +118,12 @@ const oldPasswordPlaceholder = computed(() => {
 })
 
 // --- Watchers & Lifecycle ---
-onMounted(() => {
-  if (configStore.config?.hasPassword !== undefined) {
-    enabled.value = configStore.config.hasPassword
-  }
-})
-
 watch(
-  () => configStore.config?.hasPassword,
+  hasPassword,
   (val) => {
-    if (val !== undefined) enabled.value = val
-  }
+    enabled.value = val
+  },
+  { immediate: true }
 )
 
 watch(enabled, (val) => {

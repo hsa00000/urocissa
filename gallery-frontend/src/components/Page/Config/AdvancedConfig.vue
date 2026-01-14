@@ -153,10 +153,6 @@ const save = async () => {
     disableImg: disableImg.value
   }
 
-  // Handle Auth Key logic
-  // If disabled, send null to clear.
-  // If enabled and user typed something, send it.
-  // If enabled and empty (unchanged), don't send it (preserve existing).
   if (!hasAuthKey.value) {
     payload.authKey = null
   } else if (authKey.value != null && authKey.value !== '') {
