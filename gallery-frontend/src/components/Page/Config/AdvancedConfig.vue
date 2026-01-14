@@ -140,27 +140,23 @@ const save = async () => {
   // If disabled, send empty string to clear.
   // If enabled and user typed something, send it.
   // If enabled and empty (unchanged), don't send it (preserve existing).
-  if (!hasAuthKey.value) {
+  if (hasAuthKey.value !== true) {
     payload.authKey = ''
-  } else if (authKey.value) {
+  } else if (authKey.value != null && authKey.value !== '') {
     payload.authKey = authKey.value
   }
 
   // Handle Discord Hook logic
-  if (!hasDiscordHook.value) {
+  if (hasDiscordHook.value !== true) {
     payload.discordHookUrl = ''
-  } else if (discordHookUrl.value) {
+  } else if (discordHookUrl.value != null && discordHookUrl.value !== '') {
     payload.discordHookUrl = discordHookUrl.value
   }
 
   const success = await configStore.updateConfig(payload)
 
-  if (success) {
+  if (success === true) {
     messageStore.success('Advanced settings saved successfully')
-    // Clear sensitive inputs after save if we want, or keep them.
-    // Usually good to clear authKey if it's write-only, but keeping it allows correction.
-    // Given the API doesn't return it, maybe clear it?
-    // Let's leave it as is for now.
   }
   loading.value = false
 }

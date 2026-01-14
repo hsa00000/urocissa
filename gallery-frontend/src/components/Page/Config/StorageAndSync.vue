@@ -86,7 +86,7 @@ const save = async () => {
     syncPaths: syncPaths.value
   })
 
-  if (success) {
+  if (success === true) {
     messageStore.success('Paths saved successfully')
   }
   loading.value = false
