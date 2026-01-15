@@ -6,7 +6,7 @@
 
       <v-list-item
         title="Monitored Paths"
-        subtitle="Automatically detect changed files in folders and index them"
+        subtitle="Automatically scan changed files"
         prepend-icon="mdi-folder-network-outline"
         lines="two"
       >
@@ -44,7 +44,7 @@
         v-else
         icon="mdi-folder-open-outline"
         title="No sync paths"
-        text="Add a path to start syncing your files."
+        text="Add a path to start monitoring your files."
       ></v-empty-state>
 
       <v-card-actions class="justify-end px-4 pb-4">
