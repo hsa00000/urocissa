@@ -3,12 +3,10 @@ name: Build and Release Installer
 on:
   push:
     tags:
-      # Change here: Listen to tags starting with a number (e.g. 0.20.1)
-      # Or simply write - '*' to trigger on all tags
       - "[0-9]*"
     branches:
-      - "test" # Trigger on push to test branch
-  workflow_dispatch: # Allow manual trigger
+      - "test"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -28,23 +26,30 @@ jobs:
           cache: "npm"
           cache-dependency-path: gallery-frontend/package-lock.json
 
-      - name: Install Frontend Dependencies
-        working-directory: ./gallery-frontend
-        run: npm ci
-
-      - name: Build Frontend
-        working-directory: ./gallery-frontend
-        run: npm run build
-
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-pc-windows-msvc
 
+      - name: Install Frontend Dependencies
+        working-directory: ./gallery-frontend
+        run: npm ci
+
+      - name: Check Frontend
+        working-directory: ./gallery-frontend
+        run: npm run check
+
+      - name: Run Cargo Check
+        working-directory: ./gallery-backend
+        run: cargo check --verbose
+
+      - name: Build Frontend
+        working-directory: ./gallery-frontend
+        run: npm run build
+
       - name: Install NSIS
         run: |
           choco install nsis
-          # Add NSIS to PATH for the current session if choco doesn't update it immediately for the shell
           echo "C:\Program Files (x86)\NSIS" >> $env:GITHUB_PATH
 
       - name: Download FFmpeg and FFprobe
