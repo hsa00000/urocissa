@@ -397,7 +397,7 @@
           </v-col>
           <v-col cols="12" class="text-center">
             <div class="text-body-2 text-medium-emphasis">
-              &copy; {{ new Date().getFullYear() }} Urocissa. Licensed under
+              &copy; 2024-{{ new Date().getFullYear() }} Urocissa. Licensed under
               MIT.
             </div>
           </v-col>
