@@ -59,7 +59,7 @@
               @click="savePassword"
               class="text-none"
             >
-              Update Password
+              Save Changes
             </v-btn>
           </v-col>
         </v-row>

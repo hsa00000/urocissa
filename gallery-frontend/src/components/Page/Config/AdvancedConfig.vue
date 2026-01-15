@@ -94,7 +94,7 @@
       </v-list-item>
       <v-card-actions class="justify-end px-4 pb-4">
         <v-btn color="primary" variant="flat" :loading="loading" @click="save" class="text-none">
-          Save Advanced Settings
+          Save Changes
         </v-btn>
       </v-card-actions>
     </v-card>
