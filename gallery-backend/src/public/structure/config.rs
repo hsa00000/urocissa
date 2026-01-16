@@ -8,10 +8,10 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::fs::{self, File};
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::{OnceLock, RwLock};
 
-const CONFIG_FILE: &str = "config.json";
+use crate::public::constant::storage::get_config_path;
 
 pub static FALLBACK_SECRET_KEY: OnceLock<String> = OnceLock::new();
 
@@ -89,8 +89,11 @@ impl AppConfig {
     }
 
     pub fn init() {
-        let should_migrate = if Path::new(CONFIG_FILE).exists() {
-            match fs::read_to_string(CONFIG_FILE) {
+        let config_path = get_config_path();
+        let config_path_display = config_path.display();
+
+        let should_migrate = if config_path.exists() {
+            match fs::read_to_string(&config_path) {
                 Ok(content) => serde_json::from_str::<AppConfig>(&content).is_err(),
                 Err(_) => true,
             }
@@ -107,10 +110,10 @@ impl AppConfig {
             } else {
                 crate::migration::cleanup_legacy_config_files();
             }
-            info!("Migration completed. New configuration saved to {CONFIG_FILE}");
+            info!("Migration completed. New configuration saved to {config_path_display}");
             cfg
         } else {
-            info!("Loading configuration from {CONFIG_FILE}");
+            info!("Loading configuration from {config_path_display}");
             Self::load_from_file()
         };
 
@@ -131,18 +134,23 @@ impl AppConfig {
     }
 
     fn load_from_file() -> AppConfig {
-        let file_content = fs::read_to_string(CONFIG_FILE).unwrap_or_else(|e| {
-            warn!("Failed to read config file {CONFIG_FILE}: {e}, using defaults");
+        let config_path = get_config_path();
+        let config_path_display = config_path.display();
+
+        let file_content = fs::read_to_string(&config_path).unwrap_or_else(|e| {
+            warn!("Failed to read config file {config_path_display}: {e}, using defaults");
             "{}".to_string()
         });
 
         match serde_json::from_str::<AppConfig>(&file_content) {
             Ok(config) => {
-                info!("Successfully loaded configuration from {CONFIG_FILE}");
+                info!("Successfully loaded configuration from {config_path_display}");
                 config
             }
             Err(e) => {
-                warn!("Failed to deserialize config from {CONFIG_FILE}: {e:?}, using defaults");
+                warn!(
+                    "Failed to deserialize config from {config_path_display}: {e:?}, using defaults"
+                );
                 AppConfig::default()
             }
         }
@@ -189,14 +197,19 @@ impl AppConfig {
     }
 
     fn save_update(config: &AppConfig) -> anyhow::Result<()> {
-        let mut file = File::create(CONFIG_FILE)
-            .context(format!("Failed to create config file {CONFIG_FILE}"))?;
+        let config_path = get_config_path();
+        let config_path_display = config_path.display();
+
+        let mut file = File::create(&config_path).context(format!(
+            "Failed to create config file {config_path_display}"
+        ))?;
 
         let pretty_json = serde_json::to_string_pretty(config)
             .context("Failed to serialize configuration to JSON")?;
 
-        file.write_all(pretty_json.as_bytes())
-            .context(format!("Failed to write configuration to {CONFIG_FILE}"))?;
+        file.write_all(pretty_json.as_bytes()).context(format!(
+            "Failed to write configuration to {config_path_display}"
+        ))?;
 
         Ok(())
     }

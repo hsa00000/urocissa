@@ -21,6 +21,7 @@ mod workflow;
 use crate::operations::initialization::logger::initialize_logger;
 use crate::process::initialization::initialize;
 use crate::public::constant::runtime::{INDEX_RUNTIME, ROCKET_RUNTIME};
+use crate::public::constant::storage::get_config_path;
 
 use crate::public::error_data::handle_error;
 use crate::public::structure::config::AppConfig;
@@ -59,8 +60,9 @@ async fn assets(
 
 /// Configures the Rocket instance with routes, fairings, and file servers.
 fn build_rocket() -> rocket::Rocket<rocket::Build> {
-    // Modified: Load config.json into Figment for extraction
-    let figment = Figment::new().merge(Json::file("config.json"));
+    // Modified: Load config.json from proper data path into Figment for extraction
+    let config_path = get_config_path();
+    let figment = Figment::new().merge(Json::file(&config_path));
 
     // New: Extract and validate config with type checking
     let app_config: AppConfig = figment
@@ -132,6 +134,85 @@ fn parse_limit(s: &str) -> ByteUnit {
     ByteUnit::from(bytes)
 }
 
+/// Migrates config.json from the current directory to the proper data path if needed.
+/// This handles the transition from storing config.json in the working directory
+/// to storing it in the platform-appropriate data directory.
+fn migrate_config_file() {
+    use std::path::Path;
+
+    let old_config_path = Path::new("config.json");
+    let new_config_path = get_config_path();
+
+    // Only migrate if old config exists in current directory and it's different from new path
+    if old_config_path.exists() && new_config_path != old_config_path {
+        // Don't migrate if new config already exists (user might have both)
+        if new_config_path.exists() {
+            return;
+        }
+
+        // Ensure parent directory exists
+        if let Some(parent) = new_config_path.parent() {
+            if !parent.exists() {
+                if let Err(e) = std::fs::create_dir_all(parent) {
+                    error!(
+                        "Failed to create config directory {}: {}. Config will remain at {}",
+                        parent.display(),
+                        e,
+                        old_config_path.display()
+                    );
+                    return;
+                }
+            }
+        }
+
+        // Move the config file
+        match std::fs::rename(old_config_path, &new_config_path) {
+            Ok(()) => {
+                info!(
+                    "Migrated config.json from {} to {}",
+                    old_config_path.display(),
+                    new_config_path.display()
+                );
+            }
+            Err(e) => {
+                // If rename fails (e.g., cross-device), try copy + delete
+                warn!(
+                    "Failed to move config file ({}), attempting copy: {}",
+                    e,
+                    old_config_path.display()
+                );
+                match std::fs::copy(old_config_path, &new_config_path) {
+                    Ok(_) => {
+                        if let Err(e) = std::fs::remove_file(old_config_path) {
+                            warn!(
+                                "Config copied but failed to remove old file: {}. \
+                                 Please manually delete {}",
+                                e,
+                                old_config_path.display()
+                            );
+                        } else {
+                            info!(
+                                "Migrated config.json from {} to {}",
+                                old_config_path.display(),
+                                new_config_path.display()
+                            );
+                        }
+                    }
+                    Err(e) => {
+                        error!(
+                            "Failed to copy config file from {} to {}: {}. \
+                             Config will remain at old location.",
+                            old_config_path.display(),
+                            new_config_path.display(),
+                            e
+                        );
+                    }
+                }
+            }
+        }
+    }
+}
+
 fn main() {
     // Initialize logger first thing
     let tui_events_rx = initialize_logger();
@@ -140,6 +221,9 @@ fn main() {
         error!("Migration failed: {:?}\nCheck logs above.", e);
         std::process::exit(1);
     }
+
+    // Migrate config.json from current directory to proper data path if needed
+    migrate_config_file();
 
     // Initialize core subsystems (Config, DB, FFmpeg checks)
     initialize();
