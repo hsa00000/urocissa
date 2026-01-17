@@ -15,7 +15,7 @@ pub enum Role {
 #[serde(rename_all = "camelCase")]
 pub struct Claims {
     pub role: Role,
-    pub exp: u64,
+    pub exp: u64, // seconds since epoch
 }
 
 impl Claims {

@@ -45,21 +45,24 @@ impl<'r> FromRequest<'r> for GuardTimestamp {
             }
         };
 
-        let query_timestamp = req.uri().query().and_then(|query| {
+        let maybe_timestamp = req.uri().query().and_then(|query| {
             query
                 .segments()
                 .find(|(key, _)| *key == "timestamp")
                 .and_then(|(_, value)| value.parse::<i64>().ok())
         });
 
-        let Some(query_timestamp) = query_timestamp else {
-            return Outcome::Error((
-                Status::Unauthorized,
-                AppError::new(
-                    ErrorKind::Auth,
-                    "No valid 'timestamp' parameter found in the query",
-                ),
-            ));
+        let query_timestamp = match maybe_timestamp {
+            Some(ts) => ts,
+            None => {
+                return Outcome::Error((
+                    Status::Unauthorized,
+                    AppError::new(
+                        ErrorKind::Auth,
+                        "No valid 'timestamp' parameter found in the query",
+                    ),
+                ));
+            }
         };
 
         if query_timestamp != claims.timestamp {

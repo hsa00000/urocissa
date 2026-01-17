@@ -6,7 +6,7 @@ use rocket::http::Status;
 use rocket::request::{FromRequest, Outcome};
 use rocket::serde::json::Json;
 
-use crate::public::error::{AppError, ErrorKind, ResultExt}; // Import AppError stuff
+use crate::public::error::{AppError, ErrorKind, ResultExt};
 use crate::public::structure::config::APP_CONFIG;
 use crate::router::GuardError;
 use crate::router::claims::claims_hash::ClaimsHash;
