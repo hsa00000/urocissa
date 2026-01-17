@@ -19,13 +19,13 @@ if ($dev) {
     Write-Host "Release mode. Using profile: $profile"
 }
 
-$cargoToml = Get-Content "gallery-backend/Cargo.toml"
-$versionLine = $cargoToml | Select-String -Pattern '^version\s*=\s*"(.*)"'
-if ($versionLine) {
-    $version = $versionLine.Matches.Groups[1].Value
+# Determine version based on GitHub Actions environment
+if ($env:GITHUB_REF_TYPE -eq "tag") {
+    $version = $env:GITHUB_REF_NAME
+    Write-Host "Tag detected. Using version: $version"
 } else {
     $version = "0.0.0"
-    Write-Warning "Could not determine version from Cargo.toml. Using default 0.0.0"
+    Write-Host "No tag detected. Using default version: $version"
 }
 
 Write-Host "Detected version: $version"

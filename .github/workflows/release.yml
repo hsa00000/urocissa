@@ -108,33 +108,38 @@ jobs:
         run: |
           echo "Downloading FFmpeg static build..."
           wget -q https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
-          
+
           tar -xf ffmpeg-release-amd64-static.tar.xz
-          
+
           mkdir -p final_package/urocissa-linux/bin
-          
+
           cp gallery-backend/target/release/urocissa final_package/urocissa-linux/
-          
+
           cp ffmpeg-*-amd64-static/ffmpeg final_package/urocissa-linux/bin/
           cp ffmpeg-*-amd64-static/ffprobe final_package/urocissa-linux/bin/
-          
+
           chmod +x final_package/urocissa-linux/urocissa
           chmod +x final_package/urocissa-linux/bin/ffmpeg
           chmod +x final_package/urocissa-linux/bin/ffprobe
-          
+
           ./final_package/urocissa-linux/bin/ffmpeg -version | head -n 1
 
       - name: Create Tarball
         run: |
           cd final_package
-          
-          VERSION="${{ github.ref_name }}"
-          if [[ "$VERSION" == "" ]]; then VERSION="${{ github.sha }}"; fi
-          
+
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            VERSION="${{ github.ref_name }}"
+          else
+            VERSION="0.0.0"
+          fi
+
+          echo "Detected version: $VERSION"
+
           TAR_NAME="urocissa-linux-$VERSION.tar.gz"
-          
+
           tar -czf "../$TAR_NAME" urocissa-linux
-          
+
           echo "ASSET_PATH=$TAR_NAME" >> $GITHUB_ENV
 
       - name: Upload Artifact
