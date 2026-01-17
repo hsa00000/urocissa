@@ -1,4 +1,4 @@
-name: Build and Release Installer
+name: Build and Release
 
 on:
   push:
@@ -12,7 +12,8 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  build-windows:
+    name: Build Windows Installer
     runs-on: windows-latest
 
     steps:
@@ -63,11 +64,87 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: urocissa-installer
-          path: gallery-backend/urocissa-installer-*.exe
+          name: urocissa-windows-installer
+          path: gallery-backend/urocissa-windows-installer-*.exe
 
       - name: Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: gallery-backend/urocissa-installer-*.exe
+          files: gallery-backend/urocissa-windows-installer-*.exe
+
+  build-linux:
+    name: Build Linux Binary
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: gallery-frontend/package-lock.json
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
+
+      - name: Install Frontend Dependencies
+        working-directory: ./gallery-frontend
+        run: npm ci
+
+      - name: Build Frontend
+        working-directory: ./gallery-frontend
+        run: npm run build
+
+      - name: Build Rust Backend
+        working-directory: ./gallery-backend
+        run: cargo build --release --features "embed-frontend auto-open-browser"
+
+      - name: Prepare Release Package
+        run: |
+          echo "Downloading FFmpeg static build..."
+          wget -q https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
+          
+          tar -xf ffmpeg-release-amd64-static.tar.xz
+          
+          mkdir -p final_package/urocissa-linux/bin
+          
+          cp gallery-backend/target/release/urocissa final_package/urocissa-linux/
+          
+          cp ffmpeg-*-amd64-static/ffmpeg final_package/urocissa-linux/bin/
+          cp ffmpeg-*-amd64-static/ffprobe final_package/urocissa-linux/bin/
+          
+          chmod +x final_package/urocissa-linux/urocissa
+          chmod +x final_package/urocissa-linux/bin/ffmpeg
+          chmod +x final_package/urocissa-linux/bin/ffprobe
+          
+          ./final_package/urocissa-linux/bin/ffmpeg -version | head -n 1
+
+      - name: Create Tarball
+        run: |
+          cd final_package
+          
+          VERSION="${{ github.ref_name }}"
+          if [[ "$VERSION" == "" ]]; then VERSION="${{ github.sha }}"; fi
+          
+          TAR_NAME="urocissa-linux-$VERSION.tar.gz"
+          
+          tar -czf "../$TAR_NAME" urocissa-linux
+          
+          echo "ASSET_PATH=$TAR_NAME" >> $GITHUB_ENV
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: urocissa-linux-package
+          path: ${{ env.ASSET_PATH }}
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: ${{ env.ASSET_PATH }}
