@@ -21,7 +21,7 @@ mod workflow;
 use crate::operations::initialization::logger::initialize_logger;
 use crate::process::initialization::initialize;
 use crate::public::constant::runtime::{INDEX_RUNTIME, ROCKET_RUNTIME};
-use crate::public::constant::storage::get_config_path;
+use crate::public::constant::storage::{get_config_path, get_data_path};
 
 use crate::public::error_data::handle_error;
 use crate::public::structure::config::AppConfig;
@@ -275,6 +275,16 @@ fn main() {
 
     // Migrate config.json from current directory to proper data path if needed
     migrate_config_file();
+
+    let v4_db = get_data_path().join("db/index_v4.redb");
+    let v5_db = get_data_path().join("db/index_v5.redb");
+
+    if v4_db.exists() && !v5_db.exists() {
+        info!("Migrating database from v4 to v5");
+        if let Err(e) = std::fs::rename(&v4_db, &v5_db) {
+            error!("Failed to migrate database: {}", e);
+        }
+    }
 
     clear_undefined_album();
 
