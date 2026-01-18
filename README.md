@@ -117,7 +117,7 @@ These values are based on actual runtime RSS (resident memory) usage of the `uro
    Execute the `run_urocissa_docker.sh` script to launch Urocissa:
 
    ```bash
-   bash docker/run_urocissa_docker.sh
+   bash run_urocissa_docker.sh
    ```
 
 This script will launch Urocissa. You can access the app using the following link:
@@ -143,7 +143,7 @@ If you want to change the default port or configure a password, refer to the [Co
 1. Run the Docker script:
 
    ```bash
-   bash docker/run_urocissa_docker.sh
+   bash run_urocissa_docker.sh
    ```
 
    This will update and launch Urocissa.
