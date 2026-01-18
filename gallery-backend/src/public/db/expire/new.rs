@@ -6,6 +6,11 @@ use crate::public::constant::storage::get_data_path;
 
 static EXPIRE_IN_DISK: LazyLock<redb::Database> = LazyLock::new(|| {
     let path = get_data_path().join("db/expire_db.redb");
+    if let Some(parent) = path.parent() {
+        if !parent.exists() {
+            std::fs::create_dir_all(parent).unwrap();
+        }
+    }
     redb::Database::create(path).unwrap()
 });
 

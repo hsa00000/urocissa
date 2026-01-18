@@ -9,6 +9,11 @@ use crate::public::constant::storage::get_data_path;
 
 static TREE_SNAPSHOT_IN_DISK: LazyLock<redb::Database> = LazyLock::new(|| {
     let path = get_data_path().join("db/index_v5.redb");
+    if let Some(parent) = path.parent() {
+        if !parent.exists() {
+            std::fs::create_dir_all(parent).unwrap();
+        }
+    }
     redb::Database::create(path).unwrap()
 });
 
