@@ -213,6 +213,57 @@ fn migrate_config_file() {
     }
 }
 
+fn clear_undefined_album() {
+    let write_txn = TREE.in_disk.begin_write().unwrap();
+    let mut valid_album_ids = std::collections::HashSet::new();
+    let mut updates = Vec::new();
+
+    {
+        let table = write_txn.open_table(DATA_TABLE).unwrap();
+
+        // Pass 1: Collect valid Album IDs
+        for result in table.iter().unwrap() {
+            if let Ok((_, guard)) = result {
+                let data = guard.value();
+                if let AbstractData::Album(album) = data {
+                    valid_album_ids.insert(album.object.id);
+                }
+            }
+        }
+
+        // Pass 2: Check references
+        for result in table.iter().unwrap() {
+            if let Ok((key, guard)) = result {
+                let mut data = guard.value();
+
+                let should_update = if let Some(albums) = data.albums() {
+                    albums.iter().any(|id| !valid_album_ids.contains(id))
+                } else {
+                    false
+                };
+
+                if should_update {
+                    if let Some(albums_mut) = data.albums_mut() {
+                        albums_mut.retain(|id| valid_album_ids.contains(id));
+                    }
+                    updates.push((key.value().to_string(), data));
+                }
+            }
+        }
+    }
+
+    if !updates.is_empty() {
+        let mut table = write_txn.open_table(DATA_TABLE).unwrap();
+        let count = updates.len();
+        for (key, data) in updates {
+            table.insert(key.as_str(), data).unwrap();
+        }
+        info!("Cleared undefined album references from {} items", count);
+    }
+
+    write_txn.commit().unwrap();
+}
+
 fn main() {
     // Initialize logger first thing
     let tui_events_rx = initialize_logger();
@@ -224,6 +275,8 @@ fn main() {
 
     // Migrate config.json from current directory to proper data path if needed
     migrate_config_file();
+
+    clear_undefined_album();
 
     // Initialize core subsystems (Config, DB, FFmpeg checks)
     initialize();
