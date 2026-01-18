@@ -10,7 +10,6 @@ use rocket::fs::FileServer;
 use std::thread;
 use std::time::Instant;
 
-mod migration;
 mod operations;
 mod process;
 mod public;
@@ -134,159 +133,32 @@ fn parse_limit(s: &str) -> ByteUnit {
     ByteUnit::from(bytes)
 }
 
-/// Migrates config.json from the current directory to the proper data path if needed.
-/// This handles the transition from storing config.json in the working directory
-/// to storing it in the platform-appropriate data directory.
-fn migrate_config_file() {
-    use std::path::Path;
+fn migration() {
+    let v4_db_path = get_data_path().join("db/index_v4.redb");
 
-    let old_config_path = Path::new("config.json");
-    let new_config_path = get_config_path();
+    if v4_db_path.exists() {
+        eprintln!(
+            "Old database format detected at: {}\n\n\
+             This version cannot directly migrate from database v4.\n\
+             Please follow these steps to upgrade safely:\n\
+             1. Downgrade Urocissa to version 1.2.2.\n\
+             2. Start the app (v1.2.2) to automatically migrate the database.\n\
+             3. Once confirmed working, update back to this latest version.\n\n\
+             Press Enter to exit...",
+            v4_db_path.display()
+        );
 
-    // Only migrate if old config exists in current directory and it's different from new path
-    if old_config_path.exists() && new_config_path != old_config_path {
-        // Don't migrate if new config already exists (user might have both)
-        if new_config_path.exists() {
-            return;
-        }
-
-        // Ensure parent directory exists
-        if let Some(parent) = new_config_path.parent() {
-            if !parent.exists() {
-                if let Err(e) = std::fs::create_dir_all(parent) {
-                    error!(
-                        "Failed to create config directory {}: {}. Config will remain at {}",
-                        parent.display(),
-                        e,
-                        old_config_path.display()
-                    );
-                    return;
-                }
-            }
-        }
-
-        // Move the config file
-        match std::fs::rename(old_config_path, &new_config_path) {
-            Ok(()) => {
-                info!(
-                    "Migrated config.json from {} to {}",
-                    old_config_path.display(),
-                    new_config_path.display()
-                );
-            }
-            Err(e) => {
-                // If rename fails (e.g., cross-device), try copy + delete
-                warn!(
-                    "Failed to move config file ({}), attempting copy: {}",
-                    e,
-                    old_config_path.display()
-                );
-                match std::fs::copy(old_config_path, &new_config_path) {
-                    Ok(_) => {
-                        if let Err(e) = std::fs::remove_file(old_config_path) {
-                            warn!(
-                                "Config copied but failed to remove old file: {}. \
-                                 Please manually delete {}",
-                                e,
-                                old_config_path.display()
-                            );
-                        } else {
-                            info!(
-                                "Migrated config.json from {} to {}",
-                                old_config_path.display(),
-                                new_config_path.display()
-                            );
-                        }
-                    }
-                    Err(e) => {
-                        error!(
-                            "Failed to copy config file from {} to {}: {}. \
-                             Config will remain at old location.",
-                            old_config_path.display(),
-                            new_config_path.display(),
-                            e
-                        );
-                    }
-                }
-            }
-        }
+        let mut input = String::new();
+        let _ = std::io::stdin().read_line(&mut input);
+        std::process::exit(1);
     }
-}
-
-fn clear_undefined_album() {
-    let write_txn = TREE.in_disk.begin_write().unwrap();
-    let mut valid_album_ids = std::collections::HashSet::new();
-    let mut updates = Vec::new();
-
-    {
-        let table = write_txn.open_table(DATA_TABLE).unwrap();
-
-        // Pass 1: Collect valid Album IDs
-        for result in table.iter().unwrap() {
-            if let Ok((_, guard)) = result {
-                let data = guard.value();
-                if let AbstractData::Album(album) = data {
-                    valid_album_ids.insert(album.object.id);
-                }
-            }
-        }
-
-        // Pass 2: Check references
-        for result in table.iter().unwrap() {
-            if let Ok((key, guard)) = result {
-                let mut data = guard.value();
-
-                let should_update = if let Some(albums) = data.albums() {
-                    albums.iter().any(|id| !valid_album_ids.contains(id))
-                } else {
-                    false
-                };
-
-                if should_update {
-                    if let Some(albums_mut) = data.albums_mut() {
-                        albums_mut.retain(|id| valid_album_ids.contains(id));
-                    }
-                    updates.push((key.value().to_string(), data));
-                }
-            }
-        }
-    }
-
-    if !updates.is_empty() {
-        let mut table = write_txn.open_table(DATA_TABLE).unwrap();
-        let count = updates.len();
-        for (key, data) in updates {
-            table.insert(key.as_str(), data).unwrap();
-        }
-        info!("Cleared undefined album references from {} items", count);
-    }
-
-    write_txn.commit().unwrap();
 }
 
 fn main() {
     // Initialize logger first thing
     let tui_events_rx = initialize_logger();
 
-    if let Err(e) = migration::migrate() {
-        error!("Migration failed: {:?}\nCheck logs above.", e);
-        std::process::exit(1);
-    }
-
-    // Migrate config.json from current directory to proper data path if needed
-    migrate_config_file();
-
-    let v4_db = get_data_path().join("db/index_v4.redb");
-    let v5_db = get_data_path().join("db/index_v5.redb");
-
-    if v4_db.exists() && !v5_db.exists() {
-        info!("Migrating database from v4 to v5");
-        if let Err(e) = std::fs::rename(&v4_db, &v5_db) {
-            error!("Failed to migrate database: {}", e);
-        }
-    }
-
-    clear_undefined_album();
+    migration();
 
     // Initialize core subsystems (Config, DB, FFmpeg checks)
     initialize();

@@ -92,30 +92,8 @@ impl AppConfig {
         let config_path = get_config_path();
         let config_path_display = config_path.display();
 
-        let should_migrate = if config_path.exists() {
-            match fs::read_to_string(&config_path) {
-                Ok(content) => serde_json::from_str::<AppConfig>(&content).is_err(),
-                Err(_) => true,
-            }
-        } else {
-            true
-        };
-
-        let mut config = if should_migrate {
-            info!("Legacy configuration or missing file detected. Starting migration...");
-            let cfg = crate::migration::construct_migrated_config();
-
-            if let Err(e) = Self::save_update(&cfg) {
-                warn!("Warning: Failed to save migrated config: {e}");
-            } else {
-                crate::migration::cleanup_legacy_config_files();
-            }
-            info!("Migration completed. New configuration saved to {config_path_display}");
-            cfg
-        } else {
-            info!("Loading configuration from {config_path_display}");
-            Self::load_from_file()
-        };
+        info!("Loading configuration from {config_path_display}");
+        let mut config = Self::load_from_file();
 
         if config
             .private
