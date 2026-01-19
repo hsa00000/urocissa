@@ -4733,6 +4733,7 @@ dependencies = [
  "tokio",
  "tokio-rayon",
  "toml 0.9.11+spec-1.1.0",
+ "ubyte",
  "unicode-width",
  "uuid",
  "walkdir",

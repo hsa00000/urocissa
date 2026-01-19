@@ -1,12 +1,6 @@
 #[macro_use]
 extern crate rocket;
-use figment::{
-    Figment,
-    providers::{Format, Json},
-};
 use redb::{ReadableTable, ReadableTableMetadata};
-use rocket::data::{ByteUnit, Limits}; // Add ByteUnit import
-use rocket::fs::FileServer;
 use std::thread;
 use std::time::Instant;
 
@@ -20,10 +14,9 @@ mod workflow;
 use crate::operations::initialization::logger::initialize_logger;
 use crate::process::initialization::initialize;
 use crate::public::constant::runtime::{INDEX_RUNTIME, ROCKET_RUNTIME};
-use crate::public::constant::storage::{get_config_path, get_data_path};
+use crate::public::constant::storage::get_data_path;
 
 use crate::public::error_data::handle_error;
-use crate::public::structure::config::AppConfig;
 use crate::public::tui::{DASHBOARD, tui_task};
 use crate::tasks::BATCH_COORDINATOR;
 use crate::tasks::batcher::start_watcher::StartWatcherTask;
@@ -32,106 +25,6 @@ use crate::tasks::looper::start_expire_check_loop;
 use public::constant::redb::DATA_TABLE;
 use public::db::tree::TREE;
 use public::structure::abstract_data::AbstractData;
-use router::fairing::cache_control_fairing::cache_control_fairing;
-use router::fairing::generate_fairing_routes;
-use router::{
-    delete::generate_delete_routes, get::generate_get_routes, post::generate_post_routes,
-    put::generate_put_routes,
-}; // Add import for existing AppConfig
-
-#[cfg(feature = "embed-frontend")]
-#[get("/assets/<file..>")]
-async fn assets(
-    file: std::path::PathBuf,
-) -> Option<(rocket::http::ContentType, std::borrow::Cow<'static, [u8]>)> {
-    use crate::public::embedded::FrontendAssets;
-
-    let filename = format!("assets/{}", file.display());
-    let asset = FrontendAssets::get(&filename)?;
-    let mime = mime_guess::from_path(&filename).first_or_octet_stream();
-
-    // Fix: Convert mime_guess::Mime to Rocket ContentType
-    let content_type = rocket::http::ContentType::parse_flexible(mime.as_ref())
-        .unwrap_or(rocket::http::ContentType::Binary);
-
-    Some((content_type, asset.data))
-}
-
-/// Configures the Rocket instance with routes, fairings, and file servers.
-fn build_rocket() -> rocket::Rocket<rocket::Build> {
-    // Modified: Load config.json from proper data path into Figment for extraction
-    let config_path = get_config_path();
-    let figment = Figment::new().merge(Json::file(&config_path));
-
-    // New: Extract and validate config with type checking
-    let app_config: AppConfig = figment
-        .extract()
-        .expect("config.json format error or type mismatch");
-
-    // New: Convert human-readable limits to Rocket's Limits (using HashMap from config.rs)
-    let get_limit = |key: &str, default: &str| -> ByteUnit {
-        let val = app_config
-            .public
-            .limits
-            .get(key)
-            .map_or(default, std::string::String::as_str);
-        parse_limit(val)
-    };
-
-    let limits = Limits::default()
-        .limit("form", get_limit("data-form", "10GiB"))
-        .limit("data-form", get_limit("data-form", "10GiB"))
-        .limit("file", get_limit("file", "10GiB"))
-        .limit("json", get_limit("json", "10MiB"));
-
-    // New: Build Rocket config manually with extracted values
-    let rocket_config = rocket::Config::figment()
-        .merge(("address", &app_config.public.address))
-        .merge(("port", app_config.public.port))
-        .merge(("limits", limits));
-
-    #[cfg(not(feature = "embed-frontend"))]
-    let app = {
-        // Modified: Directly use the frontend dist folder as requested.
-        // This assumes that this configuration is used for development where the sibling directory exists.
-        // For production/standalone binaries, ensure 'embed-frontend' feature is enabled.
-        let asset_path = std::path::PathBuf::from("../gallery-frontend/dist/assets");
-
-        info!("Serving assets from: {:?}", asset_path);
-
-        rocket::custom(rocket_config)
-            .manage(app_config)
-            .attach(cache_control_fairing())
-            .mount("/assets", FileServer::from(asset_path))
-    };
-
-    #[cfg(feature = "embed-frontend")]
-    let app = {
-        info!("Serving assets from embedded binary");
-        rocket::custom(rocket_config)
-            .manage(app_config)
-            .attach(cache_control_fairing())
-            .mount("/", routes![assets])
-    };
-
-    app.mount("/", generate_get_routes())
-        .mount("/", generate_post_routes())
-        .mount("/", generate_put_routes())
-        .mount("/", generate_delete_routes())
-        .mount("/", generate_fairing_routes())
-}
-
-// New: Helper function to parse limit strings (e.g., "10GiB") to bytes
-fn parse_limit(s: &str) -> ByteUnit {
-    let bytes = if let Some(gib) = s.strip_suffix("GiB") {
-        gib.parse::<u64>().unwrap_or(10) * 1024 * 1024 * 1024
-    } else if let Some(mib) = s.strip_suffix("MiB") {
-        mib.parse::<u64>().unwrap_or(10) * 1024 * 1024
-    } else {
-        s.parse::<u64>().unwrap_or(10 * 1024 * 1024 * 1024) // Default to 10GiB
-    };
-    ByteUnit::from(bytes)
-}
 
 fn migration() {
     let v4_db_path = get_data_path().join("db/index_v4.redb");
@@ -227,7 +120,7 @@ fn main() {
     let rocket_handle = thread::spawn(|| {
         info!("Rocket thread starting.");
         if let Err(e) = ROCKET_RUNTIME.block_on(async {
-            let rocket = build_rocket().ignite().await?;
+            let rocket = router::build_rocket().ignite().await?;
             #[cfg(feature = "auto-open-browser")]
             let port = rocket.config().port;
             let shutdown_handle = rocket.shutdown();
