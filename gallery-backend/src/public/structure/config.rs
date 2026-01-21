@@ -1,9 +1,9 @@
 // src/public/structure/config.rs
 
 use anyhow::Context;
-use base64::{engine::general_purpose, Engine as _};
+use base64::{Engine as _, engine::general_purpose};
 use log::{info, warn};
-use rand::{rngs::OsRng, TryRngCore};
+use rand::{TryRngCore, rngs::OsRng};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::fs::{self, File};

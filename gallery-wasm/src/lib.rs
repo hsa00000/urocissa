@@ -1,5 +1,5 @@
-mod utils;
 mod image_processing;
+mod utils;
 
 use wasm_bindgen::prelude::*;
 

@@ -1,10 +1,7 @@
-use base64::{engine::general_purpose, Engine as _};
-use image::{DynamicImage, ImageFormat};
-// extern crate kamadak_exif;
-// use kamadak_exif::{In, Reader};
 use blake3::Hasher;
 use exif::{In, Reader};
-use serde::{Deserialize, Serialize};
+use image::ImageFormat;
+use serde::Serialize;
 use std::collections::BTreeMap;
 use std::io::Cursor;
 use thumbhash::rgba_to_thumb_hash;

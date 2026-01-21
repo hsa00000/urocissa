@@ -4,8 +4,8 @@ pub mod authenticate;
 pub mod create_album;
 pub mod create_share;
 pub mod import_config;
-pub mod post_upload_local;
 pub mod post_upload;
+pub mod post_upload_local;
 
 pub fn generate_post_routes() -> Vec<Route> {
     routes![
