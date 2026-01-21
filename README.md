@@ -60,7 +60,7 @@ Both demos are currently in read-only mode, and uploading files or editing tags 
 | Responsive Layout          | ✅     |
 | Docker Installation        | ✅     |
 | Shareable Albums           | ✅     |
-| Rotation Imags             | ✅     |
+| Rotation Images            | ✅     |
 | Discovery                  | ⏳     |
 | Multi-User Support         | ❌     |
 | Object/Face Recognition    | ❌     |
