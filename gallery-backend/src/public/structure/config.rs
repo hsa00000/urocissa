@@ -92,6 +92,20 @@ impl AppConfig {
         let config_path = get_config_path();
         let config_path_display = config_path.display();
 
+        // Create default config file if it doesn't exist
+        if !config_path.exists() {
+            info!(
+                "Configuration file not found at {config_path_display}. Creating default config.json..."
+            );
+            let default_config = AppConfig::default();
+
+            if let Err(e) = Self::save_update(&default_config) {
+                warn!("Failed to create default config file: {e}");
+            } else {
+                info!("Default configuration created successfully.");
+            }
+        }
+
         info!("Loading configuration from {config_path_display}");
         let mut config = Self::load_from_file();
 
