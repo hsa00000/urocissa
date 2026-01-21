@@ -133,7 +133,7 @@
               <v-responsive height="24"></v-responsive>
 
               <div class="text-caption text-medium-emphasis text-center">
-                Free & Open Source (MIT) • Windows & Linux (Docker)
+                Free & Open Source (MIT) • Windows & Linux
               </div>
             </v-col>
           </v-row>
@@ -280,7 +280,7 @@
                   <v-icon
                     color="primary"
                     size="x-large"
-                    icon="mdi-docker"
+                    icon="mdi-rocket-launch"
                   ></v-icon>
                 </template>
                 <v-card-title class="text-h5 font-weight-bold">
@@ -288,8 +288,8 @@
                 </v-card-title>
               </v-card-item>
               <v-card-text class="text-body-1">
-                Simple setup with Docker for Linux or a standalone executable
-                for Windows. Get started in minutes.
+                No complex dependencies. Simple standalone executable for both
+                Windows and Linux. Just download and run.
               </v-card-text>
             </v-card>
           </v-col>
@@ -348,19 +348,19 @@
                     target="_blank"
                     min-width="280"
                   >
-                    Download for Windows
+                    Download for Windows (.exe)
                   </v-btn>
                 </v-col>
                 <v-col cols="12" md="auto">
                   <v-btn
-                    color="secondary"
+                    color="grey-darken-3"
                     size="x-large"
-                    prepend-icon="mdi-docker"
-                    href="https://github.com/hsa00000/urocissa?tab=readme-ov-file#quick-setup-with-docker"
+                    prepend-icon="mdi-linux"
+                    :href="linuxDownloadUrl"
                     target="_blank"
                     min-width="280"
                   >
-                    Setup with Docker (Linux)
+                    Download for Linux (.tar.gz)
                   </v-btn>
                 </v-col>
               </v-row>
@@ -397,8 +397,8 @@
           </v-col>
           <v-col cols="12" class="text-center">
             <div class="text-body-2 text-medium-emphasis">
-              &copy; 2024-{{ new Date().getFullYear() }} Urocissa. Licensed under
-              MIT.
+              &copy; 2024-{{ new Date().getFullYear() }} Urocissa. Licensed
+              under MIT.
             </div>
           </v-col>
         </v-row>
@@ -418,26 +418,34 @@ import demoLight from "~/assets/demo_light.jpg";
 
 const theme = useTheme();
 
-// Performance: Use shallowRef since the URL is replaced atomically and requires no deep reactivity.
 const windowsDownloadUrl = shallowRef(
-  "https://github.com/hsa00000/urocissa/releases"
+  "https://github.com/hsa00000/urocissa/releases",
+);
+const linuxDownloadUrl = shallowRef(
+  "https://github.com/hsa00000/urocissa/releases",
 );
 
 onMounted(async () => {
   try {
     const response = await fetch(
-      "https://api.github.com/repos/hsa00000/urocissa/releases/latest"
+      "https://api.github.com/repos/hsa00000/urocissa/releases/latest",
     );
     if (!response.ok) throw new Error("Network response was not ok");
 
     const data = await response.json();
-    const exeAsset = data.assets.find((asset: any) =>
-      asset.name.endsWith(".exe")
-    );
 
-    if (exeAsset) {
-      windowsDownloadUrl.value = exeAsset.browser_download_url;
-    }
+    // Windows Executable
+    const exeAsset = data.assets.find((asset: any) =>
+      asset.name.endsWith(".exe"),
+    );
+    if (exeAsset) windowsDownloadUrl.value = exeAsset.browser_download_url;
+
+    // Linux Binary (.tar.gz)
+    const linuxAsset = data.assets.find(
+      (asset: any) =>
+        asset.name.includes("linux") && asset.name.endsWith(".tar.gz"),
+    );
+    if (linuxAsset) linuxDownloadUrl.value = linuxAsset.browser_download_url;
   } catch (e) {
     console.error("Failed to fetch latest release", e);
   }
@@ -445,7 +453,7 @@ onMounted(async () => {
 
 const isDark = computed(() => theme.global.current.value.dark);
 const themeIcon = computed(() =>
-  isDark.value ? "mdi-weather-night" : "mdi-weather-sunny"
+  isDark.value ? "mdi-weather-night" : "mdi-weather-sunny",
 );
 const screenshotSrc = computed(() => (isDark.value ? demoDark : demoLight));
 
@@ -462,62 +470,6 @@ useHead({
         "Urocissa is a self-hosted gallery designed to serve massive collections. Serve millions of photos on a 4GB RAM server.",
     },
   ],
-  // Performance: Preconnect to GitHub API to reduce latency for the dynamic download link fetch.
   link: [{ rel: "preconnect", href: "https://api.github.com" }],
 });
 </script>
-
-<style scoped>
-html {
-  scroll-behavior: smooth;
-}
-
-.logo-bunker-sm {
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
-  overflow: hidden;
-}
-
-.logo-bunker-lg {
-  width: 150px;
-  height: 150px;
-  min-width: 150px;
-  min-height: 150px;
-  position: relative;
-}
-
-.layout-locked {
-  --v-layout-top: 64px;
-  padding-top: 64px;
-}
-
-.bunker-16-9 {
-  width: 100%;
-  padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
-  position: relative;
-  background-color: #e0e0e0;
-}
-
-.absolute-fill {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-}
-
-.logo-glow {
-  filter: drop-shadow(0 0 15px rgba(33, 150, 243, 0.6));
-  transition: filter 0.3s ease-in-out;
-
-  /* Performance: Promote to GPU layer to prevent repaints during hover transition. */
-  will-change: filter;
-  /* Hack: Force hardware acceleration to fix potential flickering. */
-  transform: translateZ(0);
-}
-
-.logo-glow:hover {
-  filter: drop-shadow(0 0 25px rgba(33, 150, 243, 0.9));
-}
-</style>
