@@ -1,83 +1,85 @@
 <template>
-  <v-dialog v-model="modalStore.showSettingModal" id="setting-modal" variant="flat" rounded max-width="400">
-    <v-card variant="elevated" retain-focus>
-      <v-card-title>Settings</v-card-title>
-      <v-card-text class="pa-0">
-        <v-table >
-          <tbody>
-            <tr>
-              <td>
-                <v-chip variant="text"> Thumbnail size </v-chip>
-              </td>
-              <td>
-                <v-slider
-                  show-ticks="always"
-                  v-model="subRowHeightScaleValue"
-                  :min="250"
-                  :max="450"
-                  :step="10"
-                  :disabled="!initializedStore.initialized"
-                  hide-details
-                  thumb-size="16"
-                  prepend-icon="mdi-minus"
-                  append-icon="mdi-plus"
-                  @click:prepend="onSubRowHeightScaleUpdate(-10)"
-                  @click:append="onSubRowHeightScaleUpdate(10)"
-                ></v-slider>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <v-chip variant="text"> Show Filename Chip </v-chip>
-              </td>
-              <td>
-                <v-switch
-                  :model-value="showFilenameChipValue"
-                  @update:model-value="onShowFilenameChipUpdate"
-                  :disabled="!initializedStore.initialized"
-                  hide-details
-                ></v-switch>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <div class="d-flex align-center">
-                  <v-chip variant="text" class="pr-2"> ViewBar Overlay </v-chip>
+  <v-dialog v-model="modalStore.showSettingModal" id="setting-modal" max-width="500">
+    <v-card border flat class="rounded-lg">
+      <v-card-title class="font-weight-bold">Settings</v-card-title>
+      <v-divider thickness="4" variant="double"></v-divider>
 
-                  <v-tooltip location="top" max-width="300">
-                    <template #activator="{ props }">
-                      <v-icon
-                        v-bind="props"
-                        icon="mdi-alert-circle-outline"
-                        size="small"
-                        color="medium-emphasis"
-                        style="cursor: help"
-                      ></v-icon>
-                    </template>
+      <v-list-item class="pt-4">
+        <v-list-item-title class="mb-2">Thumbnail size</v-list-item-title>
+        <v-slider
+          show-ticks="always"
+          v-model="subRowHeightScaleValue"
+          :min="250"
+          :max="450"
+          :step="10"
+          :disabled="!initializedStore.initialized"
+          hide-details
+          thumb-size="16"
+          prepend-icon="mdi-minus"
+          append-icon="mdi-plus"
+          color="primary"
+          @click:prepend="onSubRowHeightScaleUpdate(-10)"
+          @click:append="onSubRowHeightScaleUpdate(10)"
+        ></v-slider>
+      </v-list-item>
 
-                    <span>
-                      <b>When viewing photos:</b><br />
-                      <b>On:</b> The navigation bar overlays the image.<br />
-                      <b>Off:</b> The image is pushed down to prevent
-                      obstruction.
-                    </span>
-                  </v-tooltip>
-                </div>
-              </td>
+      <v-divider></v-divider>
 
-              <td>
-                <v-switch
-                  :model-value="viewBarOverlayValue"
-                  @update:model-value="onViewBarOverlayUpdate"
-                  :disabled="!initializedStore.initialized"
-                  hide-details
-                ></v-switch>
-              </td>
-            </tr>
+      <v-list-item
+        title="Show Filename Chip"
+        @click="onShowFilenameChipUpdate(!showFilenameChipValue)"
+      >
+        <template #append>
+          <v-switch
+            :model-value="showFilenameChipValue"
+            @update:model-value="onShowFilenameChipUpdate"
+            :disabled="!initializedStore.initialized"
+            color="primary"
+            inset
+            hide-details
+            @click.stop
+          ></v-switch>
+        </template>
+      </v-list-item>
 
-          </tbody>
-        </v-table>
-      </v-card-text>
+      <v-divider></v-divider>
+
+      <v-list-item @click="onViewBarOverlayUpdate(!viewBarOverlayValue)">
+        <template #title>
+          <div class="d-flex align-center">
+            ViewBar Overlay
+            <v-tooltip location="top" max-width="300">
+              <template #activator="{ props }">
+                <v-icon
+                  v-bind="props"
+                  icon="mdi-alert-circle-outline"
+                  size="small"
+                  color="medium-emphasis"
+                  class="ml-2"
+                  style="cursor: help"
+                ></v-icon>
+              </template>
+              <span>
+                <b>When viewing photos:</b><br />
+                <b>On:</b> The navigation bar overlays the image.<br />
+                <b>Off:</b> The image is pushed down to prevent obstruction.
+              </span>
+            </v-tooltip>
+          </div>
+        </template>
+        <template #append>
+          <v-switch
+            :model-value="viewBarOverlayValue"
+            @update:model-value="onViewBarOverlayUpdate"
+            :disabled="!initializedStore.initialized"
+            color="primary"
+            inset
+            hide-details
+            @click.stop
+          ></v-switch>
+        </template>
+      </v-list-item>
+
       <v-card-actions>
         <v-spacer></v-spacer>
         <v-btn @click="modalStore.showSettingModal = false">Close</v-btn>
