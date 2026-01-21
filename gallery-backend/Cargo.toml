@@ -27,18 +27,18 @@ atomic_float = "1.1.0"
 bitcode = { version = "0.6.9", features = ["arrayvec"] }
 blake3 = "1.8.3"
 bytesize = "2.3.1"
-chrono = "0.4.42"
+chrono = "0.4.43"
 console = "0.16.2"
 crossbeam-queue = "0.3.12"
 dashmap = { version = "6.1.0", features = ["rayon"] }
 dotenv = "0.15.0"
 env_logger = { version = "0.11.8", features = ["humantime", "color"] }
 envy = "0.4.2"
-filetime = "0.2.26"
+filetime = "0.2.27"
 futures = "0.3.31"
 figment = { version = "0.10", features = ["json"] }
 image = "0.25.9"
-image_hasher = "3.0.0"
+image_hasher = "3.1.0"
 jsonwebtoken = { version = "10.2.0", features = ["rust_crypto"] }
 kamadak-exif = "0.6.1"
 log = { version = "0.4.29", features = ["kv"] }
@@ -73,9 +73,9 @@ uuid = { version = "1.19.0", features = ["v4"] }
 walkdir = "2.5.0"
 base64 = "0.22.1"
 directories = "6.0.0"
-zip = "7.0.0"
+zip = "7.2.0"
 webbrowser = { version = "1.0.6", optional = true }
-rust-embed = "8.10.0"
+rust-embed = "8.11.0"
 mime_guess = "2.0.5"
 ubyte = "0.10.4"
 
