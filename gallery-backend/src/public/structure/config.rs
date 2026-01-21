@@ -1,9 +1,9 @@
 // src/public/structure/config.rs
 
 use anyhow::Context;
-use base64::{Engine as _, engine::general_purpose};
+use base64::{engine::general_purpose, Engine as _};
 use log::{info, warn};
-use rand::{TryRngCore, rngs::OsRng};
+use rand::{rngs::OsRng, TryRngCore};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::fs::{self, File};
@@ -32,6 +32,8 @@ pub struct PublicConfig {
     pub sync_paths: HashSet<PathBuf>,
     pub read_only_mode: bool,
     pub disable_img: bool,
+    #[serde(default)]
+    pub local_mode: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -64,6 +66,7 @@ impl Default for AppConfig {
                 sync_paths: HashSet::new(),
                 read_only_mode: false,
                 disable_img: false,
+                local_mode: false,
             },
 
             private: PrivateConfig {

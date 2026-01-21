@@ -1,10 +1,12 @@
-// src/store/uploadStore.ts
 import { defineStore } from 'pinia'
 import axios, { type AxiosProgressEvent } from 'axios'
 import { useMessageStore } from './messageStore'
 import { useModalStore } from './modalStore'
+// import { useConstStore } from './constStore'
 import { errorDisplay } from '@/script/utils/errorDisplay'
 import { IsolationId } from '@type/types'
+import init, { process_image, ProcessedImage } from '@/wasm/gallery_wasm.js'
+import { useConfigStore } from './configStore'
 
 export const useUploadStore = (isolationId: IsolationId) =>
   defineStore('uploadStore' + isolationId, {
@@ -71,9 +73,21 @@ export const useUploadStore = (isolationId: IsolationId) =>
       async fileUpload(files: File[], albumId: string | undefined): Promise<void> {
         const modalStore = useModalStore('mainId')
         const messageStore = useMessageStore('mainId')
+        const configStore = useConfigStore('mainId')
 
         this.status = 'Uploading'
         modalStore.showUploadModal = true
+
+        const localMode = Boolean(configStore.config?.localMode) || false
+
+        if (localMode) {
+          console.log('local mode enable!')
+
+          await this.localModeUpload(files, albumId)
+          return
+        }
+
+        console.log('local mode not enable!')
 
         const formData = new FormData()
         for (const file of files) {
@@ -111,6 +125,79 @@ export const useUploadStore = (isolationId: IsolationId) =>
 
           this.status = 'Completed'
           messageStore.success('Files uploaded successfully')
+        } catch (err) {
+          this.status = 'Canceled'
+          messageStore.error(errorDisplay(err))
+        }
+      },
+
+      async localModeUpload(files: File[], albumId: string | undefined): Promise<void> {
+        const messageStore = useMessageStore('mainId')
+        this.status = 'Processing'
+
+        try {
+          // Initialize WASM
+          await init()
+
+          for (const file of files) {
+            const arrayBuffer = await file.arrayBuffer()
+            const uint8Array = new Uint8Array(arrayBuffer)
+
+            // Process image
+            if (!file.type.startsWith('image/')) {
+              console.warn(`Skipping WASM processing for non-image: ${file.name}`)
+              continue
+            }
+
+            // Skip GIF
+            if (file.type === 'image/gif') {
+              continue
+            }
+
+            try {
+              const processed: ProcessedImage | null = process_image(uint8Array, file.name)
+
+              if (processed) {
+                // Upload processed data
+                const formData = new FormData()
+                formData.append(
+                  'metadata',
+                  JSON.stringify({
+                    hash: processed.hash,
+                    width: processed.width,
+                    height: processed.height,
+                    size: processed.size,
+                    thumbhash: processed.thumbhash,
+                    phash: processed.phash,
+                    exif: processed.exif,
+                    lastModified: file.lastModified // Add timestamp
+                  })
+                )
+
+                // Append binary blobs
+                // We send 'compressed' as the main optimized image.
+                formData.append(
+                  'compressed',
+                  new Blob([new Uint8Array(processed.compressed_image)], { type: 'image/jpeg' }),
+                  'compressed.jpg'
+                )
+                formData.append('original', file)
+
+                const uploadUrl =
+                  albumId !== undefined
+                    ? `/upload-local?presigned_album_id_opt=${encodeURIComponent(albumId)}`
+                    : `/upload-local`
+
+                await axios.post(uploadUrl, formData, {
+                  headers: { 'Content-Type': 'multipart/form-data' }
+                })
+              }
+            } catch (e: unknown) {
+              console.error('WASM processing failed for', file.name, e)
+            }
+          }
+          this.status = 'Completed'
+          messageStore.success('Files processed and uploaded locally')
         } catch (err) {
           this.status = 'Canceled'
           messageStore.error(errorDisplay(err))

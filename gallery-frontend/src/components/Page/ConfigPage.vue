@@ -44,6 +44,7 @@ const loading = ref(false)
 const localSettings = reactive<AppConfig>({
   readOnlyMode: false,
   disableImg: false,
+  localMode: false,
   hasPassword: false,
   hasAuthKey: false,
   hasDiscordHook: false,

@@ -9,6 +9,7 @@ export interface AppConfig {
   // App settings
   readOnlyMode: boolean
   disableImg: boolean
+  localMode: boolean
   // password is handled separately now
   authKey: string | null
   hasAuthKey: boolean

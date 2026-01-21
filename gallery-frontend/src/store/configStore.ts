@@ -26,6 +26,9 @@ export const useConfigStore = (isolationId: IsolationId) =>
       disableImg: (state) => state.config?.disableImg ?? false
     },
     actions: {
+      async refreshConfig() {
+          await this.fetchConfig()
+      },
       async fetchConfig() {
         // Return if already loaded to avoid redundant calls
         if (this.config) return
