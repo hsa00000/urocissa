@@ -47,8 +47,6 @@ Both demos are currently in read-only mode, and uploading files or editing tags 
 
 ## Limitations
 
-**Early Stage Development**: The app is still in its very early development phase. Many features are incomplete, and there are no automated tests. Additionally, Urocissa is currently optimized for Chrome and Firefox on Windows and Android, but it may encounter issues for browsers on iOS or Linux. The detailed features can be seen in this table:
-
 | Feature                    | Status |
 | -------------------------- | ------ |
 | Upload Videos and Photos   | ✅     |
@@ -62,7 +60,7 @@ Both demos are currently in read-only mode, and uploading files or editing tags 
 | Responsive Layout          | ✅     |
 | Docker Installation        | ✅     |
 | Shareable Albums           | ✅     |
-| Basic Editing              | 🛠️     |
+| Rotation Imags             | ✅     |
 | Discovery                  | ⏳     |
 | Multi-User Support         | ❌     |
 | Object/Face Recognition    | ❌     |
