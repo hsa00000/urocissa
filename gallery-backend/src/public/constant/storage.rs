@@ -72,10 +72,12 @@ impl EnvironmentStatus {
         // 1. Check for portable marker or existing directories
         let portable_db = Path::new("db");
         let portable_object = Path::new("object");
+        let portable_config = Path::new("config.json");
 
-        // If "db" or "object" folder exists in current directory, assume portable mode
-        if portable_db.exists() || portable_object.exists() {
-            info!("Portable mode detected (found ./db or ./object)");
+        // If "db" or "object" folder exists in current directory, assume portable mode.
+        // Also treat an existing ./config.json as a portable marker.
+        if portable_db.exists() || portable_object.exists() || portable_config.exists() {
+            info!("Portable mode detected (found ./db, ./object, or ./config.json)");
             return (true, PathBuf::from("."));
         }
 
