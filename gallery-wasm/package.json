@@ -1,0 +1,10 @@
+{
+  "name": "gallery-wasm-scripts",
+  "version": "1.0.0",
+  "description": "Build scripts for gallery-wasm",
+  "scripts": {
+    "build": "node build_and_copy.js"
+  },
+  "author": "",
+  "license": "ISC"
+}
