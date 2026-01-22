@@ -58,7 +58,6 @@ pub async fn upload_local(
         }
     };
 
-    // 1. Deserialize Payload (Source of Truth)
     let payload: UploadLocalPayload = serde_json::from_str(&inner_form.metadata).map_err(|e| {
         AppError::new(
             ErrorKind::InvalidInput,
@@ -69,29 +68,20 @@ pub async fn upload_local(
     let hash = payload.object.id;
     let hash_str = hash.as_str();
 
-    // 2. Prepare Storage Paths
-    // Imported Path: object/imported/xx/hash.ext
     let imported_dir = EnvironmentManager::object_imported_prefix_dir(hash_str);
     let imported_path = EnvironmentManager::imported_file_path(hash_str, &payload.metadata.ext);
 
-    // Compressed Path: object/compressed/xx/hash.jpg
     let compressed_dir = EnvironmentManager::object_compressed_prefix_dir(hash_str);
     let compressed_path = EnvironmentManager::compressed_file_path(hash_str, "jpg");
 
-    // 3. Save Files (I/O Only)
     fs::create_dir_all(&imported_dir).map_err(|e| AppError::new(ErrorKind::IO, e.to_string()))?;
 
-    // Save Original
     inner_form
         .original
         .move_copy_to(&imported_path)
         .await
         .map_err(|e| AppError::new(ErrorKind::IO, e.to_string()))?;
 
-    // Apply Timestamp to File System
-    // Intentionally do not override filesystem mtime here.
-
-    // Save Compressed
     fs::create_dir_all(&compressed_dir).map_err(|e| AppError::new(ErrorKind::IO, e.to_string()))?;
     inner_form
         .compressed
@@ -99,17 +89,14 @@ pub async fn upload_local(
         .await
         .map_err(|e| AppError::new(ErrorKind::IO, e.to_string()))?;
 
-    // 4. Construct Data Structures (No mapping; accept client payload)
     let mut abstract_data = AbstractData::Image(ImageCombined {
         object: payload.object,
         metadata: payload.metadata,
     });
 
-    // 5. DB Insertion / Merge Logic (Storage Logic)
     let data_table = open_data_table();
 
     if let Some(guard) = data_table.get(&*hash).unwrap() {
-        // Exists: Merge logic
         let mut data_exist = guard.value();
 
         if let Some(new_alias_mut) = abstract_data.alias_mut() {
@@ -131,7 +118,6 @@ pub async fn upload_local(
 
         BATCH_COORDINATOR.execute_batch_detached(FlushTreeTask::insert(vec![data_exist]));
     } else {
-        // New: Insert directly
         BATCH_COORDINATOR.execute_batch_detached(FlushTreeTask::insert(vec![abstract_data]));
     }
 
