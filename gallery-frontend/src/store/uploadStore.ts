@@ -2,7 +2,6 @@ import { defineStore } from 'pinia'
 import axios, { type AxiosProgressEvent } from 'axios'
 import { useMessageStore } from './messageStore'
 import { useModalStore } from './modalStore'
-// import { useConstStore } from './constStore'
 import { errorDisplay } from '@/script/utils/errorDisplay'
 import { IsolationId } from '@type/types'
 import init, { process_image } from '@/wasm/gallery_wasm.js'
@@ -93,10 +92,12 @@ export const useUploadStore = (isolationId: IsolationId) =>
         const handleChange = async (event: Event): Promise<void> => {
           const target = event.target as HTMLInputElement
           const files = target.files
+          if (!files || files.length === 0) {
+            document.body.removeChild(fileInput)
+            return
+          }
           try {
-            if (files && files.length > 0) {
-              await this.fileUpload([...files], albumId)
-            }
+            await this.fileUpload([...files], albumId)
           } finally {
             document.body.removeChild(fileInput)
           }
@@ -114,22 +115,23 @@ export const useUploadStore = (isolationId: IsolationId) =>
 
       async fileUpload(files: File[], albumId: string | undefined): Promise<void> {
         const modalStore = useModalStore('mainId')
-        const messageStore = useMessageStore('mainId')
         const configStore = useConfigStore('mainId')
 
         this.status = 'Uploading'
         modalStore.showUploadModal = true
 
-        const localMode = Boolean(configStore.config?.localMode) || false
+        const localMode = configStore.config?.localMode ?? false
 
         if (localMode) {
-          console.log('local mode enable!')
-
           await this.localModeUpload(files, albumId)
           return
         }
 
-        console.log('local mode not enable!')
+        await this.remoteUpload(files, albumId)
+      },
+
+      async remoteUpload(files: File[], albumId: string | undefined): Promise<void> {
+        const messageStore = useMessageStore('mainId')
 
         const formData = new FormData()
         for (const file of files) {
@@ -152,15 +154,12 @@ export const useUploadStore = (isolationId: IsolationId) =>
             headers: { 'Content-Type': 'multipart/form-data' },
             signal: abortController.signal,
             onUploadProgress: (e: AxiosProgressEvent) => {
-              if (e.total !== undefined) {
-                this.total = e.total
-                // Axios types say loaded can be undefined
-                if (typeof e.loaded === 'number') {
-                  this.loaded = e.loaded
-                }
-                if (this.loaded !== undefined && this.total === this.loaded) {
-                  this.status = 'Processing'
-                }
+              if (e.total === undefined) return
+              this.total = e.total
+              if (typeof e.loaded !== 'number') return
+              this.loaded = e.loaded
+              if (this.loaded === this.total) {
+                this.status = 'Processing'
               }
             }
           })
@@ -178,60 +177,62 @@ export const useUploadStore = (isolationId: IsolationId) =>
         this.status = 'Processing'
 
         try {
-          // Initialize WASM
           await init()
-
           for (const file of files) {
-            const arrayBuffer = await file.arrayBuffer()
-            const uint8Array = new Uint8Array(arrayBuffer)
-
-            // Process image
-            if (!file.type.startsWith('image/')) {
-              console.warn(`Skipping WASM processing for non-image: ${file.name}`)
-              continue
-            }
-
-            // Skip GIF
-            if (file.type === 'image/gif') {
-              continue
-            }
-
-            try {
-              const processed = toProcessImageForUploadResult(
-                process_image(uint8Array, file.name, file.lastModified, albumId)
-              )
-              if (processed === null) {
-                continue
-              }
-
-              // Upload processed data
-              const formData = new FormData()
-
-              formData.append('metadata', processed.metadataJson)
-
-              // Append binary blobs
-              // We send 'compressed' as the main optimized image.
-              formData.append(
-                'compressed',
-                new Blob([toArrayBuffer(processed.compressedJpeg)], { type: 'image/jpeg' }),
-                'compressed.jpg'
-              )
-              formData.append('original', file)
-
-              const uploadUrl = `/upload-local`
-
-              await axios.post(uploadUrl, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-              })
-            } catch (e: unknown) {
-              console.error('WASM processing failed for', file.name, e)
-            }
+            await this.processAndUploadFile(file, albumId)
           }
           this.status = 'Completed'
           messageStore.success('Files processed and uploaded locally')
         } catch (err) {
           this.status = 'Canceled'
           messageStore.error(errorDisplay(err))
+        }
+      },
+
+      async processAndUploadFile(file: File, albumId: string | undefined): Promise<void> {
+        if (!file.type.startsWith('image/')) {
+          console.warn(`Skipping WASM processing for non-image: ${file.name}`)
+          return
+        }
+
+        if (file.type === 'image/gif') {
+          return
+        }
+
+        const arrayBuffer = await file.arrayBuffer()
+        const uint8Array = new Uint8Array(arrayBuffer)
+
+        let processed
+        try {
+          processed = toProcessImageForUploadResult(
+            process_image(uint8Array, file.name, file.lastModified, albumId)
+          )
+        } catch (e: unknown) {
+          console.error('WASM processing failed for', file.name, e)
+          return
+        }
+
+        if (processed === null) {
+          return
+        }
+
+        const formData = new FormData()
+        formData.append('metadata', processed.metadataJson)
+        formData.append(
+          'compressed',
+          new Blob([toArrayBuffer(processed.compressedJpeg)], { type: 'image/jpeg' }),
+          'compressed.jpg'
+        )
+        formData.append('original', file)
+
+        const uploadUrl = `/upload-local`
+
+        try {
+          await axios.post(uploadUrl, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          })
+        } catch (e: unknown) {
+          console.error('Upload failed for', file.name, e)
         }
       },
 
