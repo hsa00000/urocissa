@@ -39,10 +39,16 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-Write-Host "Creating Installer with NSIS ($nsisPath)..."
-
+Write-Host "Embedding icon into executable using rcedit..."
+if (!(Test-Path "rcedit.exe")) {
+    Write-Host "Downloading rcedit.exe..."
+    Invoke-WebRequest -Uri "https://github.com/electron/rcedit/releases/latest/download/rcedit-x64.exe" -OutFile "rcedit.exe"
+}
 $exeSource = Resolve-Path "gallery-backend/target/$profile/urocissa.exe"
 $iconSource = Resolve-Path "gallery-backend\assets\logo.ico"
+& .\rcedit.exe $exeSource --set-icon $iconSource
+
+Write-Host "Creating Installer with NSIS ($nsisPath)..."
 $installerName = "urocissa-windows-installer-${version}.exe"
 
 Write-Host "Using Executable: $exeSource"
