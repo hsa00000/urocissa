@@ -19,6 +19,12 @@ use std::collections::{BTreeMap, HashSet};
 use std::fs;
 use std::mem;
 
+fn get_filename(file: &TempFile<'_>) -> String {
+    file.name()
+        .map(std::string::ToString::to_string)
+        .unwrap_or_default()
+}
+
 /// Form for local-first upload with processed metadata
 #[derive(FromForm, Debug)]
 pub struct UploadLocalForm<'r> {
@@ -89,6 +95,8 @@ pub async fn upload_local(
         .and_then(|e| e.to_str())
         .unwrap_or("jpg")
         .to_lowercase();
+
+    let filename = get_filename(&inner_form.original);
 
     // Use a temporary AbstractData (or logic) to get standard paths
     // We construct the "intended" new data to use its path methods
@@ -162,7 +170,7 @@ pub async fn upload_local(
 
     // 3. Construct FileModify with correct path
     let file_modify = FileModify {
-        file: imported_path.to_string_lossy().into_owned(),
+        file: format!("{}.{}", filename, original_ext),
         modified: modified_time,
         scan_time: timestamp,
     };
