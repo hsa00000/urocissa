@@ -14,7 +14,7 @@ mod workflow;
 use crate::operations::initialization::logger::initialize_logger;
 use crate::process::initialization::initialize;
 use crate::public::constant::runtime::{INDEX_RUNTIME, ROCKET_RUNTIME};
-use crate::public::constant::storage::EnvironmentStatus;
+use crate::public::constant::storage::EnvironmentManager;
 
 use crate::public::error_data::handle_error;
 use crate::public::tui::{DASHBOARD, tui_task};
@@ -27,7 +27,7 @@ use public::db::tree::TREE;
 use public::structure::abstract_data::AbstractData;
 
 fn migration() {
-    let v4_db_path = EnvironmentStatus::get_data_path().join("db/index_v4.redb");
+    let v4_db_path = EnvironmentManager::index_v4_db_path();
 
     if v4_db_path.exists() {
         eprintln!(

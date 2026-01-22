@@ -1,11 +1,9 @@
-use crate::public::constant::storage::EnvironmentStatus;
+use crate::public::constant::storage::EnvironmentManager;
 use std::fs;
 
 pub fn initialize_file() {
-    let root = EnvironmentStatus::get_data_path();
-
     {
-        let db_path = root.join("db/temp_db.redb");
+        let db_path = EnvironmentManager::temp_db_path();
         if fs::metadata(&db_path).is_ok() {
             match fs::remove_file(&db_path) {
                 Ok(()) => {
@@ -18,7 +16,7 @@ pub fn initialize_file() {
         }
     }
     {
-        let db_path = root.join("db/cache_db.redb");
+        let db_path = EnvironmentManager::cache_db_path();
         if fs::metadata(&db_path).is_ok() {
             match fs::remove_file(&db_path) {
                 Ok(()) => {
@@ -31,7 +29,7 @@ pub fn initialize_file() {
         }
     }
     {
-        let db_path = root.join("db/expire_db.redb");
+        let db_path = EnvironmentManager::expire_db_path();
         if fs::metadata(&db_path).is_ok() {
             match fs::remove_file(&db_path) {
                 Ok(()) => {

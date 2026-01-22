@@ -5,10 +5,10 @@ use crate::public::structure::response::reduced_data::ReducedData;
 
 use super::TreeSnapshot;
 
-use crate::public::constant::storage::EnvironmentStatus;
+use crate::public::constant::storage::EnvironmentManager;
 
 static TREE_SNAPSHOT_IN_DISK: LazyLock<redb::Database> = LazyLock::new(|| {
-    let path = EnvironmentStatus::get_data_path().join("db/temp_db.redb");
+    let path = EnvironmentManager::root_path().join("db/temp_db.redb");
     if let Some(parent) = path.parent() {
         if !parent.exists() {
             std::fs::create_dir_all(parent).unwrap();

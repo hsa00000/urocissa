@@ -1,5 +1,5 @@
 use crate::operations::open_db::open_data_table;
-use crate::public::constant::storage::EnvironmentStatus;
+use crate::public::constant::storage::EnvironmentManager;
 use crate::public::error::{AppError, ErrorKind};
 use crate::public::structure::abstract_data::AbstractData;
 use crate::public::structure::common::FileModify;
@@ -84,16 +84,13 @@ pub async fn upload_local(
         .map_err(|_| AppError::new(ErrorKind::InvalidInput, "Hash too long"))?;
 
     // 2. Prepare Storage Paths
-    let root = EnvironmentStatus::get_data_path();
-    let hash_prefix = &hash_str[0..2];
-
     // Imported Path: object/imported/xx/hash.ext
-    let imported_dir = root.join(format!("object/imported/{}", hash_prefix));
-    let imported_path = imported_dir.join(format!("{}.{}", hash_str, meta.extension));
+    let imported_dir = EnvironmentManager::object_imported_prefix_dir(hash_str);
+    let imported_path = EnvironmentManager::imported_file_path(hash_str, &meta.extension);
 
     // Compressed Path: object/compressed/xx/hash.jpg
-    let compressed_dir = root.join(format!("object/compressed/{}", hash_prefix));
-    let compressed_path = compressed_dir.join(format!("{}.jpg", hash_str));
+    let compressed_dir = EnvironmentManager::object_compressed_prefix_dir(hash_str);
+    let compressed_path = EnvironmentManager::compressed_file_path(hash_str, "jpg");
 
     // 3. Save Files (I/O Only)
     fs::create_dir_all(&imported_dir).map_err(|e| AppError::new(ErrorKind::IO, e.to_string()))?;

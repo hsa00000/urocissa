@@ -11,7 +11,7 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::sync::{OnceLock, RwLock};
 
-use crate::public::constant::storage::EnvironmentStatus;
+use crate::public::constant::storage::EnvironmentManager;
 
 pub static FALLBACK_SECRET_KEY: OnceLock<String> = OnceLock::new();
 
@@ -83,7 +83,7 @@ pub static APP_CONFIG: OnceLock<RwLock<AppConfig>> = OnceLock::new();
 
 impl AppConfig {
     pub fn get_config_path() -> PathBuf {
-        EnvironmentStatus::get_data_path().join("config.json")
+        EnvironmentManager::config_path()
     }
 
     pub fn get_jwt_secret_key(&self) -> Vec<u8> {

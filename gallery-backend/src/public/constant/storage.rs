@@ -7,63 +7,145 @@ use std::sync::OnceLock;
 use std::cell::RefCell;
 
 #[derive(Debug)]
-pub struct EnvironmentStatus {
+pub struct EnvironmentManager {
     pub is_portable: bool,
-    pub data_path: PathBuf,
+    pub root_path: PathBuf,
 }
 
-pub static ENVIROMENT_STATUS: OnceLock<EnvironmentStatus> = OnceLock::new();
-// Backwards-compat alias for older name.
-#[allow(unused_imports)]
-pub use ENVIROMENT_STATUS as ENVIRONMENT_STATUS;
+pub static ENVIRONMENT_MANAGER: OnceLock<EnvironmentManager> = OnceLock::new();
 
 #[cfg(test)]
 thread_local! {
-    static TEST_DATA_PATH_OVERRIDE: RefCell<Option<PathBuf>> = const { RefCell::new(None) };
+    static TEST_ROOT_PATH_OVERRIDE: RefCell<Option<PathBuf>> = const { RefCell::new(None) };
 }
 
-impl EnvironmentStatus {
+impl EnvironmentManager {
     pub fn init() -> &'static Self {
-        ENVIROMENT_STATUS.get_or_init(|| {
-            let (is_portable, data_path) = Self::detect_environment();
-            let status = EnvironmentStatus {
+        ENVIRONMENT_MANAGER.get_or_init(|| {
+            let (is_portable, root_path) = Self::detect_environment();
+            let manager = EnvironmentManager {
                 is_portable,
-                data_path,
+                root_path,
             };
 
             info!(
-                "ENVIROMENT_STATUS initialized: mode={}, root={}",
-                if status.is_portable {
+                "ENVIRONMENT_MANAGER initialized: mode={}, root={}",
+                if manager.is_portable {
                     "portable"
                 } else {
                     "installed"
                 },
-                status.data_path.display()
+                manager.root_path.display()
             );
 
-            status
+            manager
         })
     }
 
-    pub fn get_data_path() -> PathBuf {
+    pub fn root_path() -> PathBuf {
         #[cfg(test)]
-        if let Some(path) = TEST_DATA_PATH_OVERRIDE.with(|p| p.borrow().clone()) {
+        if let Some(path) = TEST_ROOT_PATH_OVERRIDE.with(|p| p.borrow().clone()) {
             return path;
         }
 
-        Self::init().data_path.clone()
+        Self::init().root_path.clone()
+    }
+
+    pub fn config_path() -> PathBuf {
+        Self::root_path().join("config.json")
+    }
+
+    pub fn db_dir() -> PathBuf {
+        Self::root_path().join("db")
+    }
+
+    pub fn object_dir() -> PathBuf {
+        Self::root_path().join("object")
+    }
+
+    pub fn object_imported_dir() -> PathBuf {
+        Self::object_dir().join("imported")
+    }
+
+    pub fn object_compressed_dir() -> PathBuf {
+        Self::object_dir().join("compressed")
+    }
+
+    pub fn upload_dir() -> PathBuf {
+        Self::root_path().join("upload")
+    }
+
+    pub fn db_file_path(file_name: &str) -> PathBuf {
+        Self::db_dir().join(file_name)
+    }
+
+    pub fn index_v4_db_path() -> PathBuf {
+        Self::db_file_path("index_v4.redb")
+    }
+
+    pub fn index_v5_db_path() -> PathBuf {
+        Self::db_file_path("index_v5.redb")
+    }
+
+    pub fn temp_db_path() -> PathBuf {
+        Self::db_file_path("temp_db.redb")
+    }
+
+    pub fn cache_db_path() -> PathBuf {
+        Self::db_file_path("cache_db.redb")
+    }
+
+    pub fn expire_db_path() -> PathBuf {
+        Self::db_file_path("expire_db.redb")
+    }
+
+    fn hash_prefix_2(hash: &str) -> &str {
+        &hash[0..2]
+    }
+
+    pub fn object_imported_prefix_dir(hash: &str) -> PathBuf {
+        Self::object_imported_dir().join(Self::hash_prefix_2(hash))
+    }
+
+    pub fn object_compressed_prefix_dir(hash: &str) -> PathBuf {
+        Self::object_compressed_dir().join(Self::hash_prefix_2(hash))
+    }
+
+    pub fn imported_file_path(hash: &str, ext: &str) -> PathBuf {
+        Self::object_imported_prefix_dir(hash).join(format!("{hash}.{ext}"))
+    }
+
+    pub fn compressed_file_path(hash: &str, ext: &str) -> PathBuf {
+        Self::object_compressed_prefix_dir(hash).join(format!("{hash}.{ext}"))
+    }
+
+    pub fn compressed_image_path(hash: &str) -> PathBuf {
+        Self::compressed_file_path(hash, "jpg")
+    }
+
+    pub fn compressed_video_path(hash: &str) -> PathBuf {
+        Self::compressed_file_path(hash, "mp4")
+    }
+
+    pub fn ensure_layout() -> std::io::Result<()> {
+        std::fs::create_dir_all(Self::db_dir())?;
+        std::fs::create_dir_all(Self::object_imported_dir())?;
+        std::fs::create_dir_all(Self::object_compressed_dir())?;
+        std::fs::create_dir_all(Self::upload_dir())?;
+
+        Ok(())
     }
 
     #[cfg(test)]
-    pub fn set_data_path_override_for_test(path: PathBuf) {
-        TEST_DATA_PATH_OVERRIDE.with(|p| {
+    pub fn set_root_path_override_for_test(path: PathBuf) {
+        TEST_ROOT_PATH_OVERRIDE.with(|p| {
             *p.borrow_mut() = Some(path);
         });
     }
 
     #[cfg(test)]
-    pub fn clear_data_path_override_for_test() {
-        TEST_DATA_PATH_OVERRIDE.with(|p| {
+    pub fn clear_root_path_override_for_test() {
+        TEST_ROOT_PATH_OVERRIDE.with(|p| {
             *p.borrow_mut() = None;
         });
     }
@@ -83,14 +165,14 @@ impl EnvironmentStatus {
 
         // 2. Fallback to installed mode (AppData/XDG_DATA_HOME)
         if let Some(proj_dirs) = ProjectDirs::from("com", "urocissa", "urocissa") {
-            let data_dir = proj_dirs.data_dir().to_path_buf();
+            let root_dir = proj_dirs.data_dir().to_path_buf();
 
             // Create the directory if it doesn't exist
-            if !data_dir.exists() {
-                if let Err(e) = std::fs::create_dir_all(&data_dir) {
+            if !root_dir.exists() {
+                if let Err(e) = std::fs::create_dir_all(&root_dir) {
                     error!(
                         "Failed to create data directory {}: {e}",
-                        data_dir.display()
+                        root_dir.display()
                     );
                     // Fallback to local if we can't write to AppData
                     return (true, PathBuf::from("."));
@@ -99,9 +181,9 @@ impl EnvironmentStatus {
 
             info!(
                 "Installed mode detected. Using data directory: {}",
-                data_dir.display()
+                root_dir.display()
             );
-            return (false, data_dir);
+            return (false, root_dir);
         }
 
         // 3. Fallback to current directory if ProjectDirs fails

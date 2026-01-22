@@ -366,13 +366,7 @@ impl AbstractData {
     pub fn imported_path_string(&self) -> String {
         let hash = self.hash();
         let ext = self.ext();
-        crate::public::constant::storage::EnvironmentStatus::get_data_path()
-            .join(format!(
-                "object/imported/{}/{}.{}",
-                &hash.as_str()[0..2],
-                hash,
-                ext
-            ))
+        crate::public::constant::storage::EnvironmentManager::imported_file_path(hash.as_str(), &ext)
             .to_string_lossy()
             .into_owned()
     }
@@ -380,24 +374,15 @@ impl AbstractData {
     /// Get the compressed path string
     pub fn compressed_path_string(&self) -> String {
         let hash = self.hash();
-        let relative_path = match self {
-            AbstractData::Image(_) => {
-                format!("object/compressed/{}/{}.jpg", &hash.as_str()[0..2], hash)
-            }
-            AbstractData::Video(_) => {
-                format!("object/compressed/{}/{}.mp4", &hash.as_str()[0..2], hash)
-            }
+        match self {
+            AbstractData::Image(_) => crate::public::constant::storage::EnvironmentManager::compressed_image_path(hash.as_str())
+                .to_string_lossy()
+                .into_owned(),
+            AbstractData::Video(_) => crate::public::constant::storage::EnvironmentManager::compressed_video_path(hash.as_str())
+                .to_string_lossy()
+                .into_owned(),
             AbstractData::Album(_) => String::new(),
-        };
-
-        if relative_path.is_empty() {
-            return String::new();
         }
-
-        crate::public::constant::storage::EnvironmentStatus::get_data_path()
-            .join(relative_path)
-            .to_string_lossy()
-            .into_owned()
     }
 
     /// Get the imported path
@@ -413,12 +398,7 @@ impl AbstractData {
     /// Get the thumbnail path
     pub fn thumbnail_path(&self) -> String {
         let hash = self.hash();
-        crate::public::constant::storage::EnvironmentStatus::get_data_path()
-            .join(format!(
-                "object/compressed/{}/{}.jpg",
-                &hash.as_str()[0..2],
-                hash
-            ))
+        crate::public::constant::storage::EnvironmentManager::compressed_image_path(hash.as_str())
             .to_string_lossy()
             .into_owned()
     }

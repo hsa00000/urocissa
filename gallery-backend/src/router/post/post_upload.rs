@@ -1,4 +1,4 @@
-use crate::public::constant::storage::EnvironmentStatus;
+use crate::public::constant::storage::EnvironmentManager;
 use crate::public::constant::{VALID_IMAGE_EXTENSIONS, VALID_VIDEO_EXTENSIONS};
 use crate::public::error::{AppError, ErrorKind, ResultExt};
 use crate::router::fairing::guard_read_only_mode::GuardReadOnlyMode;
@@ -104,8 +104,7 @@ async fn save_file(
     last_modified_ms: u64,
 ) -> Result<String, AppError> {
     let unique_id = Uuid::new_v4();
-    let root = EnvironmentStatus::get_data_path();
-    let upload_dir = root.join("upload");
+    let upload_dir = EnvironmentManager::upload_dir();
 
     // Ensure upload directory exists (though it should be created at init)
     if !upload_dir.exists() {

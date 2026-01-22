@@ -1,10 +1,10 @@
-use crate::public::constant::storage::EnvironmentStatus;
+use crate::public::constant::storage::EnvironmentManager;
 use log::{error, info};
 use std::env;
 use std::process::Command;
 
 pub fn check_ffmpeg_and_ffprobe() {
-    let root = EnvironmentStatus::get_data_path();
+    let root = EnvironmentManager::root_path();
     let bin_dir = root.join("bin");
 
     // Also check the executable directory's bin folder (for installed version)

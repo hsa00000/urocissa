@@ -1,4 +1,4 @@
-use crate::public::constant::storage::EnvironmentStatus;
+use crate::public::constant::storage::EnvironmentManager;
 use crate::public::error::{AppError, ErrorKind, ResultExt};
 use crate::router::{
     AppResult, GuardResult,
@@ -26,8 +26,7 @@ pub async fn compressed_file(
 ) -> AppResult<CompressedFileResponse<'static>> {
     let _ = auth_guard?;
     let _ = hash_guard?;
-    let root = EnvironmentStatus::get_data_path();
-    let compressed_file_path = root.join("object/compressed").join(&file_path);
+    let compressed_file_path = EnvironmentManager::object_compressed_dir().join(&file_path);
 
     let result = match compressed_file_path
         .extension()
@@ -82,8 +81,7 @@ pub async fn imported_file(
 ) -> AppResult<CompressedFileResponse<'static>> {
     let _ = auth?;
     let _ = hash_guard?;
-    let root = EnvironmentStatus::get_data_path();
-    let imported_file_path = root.join("object/imported").join(&file_path);
+    let imported_file_path = EnvironmentManager::object_imported_dir().join(&file_path);
     NamedFile::open(&imported_file_path)
         .await
         .map(CompressedFileResponse::NamedFile)

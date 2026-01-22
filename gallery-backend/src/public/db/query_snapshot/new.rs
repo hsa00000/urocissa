@@ -3,10 +3,10 @@ use std::sync::LazyLock;
 
 use super::{Prefetch, QuerySnapshot};
 
-use crate::public::constant::storage::EnvironmentStatus;
+use crate::public::constant::storage::EnvironmentManager;
 
 static QUERY_SNAPSHOT_IN_DISK: LazyLock<redb::Database> = LazyLock::new(|| {
-    let path = EnvironmentStatus::get_data_path().join("db/cache_db.redb");
+    let path = EnvironmentManager::root_path().join("db/cache_db.redb");
     if let Some(parent) = path.parent() {
         if !parent.exists() {
             std::fs::create_dir_all(parent).unwrap();
