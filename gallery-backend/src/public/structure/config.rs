@@ -82,12 +82,8 @@ impl Default for AppConfig {
 pub static APP_CONFIG: OnceLock<RwLock<AppConfig>> = OnceLock::new();
 
 impl AppConfig {
-    pub fn get_data_path() -> PathBuf {
-        EnvironmentStatus::init().data_path.clone()
-    }
-
     pub fn get_config_path() -> PathBuf {
-        Self::get_data_path().join("config.json")
+        EnvironmentStatus::get_data_path().join("config.json")
     }
 
     pub fn get_jwt_secret_key(&self) -> Vec<u8> {

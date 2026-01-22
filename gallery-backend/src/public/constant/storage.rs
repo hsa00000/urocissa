@@ -37,6 +37,10 @@ impl EnvironmentStatus {
         })
     }
 
+    pub fn get_data_path() -> PathBuf {
+        Self::init().data_path.clone()
+    }
+
     fn detect_environment() -> (bool, PathBuf) {
         // 1. Check for portable marker or existing directories
         let portable_db = Path::new("db");
@@ -78,7 +82,7 @@ impl EnvironmentStatus {
 }
 
 pub fn get_data_path() -> PathBuf {
-    crate::public::structure::config::AppConfig::get_data_path()
+    EnvironmentStatus::get_data_path()
 }
 
 pub fn get_config_path() -> PathBuf {
