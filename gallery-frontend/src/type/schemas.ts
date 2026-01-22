@@ -207,6 +207,53 @@ export const SubRowSchema = z.object({
   displayElements: z.array(displayElementSchema)
 })
 
+const Uint8ArrayLikeSchema = z.union([
+  z.instanceof(Uint8Array),
+  z.instanceof(ArrayBuffer),
+  z.array(z.number())
+])
+
+const ExifValueSchema = z.union([z.string(), z.number(), z.boolean(), z.bigint(), z.null()])
+
+const ExifSchema = z
+  .preprocess((value) => {
+    if (value instanceof Map) {
+      return Object.fromEntries(Array.from(value.entries(), ([k, v]) => [String(k), v]))
+    }
+    return value
+  }, z.union([z.record(z.string(), ExifValueSchema), z.array(z.unknown()), z.string()]))
+  .optional()
+  .nullable()
+
+export const ProcessedImageSchema = z
+  .object({
+    hash: z.string(),
+    width: z.number(),
+    height: z.number(),
+    size: z.number(),
+    extension: z.string(),
+    thumbhash: Uint8ArrayLikeSchema.nullable(),
+    phash: Uint8ArrayLikeSchema.nullable().optional(),
+    exif: ExifSchema,
+    compressedImage: Uint8ArrayLikeSchema,
+    lastModified: z.number()
+  })
+  .transform((data) => ({
+    ...data,
+    thumbhash: data.thumbhash ? new Uint8Array(data.thumbhash) : null,
+    phash: data.phash ? new Uint8Array(data.phash) : null,
+    compressedImage: new Uint8Array(data.compressedImage),
+    exif:
+      data.exif !== null &&
+      data.exif !== undefined &&
+      typeof data.exif === 'object' &&
+      !Array.isArray(data.exif)
+        ? Object.fromEntries(
+            Object.entries(data.exif).map(([key, value]) => [key, String(value)])
+          )
+        : {}
+  }))
+
 export const PublicConfigSchema = z.object({
   address: z.string(),
   port: z.number(),

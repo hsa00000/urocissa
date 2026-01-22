@@ -14,7 +14,8 @@ import {
   ShareSchema,
   ResolvedShareSchema,
   TokenResponseSchema,
-  BackendDataParser
+  BackendDataParser,
+  ProcessedImageSchema
 } from '@type/schemas'
 
 // Basic types
@@ -31,6 +32,8 @@ export type SubRow = z.infer<typeof SubRowSchema>
 export type Share = z.infer<typeof ShareSchema>
 export type ResolvedShare = z.infer<typeof ResolvedShareSchema>
 export type TokenResponse = z.infer<typeof TokenResponseSchema>
+export type ProcessedImage = z.infer<typeof ProcessedImageSchema>
+export type ProcessedImageMetadata = Omit<ProcessedImage, 'compressedImage'>
 
 // Core unified types (transformed)
 export type UnifiedData = z.infer<typeof BackendDataParser>
@@ -73,4 +76,6 @@ export interface ShareFormData {
   showDownload: boolean
   showMetadata: boolean
 }
+
+// ProcessedImage and ProcessedImageMetadata are derived from Zod schema above
 

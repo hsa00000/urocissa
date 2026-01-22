@@ -4,8 +4,9 @@ import { useMessageStore } from './messageStore'
 import { useModalStore } from './modalStore'
 // import { useConstStore } from './constStore'
 import { errorDisplay } from '@/script/utils/errorDisplay'
-import { IsolationId } from '@type/types'
-import init, { process_image, ProcessedImage } from '@/wasm/gallery_wasm.js'
+import { IsolationId, ProcessedImage } from '@type/types'
+import { ProcessedImageSchema } from '@type/schemas'
+import init, { process_image } from '@/wasm/gallery_wasm.js'
 import { useConfigStore } from './configStore'
 
 export const useUploadStore = (isolationId: IsolationId) =>
@@ -155,43 +156,69 @@ export const useUploadStore = (isolationId: IsolationId) =>
             }
 
             try {
-              const processed: ProcessedImage | null = process_image(uint8Array, file.name)
-
-              if (processed) {
-                // Upload processed data
-                const formData = new FormData()
-                formData.append(
-                  'metadata',
-                  JSON.stringify({
-                    hash: processed.hash,
-                    width: processed.width,
-                    height: processed.height,
-                    size: processed.size,
-                    thumbhash: processed.thumbhash,
-                    phash: processed.phash,
-                    exif: processed.exif,
-                    lastModified: file.lastModified // Add timestamp
-                  })
-                )
-
-                // Append binary blobs
-                // We send 'compressed' as the main optimized image.
-                formData.append(
-                  'compressed',
-                  new Blob([new Uint8Array(processed.compressed_image)], { type: 'image/jpeg' }),
-                  'compressed.jpg'
-                )
-                formData.append('original', file)
-
-                const uploadUrl =
-                  albumId !== undefined
-                    ? `/upload-local?presigned_album_id_opt=${encodeURIComponent(albumId)}`
-                    : `/upload-local`
-
-                await axios.post(uploadUrl, formData, {
-                  headers: { 'Content-Type': 'multipart/form-data' }
-                })
+              const processedRaw: unknown = process_image(uint8Array, file.name, file.lastModified)
+              console.log('processedRaw', processedRaw)
+              const processedResult = ProcessedImageSchema.safeParse(processedRaw)
+              if (!processedResult.success) {
+                console.error('Invalid WASM processed image payload', processedResult.error)
+                continue
               }
+              const processed: ProcessedImage = processedResult.data
+
+              // Upload processed data
+              const formData = new FormData()
+              const nowMs = Date.now()
+
+              // Backend expects ObjectSchema + ImageMetadata directly (camelCase)
+              const payload = {
+                object: {
+                  id: processed.hash,
+                  objType: 'image',
+                  pending: false,
+                  // Rust expects Option<Vec<u8>>; JSON must be a sequence (array), not a Uint8Array object.
+                  thumbhash: processed.thumbhash ? Array.from(processed.thumbhash) : null,
+                  description: null,
+                  tags: [] as string[],
+                  isFavorite: false,
+                  isArchived: false,
+                  isTrashed: false,
+                  updateAt: nowMs
+                },
+                metadata: {
+                  id: processed.hash,
+                  size: processed.size,
+                  width: processed.width,
+                  height: processed.height,
+                  ext: processed.extension,
+                  phash: processed.phash ? Array.from(processed.phash) : null,
+                  albums: albumId !== undefined ? [albumId] : [],
+                  exifVec: processed.exif,
+                  alias: [
+                    {
+                      file: file.name,
+                      modified: file.lastModified,
+                      scanTime: nowMs
+                    }
+                  ]
+                }
+              }
+
+              formData.append('metadata', JSON.stringify(payload))
+
+              // Append binary blobs
+              // We send 'compressed' as the main optimized image.
+              formData.append(
+                'compressed',
+                new Blob([processed.compressedImage], { type: 'image/jpeg' }),
+                'compressed.jpg'
+              )
+              formData.append('original', file)
+
+              const uploadUrl = `/upload-local`
+
+              await axios.post(uploadUrl, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+              })
             } catch (e: unknown) {
               console.error('WASM processing failed for', file.name, e)
             }

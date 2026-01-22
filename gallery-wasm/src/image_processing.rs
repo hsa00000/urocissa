@@ -8,6 +8,7 @@ use thumbhash::rgba_to_thumb_hash;
 use wasm_bindgen::prelude::*;
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ProcessedImage {
     pub hash: String,
     pub width: u32,

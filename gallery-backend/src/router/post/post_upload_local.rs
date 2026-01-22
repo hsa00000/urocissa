@@ -2,20 +2,15 @@ use crate::operations::open_db::open_data_table;
 use crate::public::constant::storage::EnvironmentManager;
 use crate::public::error::{AppError, ErrorKind};
 use crate::public::structure::abstract_data::AbstractData;
-use crate::public::structure::common::FileModify;
 use crate::public::structure::image::{ImageCombined, ImageMetadata};
-use crate::public::structure::object::{ObjectSchema, ObjectType};
+use crate::public::structure::object::ObjectSchema;
 use crate::router::fairing::guard_read_only_mode::GuardReadOnlyMode;
 use crate::router::fairing::guard_upload::GuardUpload;
 use crate::router::{AppResult, GuardResult};
 use crate::tasks::BATCH_COORDINATOR;
 use crate::tasks::batcher::flush_tree::FlushTreeTask;
-use anyhow::Result;
-use arrayvec::ArrayString;
-use chrono::Utc;
 use rocket::form::{Errors, Form};
 use rocket::fs::TempFile;
-use std::collections::{BTreeMap, HashSet};
 use std::fs;
 use std::mem;
 
@@ -35,27 +30,19 @@ pub struct UploadLocalForm<'r> {
     pub original: TempFile<'r>,
 }
 
-/// Metadata fully calculated by Frontend/WASM
-/// Backend treats this as the source of truth without re-verification
+/// Payload fully calculated by Frontend/WASM.
+/// Backend treats this as the source of truth without re-mapping.
 #[derive(serde::Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct ProcessedMetadata {
-    pub hash: String,
-    pub width: u32,
-    pub height: u32,
-    pub size: u64,
-    pub extension: String, // Received from WASM
-    pub thumbhash: Option<Vec<u8>>,
-    pub phash: Option<Vec<u8>>,
-    pub exif: BTreeMap<String, String>,
-    pub last_modified: i64, // Mandatory from WASM
+pub struct UploadLocalPayload {
+    pub object: ObjectSchema,
+    pub metadata: ImageMetadata,
 }
 
-#[post("/upload-local?<presigned_album_id_opt>", data = "<form>")]
+#[post("/upload-local", data = "<form>")]
 pub async fn upload_local(
     auth: GuardResult<GuardUpload>,
     read_only_mode: GuardResult<GuardReadOnlyMode>,
-    presigned_album_id_opt: Option<String>,
     form: Result<Form<UploadLocalForm<'_>>, Errors<'_>>,
 ) -> AppResult<()> {
     let _ = auth?;
@@ -71,22 +58,21 @@ pub async fn upload_local(
         }
     };
 
-    // 1. Deserialize Metadata (Source of Truth)
-    let meta: ProcessedMetadata = serde_json::from_str(&inner_form.metadata).map_err(|e| {
+    // 1. Deserialize Payload (Source of Truth)
+    let payload: UploadLocalPayload = serde_json::from_str(&inner_form.metadata).map_err(|e| {
         AppError::new(
             ErrorKind::InvalidInput,
             format!("Invalid metadata JSON: {}", e),
         )
     })?;
 
-    let hash_str = &meta.hash;
-    let hash = ArrayString::from(hash_str)
-        .map_err(|_| AppError::new(ErrorKind::InvalidInput, "Hash too long"))?;
+    let hash = payload.object.id;
+    let hash_str = hash.as_str();
 
     // 2. Prepare Storage Paths
     // Imported Path: object/imported/xx/hash.ext
     let imported_dir = EnvironmentManager::object_imported_prefix_dir(hash_str);
-    let imported_path = EnvironmentManager::imported_file_path(hash_str, &meta.extension);
+    let imported_path = EnvironmentManager::imported_file_path(hash_str, &payload.metadata.ext);
 
     // Compressed Path: object/compressed/xx/hash.jpg
     let compressed_dir = EnvironmentManager::object_compressed_prefix_dir(hash_str);
@@ -103,8 +89,7 @@ pub async fn upload_local(
         .map_err(|e| AppError::new(ErrorKind::IO, e.to_string()))?;
 
     // Apply Timestamp to File System
-    let mtime = filetime::FileTime::from_unix_time((meta.last_modified / 1000) as i64, 0);
-    let _ = filetime::set_file_mtime(&imported_path, mtime);
+    // Intentionally do not override filesystem mtime here.
 
     // Save Compressed
     fs::create_dir_all(&compressed_dir).map_err(|e| AppError::new(ErrorKind::IO, e.to_string()))?;
@@ -114,59 +99,11 @@ pub async fn upload_local(
         .await
         .map_err(|e| AppError::new(ErrorKind::IO, e.to_string()))?;
 
-    // 4. Construct Data Structures (Mapping Only)
-    let current_server_time = Utc::now().timestamp_millis();
-    let mut albums = HashSet::new();
-
-    if let Some(aid) = presigned_album_id_opt {
-        if let Ok(aid_array) = ArrayString::from(&aid) {
-            albums.insert(aid_array);
-        }
-    }
-
-    // Object Schema - Directly map from meta
-    let object = ObjectSchema {
-        id: hash,
-        obj_type: ObjectType::Image,
-        pending: false,
-        thumbhash: meta.thumbhash,
-        description: None,
-        tags: HashSet::new(),
-        is_favorite: false,
-        is_archived: false,
-        is_trashed: false,
-        update_at: current_server_time, // Server sets update time, file keeps original time
-    };
-
-    // Metadata - Directly map from meta
-    let mut metadata = ImageMetadata {
-        id: hash,
-        size: meta.size,
-        width: meta.width,
-        height: meta.height,
-        ext: meta.extension.clone(),
-        phash: meta.phash,
-        albums,
-        exif_vec: meta.exif,
-        alias: vec![], // Populated below
-    };
-
-    // FileModify - Directly map from meta + temp file logic
-    // We still need the original filename string, which comes from the form upload
-    let original_filename_base = inner_form
-        .original
-        .name()
-        .map(std::string::ToString::to_string)
-        .unwrap_or_else(|| "unknown".to_string());
-
-    let file_modify = FileModify {
-        file: format!("{}.{}", original_filename_base, meta.extension),
-        modified: meta.last_modified,
-        scan_time: current_server_time,
-    };
-    metadata.alias.push(file_modify);
-
-    let mut abstract_data = AbstractData::Image(ImageCombined { object, metadata });
+    // 4. Construct Data Structures (No mapping; accept client payload)
+    let mut abstract_data = AbstractData::Image(ImageCombined {
+        object: payload.object,
+        metadata: payload.metadata,
+    });
 
     // 5. DB Insertion / Merge Logic (Storage Logic)
     let data_table = open_data_table();

@@ -13,7 +13,9 @@ export default tseslint.config(
       '**/dev-dist/**/*',
       'src/script/lexer/MyParserCst.d.ts',
       '**/*.mjs',
-      'src/type/MyParserCst.d.ts'
+      'src/type/MyParserCst.d.ts',
+      'src/wasm/**/*.js',
+      'src/wasm/**/*.d.ts'
     ]
   },
   eslint.configs.recommended,
