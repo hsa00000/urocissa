@@ -3,14 +3,15 @@
 /**
  * @param {Uint8Array} data
  * @param {string} filename
+ * @param {number} last_modified_ms
  * @returns {any}
  */
-export function process_image(data, filename) {
+export function process_image(data, filename, last_modified_ms) {
     const ptr0 = passArray8ToWasm0(data, wasm.__wbindgen_malloc);
     const len0 = WASM_VECTOR_LEN;
     const ptr1 = passStringToWasm0(filename, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len1 = WASM_VECTOR_LEN;
-    const ret = wasm.process_image(ptr0, len0, ptr1, len1);
+    const ret = wasm.process_image(ptr0, len0, ptr1, len1, last_modified_ms);
     if (ret[2]) {
         throw takeFromExternrefTable0(ret[1]);
     }
@@ -69,12 +70,17 @@ function __wbg_get_imports() {
             const ret = arg0;
             return ret;
         },
-        __wbindgen_cast_0000000000000002: function(arg0, arg1) {
+        __wbindgen_cast_0000000000000002: function(arg0) {
+            // Cast intrinsic for `I64 -> Externref`.
+            const ret = arg0;
+            return ret;
+        },
+        __wbindgen_cast_0000000000000003: function(arg0, arg1) {
             // Cast intrinsic for `Ref(String) -> Externref`.
             const ret = getStringFromWasm0(arg0, arg1);
             return ret;
         },
-        __wbindgen_cast_0000000000000003: function(arg0) {
+        __wbindgen_cast_0000000000000004: function(arg0) {
             // Cast intrinsic for `U64 -> Externref`.
             const ret = BigInt.asUintN(64, arg0);
             return ret;
