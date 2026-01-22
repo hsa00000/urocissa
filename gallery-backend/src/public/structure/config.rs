@@ -1,9 +1,9 @@
 // src/public/structure/config.rs
 
 use anyhow::Context;
-use base64::{Engine as _, engine::general_purpose};
-use log::{info, warn};
-use rand::{TryRngCore, rngs::OsRng};
+use base64::{engine::general_purpose, Engine as _};
+use log::info;
+use rand::{rngs::OsRng, TryRngCore};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::fs::{self, File};
@@ -11,7 +11,7 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::sync::{OnceLock, RwLock};
 
-use crate::public::constant::storage::get_config_path;
+use crate::public::constant::storage::EnvironmentStatus;
 
 pub static FALLBACK_SECRET_KEY: OnceLock<String> = OnceLock::new();
 
@@ -33,6 +33,7 @@ pub struct PublicConfig {
     pub read_only_mode: bool,
     pub disable_img: bool,
     #[serde(default)]
+    // Indicates if the application is running in local-first mode
     pub local_mode: bool,
 }
 
@@ -81,6 +82,14 @@ impl Default for AppConfig {
 pub static APP_CONFIG: OnceLock<RwLock<AppConfig>> = OnceLock::new();
 
 impl AppConfig {
+    pub fn get_data_path() -> PathBuf {
+        EnvironmentStatus::init().data_path.clone()
+    }
+
+    pub fn get_config_path() -> PathBuf {
+        Self::get_data_path().join("config.json")
+    }
+
     pub fn get_jwt_secret_key(&self) -> Vec<u8> {
         match self.private.auth_key.as_ref() {
             Some(auth_key) => auth_key.as_bytes().to_vec(),
@@ -91,8 +100,8 @@ impl AppConfig {
         }
     }
 
-    pub fn init() {
-        let config_path = get_config_path();
+    pub fn init() -> anyhow::Result<()> {
+        let config_path = Self::get_config_path();
         let config_path_display = config_path.display();
 
         // Create default config file if it doesn't exist
@@ -102,15 +111,12 @@ impl AppConfig {
             );
             let default_config = AppConfig::default();
 
-            if let Err(e) = Self::save_update(&default_config) {
-                warn!("Failed to create default config file: {e}");
-            } else {
-                info!("Default configuration created successfully.");
-            }
+            Self::save_update(&default_config).context("Failed to create default config file")?;
+            info!("Default configuration created successfully.");
         }
 
         info!("Loading configuration from {config_path_display}");
-        let mut config = Self::load_from_file();
+        let mut config = Self::load_from_file()?;
 
         if config
             .private
@@ -125,30 +131,24 @@ impl AppConfig {
 
         APP_CONFIG
             .set(RwLock::new(config))
-            .expect("Config already initialized");
+            .map_err(|_| anyhow::anyhow!("Config already initialized"))?;
+
+        Ok(())
     }
 
-    fn load_from_file() -> AppConfig {
-        let config_path = get_config_path();
+    fn load_from_file() -> anyhow::Result<AppConfig> {
+        let config_path = Self::get_config_path();
         let config_path_display = config_path.display();
 
-        let file_content = fs::read_to_string(&config_path).unwrap_or_else(|e| {
-            warn!("Failed to read config file {config_path_display}: {e}, using defaults");
-            "{}".to_string()
-        });
+        let file_content = fs::read_to_string(&config_path)
+            .context(format!("Failed to read config file {config_path_display}"))?;
 
-        match serde_json::from_str::<AppConfig>(&file_content) {
-            Ok(config) => {
-                info!("Successfully loaded configuration from {config_path_display}");
-                config
-            }
-            Err(e) => {
-                warn!(
-                    "Failed to deserialize config from {config_path_display}: {e:?}, using defaults"
-                );
-                AppConfig::default()
-            }
-        }
+        let config = serde_json::from_str::<AppConfig>(&file_content).context(format!(
+            "Failed to deserialize config from {config_path_display}. Please check the file format."
+        ))?;
+
+        info!("Successfully loaded configuration from {config_path_display}");
+        Ok(config)
     }
 
     pub fn update(mut new_config: AppConfig) -> anyhow::Result<()> {
@@ -192,7 +192,7 @@ impl AppConfig {
     }
 
     fn save_update(config: &AppConfig) -> anyhow::Result<()> {
-        let config_path = get_config_path();
+        let config_path = Self::get_config_path();
         let config_path_display = config_path.display();
 
         let mut file = File::create(&config_path).context(format!(
