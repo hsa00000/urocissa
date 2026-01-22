@@ -4,7 +4,6 @@ use super::fairing::generate_fairing_routes;
 use super::get::generate_get_routes;
 use super::post::generate_post_routes;
 use super::put::generate_put_routes;
-use crate::public::constant::storage::get_config_path;
 use crate::public::structure::config::AppConfig;
 
 use figment::{
@@ -49,7 +48,7 @@ async fn assets(
 
 /// Load configuration from the file system
 pub fn load_config() -> AppConfig {
-    let config_path = get_config_path();
+    let config_path = AppConfig::get_config_path();
     let figment = Figment::new().merge(Json::file(&config_path));
 
     figment

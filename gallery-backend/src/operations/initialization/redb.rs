@@ -1,8 +1,8 @@
-use crate::public::constant::storage::get_data_path;
+use crate::public::constant::storage::EnvironmentStatus;
 use std::fs;
 
 pub fn initialize_file() {
-    let root = get_data_path();
+    let root = EnvironmentStatus::get_data_path();
 
     {
         let db_path = root.join("db/temp_db.redb");

@@ -366,7 +366,7 @@ impl AbstractData {
     pub fn imported_path_string(&self) -> String {
         let hash = self.hash();
         let ext = self.ext();
-        crate::public::constant::storage::get_data_path()
+        crate::public::constant::storage::EnvironmentStatus::get_data_path()
             .join(format!(
                 "object/imported/{}/{}.{}",
                 &hash.as_str()[0..2],
@@ -394,7 +394,7 @@ impl AbstractData {
             return String::new();
         }
 
-        crate::public::constant::storage::get_data_path()
+        crate::public::constant::storage::EnvironmentStatus::get_data_path()
             .join(relative_path)
             .to_string_lossy()
             .into_owned()
@@ -413,7 +413,7 @@ impl AbstractData {
     /// Get the thumbnail path
     pub fn thumbnail_path(&self) -> String {
         let hash = self.hash();
-        crate::public::constant::storage::get_data_path()
+        crate::public::constant::storage::EnvironmentStatus::get_data_path()
             .join(format!(
                 "object/compressed/{}/{}.jpg",
                 &hash.as_str()[0..2],

@@ -1,5 +1,5 @@
 use crate::operations::open_db::open_data_table;
-use crate::public::constant::storage::get_data_path;
+use crate::public::constant::storage::EnvironmentStatus;
 use crate::public::error::{AppError, ErrorKind};
 use crate::public::structure::abstract_data::AbstractData;
 use crate::public::structure::common::FileModify;
@@ -84,7 +84,7 @@ pub async fn upload_local(
         .map_err(|_| AppError::new(ErrorKind::InvalidInput, "Hash too long"))?;
 
     // 2. Prepare Storage Paths
-    let root = get_data_path();
+    let root = EnvironmentStatus::get_data_path();
     let hash_prefix = &hash_str[0..2];
 
     // Imported Path: object/imported/xx/hash.ext

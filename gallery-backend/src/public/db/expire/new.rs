@@ -2,10 +2,10 @@ use std::sync::LazyLock;
 
 use super::Expire;
 
-use crate::public::constant::storage::get_data_path;
+use crate::public::constant::storage::EnvironmentStatus;
 
 static EXPIRE_IN_DISK: LazyLock<redb::Database> = LazyLock::new(|| {
-    let path = get_data_path().join("db/expire_db.redb");
+    let path = EnvironmentStatus::get_data_path().join("db/expire_db.redb");
     if let Some(parent) = path.parent() {
         if !parent.exists() {
             std::fs::create_dir_all(parent).unwrap();

@@ -1,5 +1,5 @@
 use crate::public::constant::MAX_DELETE_ATTEMPTS;
-use crate::public::constant::storage::get_data_path;
+use crate::public::constant::storage::EnvironmentStatus;
 use crate::public::error_data::handle_error;
 use anyhow::Context;
 use anyhow::Result;
@@ -14,7 +14,7 @@ use std::{
 use tokio::task::spawn_blocking;
 
 static UPLOAD_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
-    let root = get_data_path();
+    let root = EnvironmentStatus::get_data_path();
     let upload_dir = root.join("upload");
     if !upload_dir.exists() {
         fs::create_dir_all(&upload_dir).expect("Failed to create upload dir");

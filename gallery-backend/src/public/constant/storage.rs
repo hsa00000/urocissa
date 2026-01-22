@@ -109,11 +109,3 @@ impl EnvironmentStatus {
         (true, PathBuf::from("."))
     }
 }
-
-pub fn get_data_path() -> PathBuf {
-    EnvironmentStatus::get_data_path()
-}
-
-pub fn get_config_path() -> PathBuf {
-    crate::public::structure::config::AppConfig::get_config_path()
-}

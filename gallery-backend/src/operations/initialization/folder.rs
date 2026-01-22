@@ -1,8 +1,8 @@
-use crate::public::constant::storage::get_data_path;
+use crate::public::constant::storage::EnvironmentStatus;
 use log::info;
 
 pub fn initialize_folder() {
-    let root = get_data_path();
+    let root = EnvironmentStatus::get_data_path();
     info!("Storage root initialized at: {}", root.display());
     std::fs::create_dir_all(root.join("db")).unwrap();
 
