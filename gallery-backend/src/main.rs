@@ -61,9 +61,7 @@ fn main() {
     #[cfg(not(feature = "embed-frontend"))]
     info!("Frontend Configuration: EXTERNAL (Loading from file system)");
 
-    // Architecture: Isolate the Indexing/TUI runtime from the Rocket server runtime.
-
-    // This prevents heavy blocking operations in the indexer from stalling web requests.
+    // Isolate the Indexing/TUI runtime from the Rocket server runtime.
     let worker_handle = thread::spawn(move || {
         INDEX_RUNTIME.block_on(async {
             let start_time = Instant::now();
