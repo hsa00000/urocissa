@@ -3,6 +3,9 @@ use log::{error, info};
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
+#[cfg(test)]
+use std::cell::RefCell;
+
 #[derive(Debug)]
 pub struct EnvironmentStatus {
     pub is_portable: bool,
@@ -13,6 +16,11 @@ pub static ENVIROMENT_STATUS: OnceLock<EnvironmentStatus> = OnceLock::new();
 // Backwards-compat alias for older name.
 #[allow(unused_imports)]
 pub use ENVIROMENT_STATUS as ENVIRONMENT_STATUS;
+
+#[cfg(test)]
+thread_local! {
+    static TEST_DATA_PATH_OVERRIDE: RefCell<Option<PathBuf>> = const { RefCell::new(None) };
+}
 
 impl EnvironmentStatus {
     pub fn init() -> &'static Self {
@@ -38,7 +46,26 @@ impl EnvironmentStatus {
     }
 
     pub fn get_data_path() -> PathBuf {
+        #[cfg(test)]
+        if let Some(path) = TEST_DATA_PATH_OVERRIDE.with(|p| p.borrow().clone()) {
+            return path;
+        }
+
         Self::init().data_path.clone()
+    }
+
+    #[cfg(test)]
+    pub fn set_data_path_override_for_test(path: PathBuf) {
+        TEST_DATA_PATH_OVERRIDE.with(|p| {
+            *p.borrow_mut() = Some(path);
+        });
+    }
+
+    #[cfg(test)]
+    pub fn clear_data_path_override_for_test() {
+        TEST_DATA_PATH_OVERRIDE.with(|p| {
+            *p.borrow_mut() = None;
+        });
     }
 
     fn detect_environment() -> (bool, PathBuf) {
