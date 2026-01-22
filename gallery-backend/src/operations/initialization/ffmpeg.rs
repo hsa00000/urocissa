@@ -1,9 +1,9 @@
 use crate::public::constant::storage::EnvironmentManager;
-use log::{error, info};
+use log::info;
 use std::env;
 use std::process::Command;
 
-pub fn check_ffmpeg_and_ffprobe() {
+pub fn check_ffmpeg_and_ffprobe() -> Result<(), String> {
     let root = EnvironmentManager::root_path();
     let bin_dir = root.join("bin");
 
@@ -47,15 +47,17 @@ pub fn check_ffmpeg_and_ffprobe() {
                 info!("{command} version: {version_number}");
             }
             Ok(_) => {
-                error!(
+                return Err(format!(
                     "`{command}` command was found, but it returned an error. Please ensure it's correctly installed."
-                );
+                ));
             }
             Err(_) => {
-                error!(
+                return Err(format!(
                     "`{command}` is not installed or not available in PATH. Please install it before running the application."
-                );
+                ));
             }
         }
     }
+
+    Ok(())
 }

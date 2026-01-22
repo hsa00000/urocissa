@@ -19,8 +19,15 @@ pub fn initialize() {
         std::process::exit(1);
     }
 
-    check_ffmpeg_and_ffprobe();
-    initialize_file();
+    if let Err(e) = check_ffmpeg_and_ffprobe() {
+        eprintln!("Failed to check ffmpeg and ffprobe: {e}");
+        std::process::exit(1);
+    }
+
+    if let Err(e) = initialize_file() {
+        eprintln!("Failed to initialize file: {e}");
+        std::process::exit(1);
+    }
 }
 
 #[cfg(test)]
