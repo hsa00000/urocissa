@@ -22,11 +22,67 @@ pub struct ProcessedImage {
     pub last_modified: i64,
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UploadLocalObject {
+    pub id: String,
+    pub obj_type: String,
+    pub pending: bool,
+    pub thumbhash: Option<Vec<u8>>,
+    pub description: Option<String>,
+    pub tags: Vec<String>,
+    pub is_favorite: bool,
+    pub is_archived: bool,
+    pub is_trashed: bool,
+    pub update_at: i64,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UploadLocalFileModify {
+    pub file: String,
+    pub modified: i64,
+    pub scan_time: i64,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UploadLocalMetadata {
+    pub id: String,
+    pub size: u64,
+    pub width: u32,
+    pub height: u32,
+    pub ext: String,
+    pub phash: Option<Vec<u8>>,
+    pub albums: Vec<String>,
+    pub exif_vec: BTreeMap<String, String>,
+    pub alias: Vec<UploadLocalFileModify>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UploadLocalPayload {
+    pub object: UploadLocalObject,
+    pub metadata: UploadLocalMetadata,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProcessImageForUploadResult {
+    /// A JSON string matching backend `UploadLocalPayload`.
+    pub metadata_json: String,
+    /// JPEG bytes (optimized) for multipart field `compressed`.
+    pub compressed_jpeg: Vec<u8>,
+    /// The computed object id (hash).
+    pub hash: String,
+}
+
 #[wasm_bindgen]
 pub fn process_image(
     data: &[u8],
     filename: &str,
     last_modified_ms: f64, // JS number passed as f64
+    album_id_opt: Option<String>,
 ) -> Result<JsValue, JsValue> {
     let cursor = Cursor::new(data);
     let mut reader = image::ImageReader::new(cursor);
@@ -103,5 +159,62 @@ pub fn process_image(
         last_modified: last_modified_ms as i64,
     };
 
-    Ok(serde_wasm_bindgen::to_value(&result).map_err(|e| e.to_string())?)
+    // Build an upload-ready payload that matches backend `UploadLocalPayload` (camelCase).
+    // We serialize it to a JSON string inside wasm to avoid JS-side mapping and Uint8Array->number[] conversions.
+    let now_ms = js_sys::Date::now() as i64;
+    let payload = UploadLocalPayload {
+        object: UploadLocalObject {
+            id: result.hash.clone(),
+            obj_type: "image".to_string(),
+            pending: false,
+            thumbhash: result.thumbhash.clone(),
+            description: None,
+            tags: Vec::new(),
+            is_favorite: false,
+            is_archived: false,
+            is_trashed: false,
+            update_at: now_ms,
+        },
+        metadata: UploadLocalMetadata {
+            id: result.hash.clone(),
+            size: result.size,
+            width: result.width,
+            height: result.height,
+            ext: result.extension.clone(),
+            phash: result.phash.clone(),
+            albums: album_id_opt.into_iter().collect(),
+            exif_vec: result.exif.clone(),
+            alias: vec![UploadLocalFileModify {
+                file: filename.to_string(),
+                modified: result.last_modified,
+                scan_time: now_ms,
+            }],
+        },
+    };
+
+    let payload_js = payload
+        .serialize(
+            &serde_wasm_bindgen::Serializer::new()
+                .serialize_maps_as_objects(true)
+                .serialize_bytes_as_arrays(true),
+        )
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+
+    let metadata_json = js_sys::JSON::stringify(&payload_js)
+        .map_err(|e| {
+            JsValue::from_str(
+                &e.as_string()
+                    .unwrap_or_else(|| "Failed to stringify upload metadata".to_string()),
+            )
+        })?
+        .as_string()
+        .ok_or_else(|| JsValue::from_str("JSON.stringify did not return a string"))?;
+
+    let upload_result = ProcessImageForUploadResult {
+        metadata_json,
+        compressed_jpeg: result.compressed_image,
+        hash: result.hash,
+    };
+
+    Ok(serde_wasm_bindgen::to_value(&upload_result).map_err(|e| e.to_string())?)
 }

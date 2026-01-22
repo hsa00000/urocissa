@@ -4,10 +4,51 @@ import { useMessageStore } from './messageStore'
 import { useModalStore } from './modalStore'
 // import { useConstStore } from './constStore'
 import { errorDisplay } from '@/script/utils/errorDisplay'
-import { IsolationId, ProcessedImage } from '@type/types'
-import { ProcessedImageSchema } from '@type/schemas'
+import { IsolationId } from '@type/types'
 import init, { process_image } from '@/wasm/gallery_wasm.js'
 import { useConfigStore } from './configStore'
+
+interface ProcessImageForUploadResult {
+  metadataJson: string
+  compressedJpeg: Uint8Array
+  hash: string
+}
+
+function toUint8Array(value: unknown): Uint8Array | null {
+  if (value instanceof Uint8Array) return value
+  if (value instanceof ArrayBuffer) return new Uint8Array(value)
+  if (Array.isArray(value) && value.every((v) => typeof v === 'number')) {
+    return new Uint8Array(value)
+  }
+  return null
+}
+
+function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  // Blob typings can be picky about ArrayBuffer vs SharedArrayBuffer; normalize via copy.
+  if (bytes.buffer instanceof ArrayBuffer) {
+    return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)
+  }
+  const arrayBuffer = new ArrayBuffer(bytes.byteLength)
+  new Uint8Array(arrayBuffer).set(bytes)
+  return arrayBuffer
+}
+
+function toProcessImageForUploadResult(value: unknown): ProcessImageForUploadResult | null {
+  if (typeof value !== 'object' || value === null) return null
+
+  const record = value as Record<string, unknown>
+  if (typeof record.metadataJson !== 'string') return null
+  if (typeof record.hash !== 'string') return null
+
+  const compressedJpeg = toUint8Array(record.compressedJpeg)
+  if (compressedJpeg === null) return null
+
+  return {
+    metadataJson: record.metadataJson,
+    compressedJpeg,
+    hash: record.hash
+  }
+}
 
 export const useUploadStore = (isolationId: IsolationId) =>
   defineStore('uploadStore' + isolationId, {
@@ -156,60 +197,23 @@ export const useUploadStore = (isolationId: IsolationId) =>
             }
 
             try {
-              const processedRaw: unknown = process_image(uint8Array, file.name, file.lastModified)
-              console.log('processedRaw', processedRaw)
-              const processedResult = ProcessedImageSchema.safeParse(processedRaw)
-              if (!processedResult.success) {
-                console.error('Invalid WASM processed image payload', processedResult.error)
+              const processed = toProcessImageForUploadResult(
+                process_image(uint8Array, file.name, file.lastModified, albumId)
+              )
+              if (processed === null) {
                 continue
               }
-              const processed: ProcessedImage = processedResult.data
 
               // Upload processed data
               const formData = new FormData()
-              const nowMs = Date.now()
 
-              // Backend expects ObjectSchema + ImageMetadata directly (camelCase)
-              const payload = {
-                object: {
-                  id: processed.hash,
-                  objType: 'image',
-                  pending: false,
-                  // Rust expects Option<Vec<u8>>; JSON must be a sequence (array), not a Uint8Array object.
-                  thumbhash: processed.thumbhash ? Array.from(processed.thumbhash) : null,
-                  description: null,
-                  tags: [] as string[],
-                  isFavorite: false,
-                  isArchived: false,
-                  isTrashed: false,
-                  updateAt: nowMs
-                },
-                metadata: {
-                  id: processed.hash,
-                  size: processed.size,
-                  width: processed.width,
-                  height: processed.height,
-                  ext: processed.extension,
-                  phash: processed.phash ? Array.from(processed.phash) : null,
-                  albums: albumId !== undefined ? [albumId] : [],
-                  exifVec: processed.exif,
-                  alias: [
-                    {
-                      file: file.name,
-                      modified: file.lastModified,
-                      scanTime: nowMs
-                    }
-                  ]
-                }
-              }
-
-              formData.append('metadata', JSON.stringify(payload))
+              formData.append('metadata', processed.metadataJson)
 
               // Append binary blobs
               // We send 'compressed' as the main optimized image.
               formData.append(
                 'compressed',
-                new Blob([processed.compressedImage], { type: 'image/jpeg' }),
+                new Blob([toArrayBuffer(processed.compressedJpeg)], { type: 'image/jpeg' }),
                 'compressed.jpg'
               )
               formData.append('original', file)

@@ -1,7 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
-export function process_image(data: Uint8Array, filename: string, last_modified_ms: number): any;
+export function process_image(data: Uint8Array, filename: string, last_modified_ms: number, album_id_opt?: string | null): any;
 
 export function run(): void;
 
@@ -9,10 +9,12 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
-    readonly process_image: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
+    readonly process_image: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number];
     readonly run: () => void;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
+    readonly __wbindgen_exn_store: (a: number) => void;
+    readonly __externref_table_alloc: () => number;
     readonly __wbindgen_externrefs: WebAssembly.Table;
     readonly __externref_table_dealloc: (a: number) => void;
     readonly __wbindgen_start: () => void;

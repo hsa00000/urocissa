@@ -196,6 +196,7 @@ dependencies = [
  "console_error_panic_hook",
  "image",
  "image_hasher",
+ "js-sys",
  "kamadak-exif",
  "serde",
  "serde-wasm-bindgen",
