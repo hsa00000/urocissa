@@ -6,7 +6,7 @@
         <v-card
           variant="flat"
           class="w-100"
-          :title="`Add ${collectionStore.editModeCollection.size} items to ${album.title}`"
+          :title="`Add ${collectionStore.editModeCollection.size} items to ${album.title?.trim() || 'Untitled'}`"
         >
         </v-card>
         <v-spacer></v-spacer>
