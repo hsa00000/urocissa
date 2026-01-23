@@ -107,7 +107,14 @@ impl AppConfig {
         }
 
         info!("Loading configuration from {config_path_display}");
-        let mut config = Self::load_from_file();
+        let (mut config, was_fallback) = Self::load_from_file();
+
+        if was_fallback {
+            info!("Overwriting invalid/empty config with defaults");
+            if let Err(e) = Self::save_update(&config) {
+                warn!("Failed to save default config: {e}");
+            }
+        }
 
         if config
             .private
@@ -125,7 +132,7 @@ impl AppConfig {
             .expect("Config already initialized");
     }
 
-    fn load_from_file() -> AppConfig {
+    fn load_from_file() -> (AppConfig, bool) {
         let config_path = get_config_path();
         let config_path_display = config_path.display();
 
@@ -137,13 +144,13 @@ impl AppConfig {
         match serde_json::from_str::<AppConfig>(&file_content) {
             Ok(config) => {
                 info!("Successfully loaded configuration from {config_path_display}");
-                config
+                (config, false)
             }
             Err(e) => {
                 warn!(
                     "Failed to deserialize config from {config_path_display}: {e:?}, using defaults"
                 );
-                AppConfig::default()
+                (AppConfig::default(), true)
             }
         }
     }
