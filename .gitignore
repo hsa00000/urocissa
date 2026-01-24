@@ -27,3 +27,7 @@ docker/docker-compose.override.yml
 
 # gallery-backend/upload: A user-specific folder for media uploads, should not be tracked
 gallery-backend/upload
+
+# Ignore OpenCode config files
+.opencode/opencode.json
+.opencode/oh-my-opencode.jsonc
