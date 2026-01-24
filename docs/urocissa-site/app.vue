@@ -473,3 +473,57 @@ useHead({
   link: [{ rel: "preconnect", href: "https://api.github.com" }],
 });
 </script>
+<style scoped>
+html {
+  scroll-behavior: smooth;
+}
+
+.logo-bunker-sm {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  overflow: hidden;
+}
+
+.logo-bunker-lg {
+  width: 150px;
+  height: 150px;
+  min-width: 150px;
+  min-height: 150px;
+  position: relative;
+}
+
+.layout-locked {
+  --v-layout-top: 64px;
+  padding-top: 64px;
+}
+
+.bunker-16-9 {
+  width: 100%;
+  padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+  position: relative;
+  background-color: #e0e0e0;
+}
+
+.absolute-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.logo-glow {
+  filter: drop-shadow(0 0 15px rgba(33, 150, 243, 0.6));
+  transition: filter 0.3s ease-in-out;
+
+  /* Performance: Promote to GPU layer to prevent repaints during hover transition. */
+  will-change: filter;
+  /* Hack: Force hardware acceleration to fix potential flickering. */
+  transform: translateZ(0);
+}
+
+.logo-glow:hover {
+  filter: drop-shadow(0 0 25px rgba(33, 150, 243, 0.9));
+}
+</style>
