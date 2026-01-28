@@ -39,6 +39,25 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
+# ---- Embed exe icon (Windows release only) ----
+$repoRoot = Resolve-Path $PSScriptRoot | Select-Object -ExpandProperty Path
+
+$exePath  = Join-Path $repoRoot "gallery-backend\target\$profile\urocissa.exe"
+$iconPath = Join-Path $repoRoot "gallery-backend\assets\logo.ico"
+
+if (-not (Test-Path $exePath))  { throw "exe not found: $exePath" }
+if (-not (Test-Path $iconPath)) { throw "icon not found: $iconPath" }
+
+# Ensure rcedit exists (via Chocolatey)
+if (-not (Get-Command rcedit.exe -ErrorAction SilentlyContinue)) {
+  choco install rcedit -y --no-progress
+  if ($LASTEXITCODE -ne 0) { throw "choco install rcedit failed." }
+}
+
+# Set icon
+rcedit "$exePath" --set-icon "$iconPath"
+if ($LASTEXITCODE -ne 0) { throw "rcedit failed." }
+
 Write-Host "Creating Installer with NSIS ($nsisPath)..."
 
 $exeSource = Resolve-Path "gallery-backend/target/$profile/urocissa.exe"

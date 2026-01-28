@@ -79,9 +79,6 @@ rust-embed = "8.11.0"
 mime_guess = "2.0.5"
 ubyte = "0.10.4"
 
-[build-dependencies]
-winres = "0.1"
-
 [features]
 embed-frontend = []
 auto-open-browser = ["dep:webbrowser"]
