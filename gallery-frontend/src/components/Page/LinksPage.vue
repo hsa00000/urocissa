@@ -1,5 +1,11 @@
 <template>
-  <PageTemplate preset="card" width="wide" :ready="albumStore.fetched">
+  <PageTemplate
+    preset="card"
+    :ready="albumStore.fetched"
+    width="wide"
+    :fill-height="true"
+    :card-class="['w-100', 'h-100', 'overflow-hidden']"
+  >
     <template #overlay>
       <EditShareModal
         v-if="modalStore.showEditShareModal && currentEditShareData"
@@ -20,6 +26,7 @@
         item-value="url"
         :items-per-page="-1"
         :sort-by="[{ key: 'share.url', order: 'asc' }]"
+        class="h-100"
       >
         <!-- Description with tooltip -->
         <template #[`item.share.description`]="{ item }">
