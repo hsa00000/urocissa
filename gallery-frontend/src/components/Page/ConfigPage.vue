@@ -1,5 +1,5 @@
 <template>
-  <PageTemplate preset="card" :ready="initializedStore.initialized" :col="pageCols.tableNarrow">
+  <PageTemplate preset="card" width="narrow" :ready="initializedStore.initialized">
     <template #content>
       <v-row>
         <ChangePassword v-model:has-password="localSettings.hasPassword" />
@@ -23,7 +23,6 @@ import { useConfigStore } from '@/store/configStore'
 import { useInitializedStore } from '@/store/initializedStore'
 import type { AppConfig } from '@/api/config'
 import PageTemplate from './PageLayout/PageTemplate.vue'
-import { pageCols } from './PageLayout/pageLayoutPresets'
 import ChangePassword from './Config/ChangePassword.vue'
 import StorageAndSync from './Config/StorageAndSync.vue'
 import AdvancedConfig from './Config/AdvancedConfig.vue'

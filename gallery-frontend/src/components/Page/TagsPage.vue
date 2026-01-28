@@ -1,5 +1,5 @@
 <template>
-  <PageTemplate preset="card" :ready="tagStore.fetched" :col="pageCols.tableNarrow">
+  <PageTemplate preset="card" width="pane" :ready="tagStore.fetched">
     <template #content>
       <v-table hover>
         <thead>
@@ -35,7 +35,6 @@ import { useTagStore } from '@/store/tagStore'
 import { useInitializedStore } from '@/store/initializedStore'
 import { searchByTag } from '@utils/getter'
 import PageTemplate from './PageLayout/PageTemplate.vue'
-import { pageCols } from './PageLayout/pageLayoutPresets'
 
 const initializedStore = useInitializedStore('mainId')
 const tagStore = useTagStore('mainId')

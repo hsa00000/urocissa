@@ -1,5 +1,5 @@
 <template>
-  <PageTemplate preset="card" :ready="albumStore.fetched" :col="pageCols.tableWide">
+  <PageTemplate preset="card" width="wide" :ready="albumStore.fetched">
     <template #overlay>
       <EditShareModal
         v-if="modalStore.showEditShareModal && currentEditShareData"
@@ -136,7 +136,6 @@ import { useMessageStore } from '@/store/messageStore'
 import type { EditShareData } from '@/type/types'
 import { ShareSchema } from '@/type/schemas'
 import PageTemplate from './PageLayout/PageTemplate.vue'
-import { pageCols } from './PageLayout/pageLayoutPresets'
 
 const initializedStore = useInitializedStore('mainId')
 const albumStore = useAlbumStore('mainId')

@@ -6,17 +6,17 @@
     <slot name="overlay"></slot>
 
     <v-container
-      v-if="resolvedReady"
-      :id="resolvedContainerId"
-      :class="resolvedContainerClass"
+      v-if="resolved.ready"
+      :id="resolved.containerId"
+      :class="resolved.containerClass"
       fluid
     >
       <v-row justify="center" :class="wrapperRowClass">
         <v-col
-          :cols="resolvedColSizes.cols"
-          :sm="resolvedColSizes.sm"
-          :md="resolvedColSizes.md"
-          :lg="resolvedColSizes.lg"
+          :cols="resolved.col.cols"
+          :sm="resolved.col.sm"
+          :md="resolved.col.md"
+          :lg="resolved.col.lg"
           :class="wrapperColClass"
         >
           <v-card tile flat :class="wrapperCardClass">
@@ -54,31 +54,60 @@ interface PageCol {
 }
 
 type Preset = 'full' | 'card'
+type Width = 'pane' | 'narrow' | 'compact' | 'default' | 'wide' | 'full'
+
+interface PresetConfig {
+  containerId: string
+  containerClass: string | string[]
+  cardClass: string | string[]
+  col: PageCol
+  fillHeight: boolean
+  centerContent: boolean
+  colClass: string | string[]
+}
+
+const baseContainerClass = 'h-100 w-100 pa-0 min-h-0'
+const baseCardClass = 'overflow-y-auto w-100'
 
 const presetDefaults = {
   full: {
+    containerId: 'home-container',
+    containerClass: [baseContainerClass, 'overflow-hidden'],
+    cardClass: baseCardClass,
     col: { cols: 12, sm: 12, md: 12, lg: 12 },
-    centerContent: true,
     fillHeight: true,
-    colClass: 'pa-0',
-    containerClass: 'h-100 w-100 pa-0 overflow-hidden min-h-0',
-    cardClass: 'overflow-y-auto w-100',
-    containerId: 'home-container'
+    centerContent: false,
+    colClass: 'pa-0'
   },
   card: {
+    containerId: 'table-container',
+    containerClass: baseContainerClass,
+    cardClass: baseCardClass,
     col: { cols: 12, sm: 12, md: 10, lg: 8 },
-    centerContent: true,
     fillHeight: false,
-    colClass: '',
-    containerClass: 'h-100 w-100 pa-0 min-h-0',
-    cardClass: 'overflow-y-auto w-100',
-    containerId: 'table-container'
+    centerContent: true,
+    colClass: ''
   }
-} as const
+} satisfies Record<Preset, PresetConfig>
+
+const widthCols: Record<Width, PageCol> = {
+  pane: { cols: 12, sm: 6, md: 4, lg: 3 },
+
+  // 單頁卡片：到 md 才開始變窄（平板 sm 多數仍滿寬可讀性較好）
+  narrow: { cols: 12, sm: 12, md: 8, lg: 6 },
+
+  // 你要的「default 與 narrow 之間」
+  compact: { cols: 12, sm: 12, md: 9, lg: 7 },
+
+  default: { cols: 12, sm: 12, md: 10, lg: 8 },
+  wide: { cols: 12, sm: 12, md: 11, lg: 10 },
+  full: { cols: 12, sm: 12, md: 12, lg: 12 }
+}
 
 const props = withDefaults(
   defineProps<{
     preset?: Preset
+    width?: Width
     ready?: boolean
     containerId?: string
     containerClass?: string | string[]
@@ -91,6 +120,7 @@ const props = withDefaults(
   }>(),
   {
     preset: 'full',
+    width: undefined,
     ready: true,
     containerId: undefined,
     containerClass: undefined,
@@ -130,45 +160,44 @@ onBeforeRouteLeave(() => {
   if (exitEditMode()) return false
 })
 
-const resolvedReady = computed(() => props.ready)
-const resolvedContainerId = computed(
-  () => props.containerId ?? presetDefaults[props.preset].containerId
-)
-const resolvedContainerClass = computed(
-  () => props.containerClass ?? presetDefaults[props.preset].containerClass
-)
-const resolvedCardClass = computed(() => props.cardClass ?? presetDefaults[props.preset].cardClass)
-const resolvedCol = computed(() => props.col ?? presetDefaults[props.preset].col)
-const resolvedFillHeight = computed(
-  () => props.fillHeight ?? presetDefaults[props.preset].fillHeight
-)
-const resolvedCenterContent = computed(
-  () => props.centerContent ?? presetDefaults[props.preset].centerContent
-)
-const resolvedColClass = computed(() => props.colClass ?? presetDefaults[props.preset].colClass)
+const preset = computed(() => presetDefaults[props.preset])
 
-const resolvedColSizes = computed(() => {
-  const col = resolvedCol.value
+function normalizeCol(col: PageCol): Required<PageCol> {
   return {
     cols: col.cols ?? 12,
     sm: col.sm ?? 12,
-    md: col.md ?? 10,
-    lg: col.lg ?? 8
+    md: col.md ?? 12,
+    lg: col.lg ?? 12
+  }
+}
+
+const resolved = computed(() => {
+  const p = preset.value
+  const effectiveCol = props.col ?? (props.width ? widthCols[props.width] : p.col)
+  return {
+    ready: props.ready,
+    containerId: props.containerId ?? p.containerId,
+    containerClass: props.containerClass ?? p.containerClass,
+    cardClass: props.cardClass ?? p.cardClass,
+    col: normalizeCol(effectiveCol),
+    fillHeight: props.fillHeight ?? p.fillHeight,
+    centerContent: props.centerContent ?? p.centerContent,
+    colClass: props.colClass ?? p.colClass
   }
 })
 
 const wrapperRowClass = computed(() => {
   const cls: string[] = ['ma-0', 'w-100']
-  if (resolvedFillHeight.value) cls.push('h-100')
+  if (resolved.value.fillHeight) cls.push('h-100')
   return cls
 })
 
 const wrapperColClass = computed(() => {
   const cls: string[] = ['d-flex', 'w-100']
-  cls.push(resolvedCenterContent.value ? 'justify-center' : 'justify-start')
-  if (resolvedFillHeight.value) cls.push('h-100')
+  cls.push(resolved.value.centerContent ? 'justify-center' : 'justify-start')
+  if (resolved.value.fillHeight) cls.push('h-100')
 
-  const colClass = resolvedColClass.value
+  const colClass = resolved.value.colClass
   if (Array.isArray(colClass)) {
     cls.push(...colClass.filter((x) => x !== ''))
   } else if (colClass !== '') {
@@ -179,10 +208,10 @@ const wrapperColClass = computed(() => {
 })
 
 const wrapperCardClass = computed(() => {
-  const base = Array.isArray(resolvedCardClass.value)
-    ? [...resolvedCardClass.value]
-    : [resolvedCardClass.value]
-  if (resolvedFillHeight.value) base.push('h-100')
+  const base = Array.isArray(resolved.value.cardClass)
+    ? [...resolved.value.cardClass]
+    : [resolved.value.cardClass]
+  if (resolved.value.fillHeight) base.push('h-100')
   return base
 })
 </script>
