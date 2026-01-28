@@ -4671,7 +4671,7 @@ dependencies = [
 
 [[package]]
 name = "urocissa"
-version = "2.0.5"
+version = "2.0.6"
 dependencies = [
  "anyhow",
  "arrayvec",
