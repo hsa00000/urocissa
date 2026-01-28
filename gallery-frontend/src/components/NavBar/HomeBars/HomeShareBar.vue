@@ -41,7 +41,7 @@
         <v-spacer></v-spacer>
       </v-toolbar>
 
-      <EditBar v-else />
+      <EditBarShare v-else />
     </template>
   </HomeBarTemplate>
 </template>
@@ -52,7 +52,7 @@ import { LocationQueryValue, useRoute, useRouter } from 'vue-router'
 import { useFilterStore } from '@/store/filterStore'
 import { useShareStore } from '@/store/shareStore'
 import { useCollectionStore } from '@/store/collectionStore'
-import EditBar from '@/components/NavBar/EditBar.vue'
+import EditBarShare from '@/components/NavBar/EditBarShare.vue'
 import HomeBarTemplate from '@/components/NavBar/HomeBars/HomeBarTemplate.vue'
 
 const filterStore = useFilterStore('mainId')

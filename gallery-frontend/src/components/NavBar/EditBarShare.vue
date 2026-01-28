@@ -17,23 +17,25 @@
       :isolation-id="isolationId"
     />
     <SelectClear v-else :isolation-id="isolationId" />
-    <BatchMenu />
+    <BtnDownload :index-list="editModeList" />
   </v-toolbar>
 </template>
 
 <script lang="ts" setup>
 import { useCollectionStore } from '@/store/collectionStore'
 import { usePrefetchStore } from '@/store/prefetchStore'
-import BatchMenu from '@Menu/BatchMenu.vue'
+import BtnDownload from '@Menu/MenuButton/BtnDownload.vue'
 import { useRoute } from 'vue-router'
 import { getIsolationIdByRoute } from '@utils/getter'
 import LeaveEdit from '@Menu/MenuButton/BtnLeaveEdit.vue'
 import SelectAll from '@Menu/MenuButton/BtnSelectAll.vue'
 import SelectClear from '@Menu/MenuButton/BtnSelectClear.vue'
 import SelectInverse from '@Menu/MenuButton/BtnSelectInverse.vue'
+import { computed } from 'vue'
 const route = useRoute()
 const isolationId = getIsolationIdByRoute(route)
-
 const collectionStore = useCollectionStore(isolationId)
+const editModeList = computed(() => Array.from(collectionStore.editModeCollection))
+
 const prefetchStore = usePrefetchStore(isolationId)
 </script>
