@@ -1,7 +1,7 @@
 <template>
   <PageTemplate preset="card" width="narrow" :ready="initializedStore.initialized">
     <template #content>
-      <v-row>
+      <v-row class="ma-0">
         <ChangePassword v-model:has-password="localSettings.hasPassword" />
         <StorageAndSync v-model:sync-paths="localSettings.syncPaths" />
         <AdvancedConfig
