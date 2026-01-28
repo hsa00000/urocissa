@@ -16,7 +16,7 @@
           </v-card-title>
         </v-card>
 
-        <v-card elevation="0" class="search-card">
+        <v-card elevation="0" class="search-card" v-if="false">
           <v-card-text class="pa-0">
             <v-text-field
               id="nav-search-input-isolated"
@@ -41,12 +41,12 @@
             </v-text-field>
           </v-card-text>
         </v-card>
-
+        <v-spacer></v-spacer>
         <v-btn icon="mdi-share-variant" @click="modalStore.showShareModal = true"> </v-btn>
         <v-btn icon="mdi-image-plus" @click="modalStore.showHomeTempModal = true"> </v-btn>
       </v-toolbar>
 
-      <EditBar v-else />
+      <EditBar v-if="collectionStore.editModeOn" />
 
       <HomeTemp v-if="modalStore.showHomeTempModal" :album="props.album"> </HomeTemp>
       <CreateShareModal
