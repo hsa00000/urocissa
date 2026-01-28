@@ -1,10 +1,11 @@
 <template>
   <HomeBarTemplate isolation-id="mainId">
     <template #content>
-      <v-toolbar class="position-relative bg-surface">
+      <v-toolbar v-if="!collectionStore.editModeOn" class="position-relative bg-surface">
         <v-card elevation="0" class="w-50">
           <v-card-title> {{ shareStore.resolvedShare?.albumTitle }} </v-card-title>
         </v-card>
+
         <v-card
           elevation="0"
           :style="{
@@ -14,9 +15,9 @@
           <v-card-text class="pa-0">
             <v-text-field
               id="nav-search-input"
+              v-model="searchQuery"
               rounded
               class="ma-0"
-              v-model="searchQuery"
               bg-color="surface-light"
               @click:prepend-inner="handleSearch"
               @click:clear="handleSearch"
@@ -36,20 +37,27 @@
             </v-text-field>
           </v-card-text>
         </v-card>
+
         <v-spacer></v-spacer>
       </v-toolbar>
+
+      <EditBar v-else />
     </template>
   </HomeBarTemplate>
 </template>
+
 <script setup lang="ts">
 import { Ref, ref, watchEffect } from 'vue'
 import { LocationQueryValue, useRoute, useRouter } from 'vue-router'
 import { useFilterStore } from '@/store/filterStore'
 import { useShareStore } from '@/store/shareStore'
+import { useCollectionStore } from '@/store/collectionStore'
+import EditBar from '@/components/NavBar/EditBar.vue'
 import HomeBarTemplate from '@/components/NavBar/HomeBars/HomeBarTemplate.vue'
 
 const filterStore = useFilterStore('mainId')
 const shareStore = useShareStore('mainId')
+const collectionStore = useCollectionStore('mainId')
 
 const route = useRoute()
 const router = useRouter()
@@ -65,6 +73,5 @@ const handleSearch = async () => {
 
 watchEffect(() => {
   searchQuery.value = filterStore.searchString
-  console.log('shareStore.resolvedShare?.albumTitle is', shareStore.resolvedShare?.albumTitle)
 })
 </script>

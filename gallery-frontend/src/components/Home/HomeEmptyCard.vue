@@ -118,8 +118,10 @@ interface UIState {
  * determines at once: whether to show two cards, hover, message, icon, and click behavior.
  */
 const ui = computed<UIState>(() => {
-  const isSearching =
-    route.query.search !== undefined && route.query.search?.toString().trim() !== ''
+  const searchKey = props.isolationId === 'subId' ? 'subSearch' : 'search'
+  const raw = route.query[searchKey]
+  const searchText = typeof raw === 'string' ? raw : Array.isArray(raw) ? raw.join(',') : ''
+  const isSearching = searchText.trim() !== ''
 
   // 1) No search results: always show a single card, no click
   if (isSearching) {

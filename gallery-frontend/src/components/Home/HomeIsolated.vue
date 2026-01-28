@@ -10,9 +10,10 @@
   >
     <Home
       v-if="album !== undefined && basicString !== null"
+      :key="isolatedHomeKey"
       isolation-id="subId"
       :basic-string="basicString"
-      :search-string="null"
+      :search-string="searchString"
     >
       <template #home-toolbar>
         <HomeIsolatedBar :album="album" />
@@ -24,35 +25,77 @@
 import Home from './Home.vue'
 import HomeIsolatedBar from '@/components/NavBar/HomeBars/HomeIsolatedBar.vue'
 import { GalleryAlbum } from '@type/types'
-import { computed, onBeforeMount, Ref, ref } from 'vue'
+import { computed, onBeforeMount, Ref, ref, watch } from 'vue'
 import { useCollectionStore } from '@/store/collectionStore'
-import { useRoute, useRouter } from 'vue-router'
+import { LocationQueryValue, useRoute, useRouter } from 'vue-router'
 import { useDataStore } from '@/store/dataStore'
+
 const route = useRoute()
 const router = useRouter()
 const dataStore = useDataStore('mainId')
 const album: Ref<GalleryAlbum | undefined> = ref(undefined)
 const basicString: Ref<string | null> = ref(null)
+
+const searchString = ref<LocationQueryValue | LocationQueryValue[] | undefined>(null)
 const collectionStore = useCollectionStore('subId')
 
 const overlayVisible = computed<boolean>({
   get() {
-    // As long as this component exists, the overlay remains open.
     return true
   },
   set(val: boolean) {
     if (!val) {
-      // Received a request from Vuetify via ESC to close the overlay.
       if (collectionStore.editModeOn) {
-        // In edit mode, first turn off edit mode without closing the overlay.
         collectionStore.editModeOn = false
       } else {
-        // Really close the overlay -> navigate back via router.
         router.back()
       }
     }
   }
 })
+
+const subSearchKey = computed(() => {
+  const v = route.query.subSearch
+  if (typeof v === 'string') return v
+  if (Array.isArray(v)) return v.join(',')
+  return ''
+})
+
+const locateKey = computed(() => {
+  const v = route.query.locate
+  if (typeof v === 'string') return v
+  if (Array.isArray(v)) return v.join(',')
+  return ''
+})
+
+const priorityKey = computed(() => {
+  const v = route.query.priority_id
+  if (typeof v === 'string') return v
+  if (Array.isArray(v)) return v.join(',')
+  return ''
+})
+
+const reverseKey = computed(() => {
+  const v = route.query.reverse
+  if (typeof v === 'string') return v
+  if (Array.isArray(v)) return v.join(',')
+  return ''
+})
+
+const hashKey = computed(() => (typeof route.params.hash === 'string' ? route.params.hash : ''))
+
+// This forces ONLY the isolated Home to remount when subSearch changes
+const isolatedHomeKey = computed(() => {
+  return `isolated-${hashKey.value}-${subSearchKey.value}-${locateKey.value}-${priorityKey.value}-${reverseKey.value}`
+})
+
+watch(
+  () => route.query.subSearch,
+  (v) => {
+    searchString.value = v
+  },
+  { immediate: true }
+)
 
 onBeforeMount(() => {
   const hash = route.params.hash
@@ -65,6 +108,7 @@ onBeforeMount(() => {
       }
     }
   }
+
   const album_id = route.params.hash
   if (typeof album_id === 'string') {
     basicString.value = `and(album:"${album_id}", trashed:false)`
