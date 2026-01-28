@@ -1,24 +1,18 @@
 <template>
-  <PageTemplate>
+  <PageTemplate preset="card" :ready="initializedStore.initialized" :col="pageCols.tableNarrow">
     <template #content>
-      <v-container fluid class="fill-height overflow-y-auto bg-surface-light">
-        <v-row justify="center" no-gutters>
-          <v-col cols="12" md="8" lg="6">
-            <v-row>
-              <ChangePassword v-model:has-password="localSettings.hasPassword" />
-              <StorageAndSync v-model:sync-paths="localSettings.syncPaths" />
-              <AdvancedConfig
-                v-model:auth-key="localSettings.authKey"
-                v-model:has-auth-key="localSettings.hasAuthKey"
-                v-model:discord-hook-url="localSettings.discordHookUrl"
-                v-model:read-only-mode="localSettings.readOnlyMode"
-                v-model:disable-img="localSettings.disableImg"
-                v-model:has-discord-hook="localSettings.hasDiscordHook"
-              />
-            </v-row>
-          </v-col>
-        </v-row>
-      </v-container>
+      <v-row>
+        <ChangePassword v-model:has-password="localSettings.hasPassword" />
+        <StorageAndSync v-model:sync-paths="localSettings.syncPaths" />
+        <AdvancedConfig
+          v-model:auth-key="localSettings.authKey"
+          v-model:has-auth-key="localSettings.hasAuthKey"
+          v-model:discord-hook-url="localSettings.discordHookUrl"
+          v-model:read-only-mode="localSettings.readOnlyMode"
+          v-model:disable-img="localSettings.disableImg"
+          v-model:has-discord-hook="localSettings.hasDiscordHook"
+        />
+      </v-row>
     </template>
   </PageTemplate>
 </template>
@@ -29,6 +23,7 @@ import { useConfigStore } from '@/store/configStore'
 import { useInitializedStore } from '@/store/initializedStore'
 import type { AppConfig } from '@/api/config'
 import PageTemplate from './PageLayout/PageTemplate.vue'
+import { pageCols } from './PageLayout/pageLayoutPresets'
 import ChangePassword from './Config/ChangePassword.vue'
 import StorageAndSync from './Config/StorageAndSync.vue'
 import AdvancedConfig from './Config/AdvancedConfig.vue'

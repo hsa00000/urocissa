@@ -1,22 +1,23 @@
 <template>
-  <!-- This router-view contains ViewPage.vue. -->
-  <!--
-    albumHomeIsolatedKey triggers a ViewPage re-render when photos are added or removed
-    via HomeTempBar while browsing an album, ensuring the latest album data is displayed.
-  -->
-  <router-view :key="albumHomeIsolatedKey"></router-view>
   <div class="w-100 h-100 d-flex flex-column">
-    <div class="w-100 flex-grow-0 flex-shrink-0"><slot name="home-toolbar"> </slot></div>
+    <!-- This router-view contains ViewPage.vue. -->
+    <!--
+      albumHomeIsolatedKey triggers a ViewPage re-render when photos are added or removed
+      via HomeTempBar while browsing an album, ensuring the latest album data is displayed.
+    -->
+    <router-view :key="albumHomeIsolatedKey"></router-view>
+
+    <div class="w-100 flex-grow-0 flex-shrink-0">
+      <slot name="home-toolbar"></slot>
+    </div>
+
     <div class="w-100 flex-grow-1 min-h-0 d-flex">
       <div
         id="image-container"
         ref="imageContainerRef"
         class="d-flex flex-wrap position-relative flex-grow-1 min-h-0 h-100 pa-1 pb-2 bg-surface-light"
         :class="stopScroll ? 'overflow-y-hidden' : 'overflow-y-scroll'"
-        @scroll="
-          // Suspend scroll handling while auto-scrolling to a target location to avoid conflicts.
-          prefetchStore.locateTo === null ? throttledHandleScroll() : () => {}
-        "
+        @scroll="prefetchStore.locateTo === null ? throttledHandleScroll() : () => {}"
       >
         <Buffer
           v-if="initializedStore.initialized && prefetchStore.dataLength > 0"
@@ -28,6 +29,7 @@
           :isolation-id="props.isolationId"
         />
       </div>
+
       <div class="flex-grow-0 flex-shrink-0 bg-surface-light">
         <ScrollBar :isolation-id="props.isolationId" />
       </div>
@@ -36,17 +38,6 @@
 </template>
 
 <script setup lang="ts">
-/**
- * Home.vue component handles user scrolling using a custom virtual scrolling implementation.
- *
- * This implementation addresses a limitation of standard virtual scrolling, where the DOM height can reach
- * the browser limit of 33,554,400px. To prevent this issue, a subcomponent called `Buffer` is used with a large height.
- * This setup allows `HomePage.vue` to remain scrollable without hitting the top or bottom prematurely.
- *
- * The scrolling logic is managed by the `throttledHandleScroll()` function. When the user scrolls, this function
- * adjusts the scroll position by updating `scrollTop.value` and restores the value of `imageContainerRef.scrollTop`.
- * This approach enables virtual scrolling to handle heights up to 2^32-1 px or 2^64-1 px in 64-bit Chrome.
- */
 import { ref, onMounted, computed, provide, onBeforeUnmount, watch } from 'vue'
 import { useDataStore } from '@/store/dataStore'
 import { usePrefetchStore } from '@/store/prefetchStore'
@@ -123,8 +114,6 @@ const throttledHandleScroll = handleScroll(
 )
 
 watch([windowWidth, () => constStore.subRowHeightScale], async () => {
-  // Handles browser resizing.
-
   locationStore.triggerForResize()
   prefetchStore.windowWidth = Math.round(windowWidth.value)
   prefetchStore.clearForResize()
@@ -134,7 +123,6 @@ watch([windowWidth, () => constStore.subRowHeightScale], async () => {
   imgStore.clearForResize()
   const locationRowIndex = Math.floor(locationStore.locationIndex / layoutBatchNumber)
 
-  // Prevent findInTimeline from failing due to the anchor being set too early before initialization
   locationStore.anchor = initializedStore.initialized ? locationRowIndex : null
 
   scrollTopStore.scrollTop = locationRowIndex * 2400
@@ -143,8 +131,6 @@ watch([windowWidth, () => constStore.subRowHeightScale], async () => {
 
 const bufferHeight = computed(() => {
   return 600000
-  // A large value to enable scrolling within the imageContainer without reaching the top or bottom prematurely.
-  // This value must be a multiple of 3 to avoid pixel misalignment when dividing bufferHeight by 3 (in useInitializeScrollPosition.ts).
 })
 
 const albumHomeIsolatedKey = computed(() => {
@@ -196,14 +182,11 @@ onBeforeUnmount(() => {
 <style scoped>
 #image-container {
   -ms-overflow-style: none;
-  /* IE and Edge */
   scrollbar-width: none;
-  /* Firefox */
 }
 
 #image-container::-webkit-scrollbar {
   display: none;
-  /* Chrome, Safari, and Opera */
 }
 
 img {
