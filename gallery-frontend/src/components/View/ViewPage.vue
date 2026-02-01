@@ -10,6 +10,7 @@
   >
     <div v-if="index !== undefined" class="pa-0 h-100 w-100 d-flex position-relative bg-background">
       <ViewPageDisplay
+        ref="displayRef"
         :abstract-data="abstractData"
         :index="index"
         :hash="hash"
@@ -37,13 +38,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useDataStore } from '@/store/dataStore'
 import ViewPageDisplay from '@/components/View/Display/Display.vue'
 import ViewPageMetadata from '@/components/View/Metadata/ViewPageMetadata.vue'
 import { IsolationId } from '@type/types'
 import { useConstStore } from '@/store/constStore'
+import { useConfigStore } from '@/store/configStore'
 const props = defineProps<{
   isolationId: IsolationId
 }>()
@@ -52,6 +54,31 @@ const dataStore = useDataStore(props.isolationId)
 const route = useRoute()
 const router = useRouter()
 const constStore = useConstStore('mainId')
+const configStore = useConfigStore(props.isolationId)
+
+// Handle back button on mobile: close info panel first if open
+function handlePopState(event: PopStateEvent) {
+  if (configStore.isMobile && constStore.showInfo) {
+    // Prevent the default navigation
+    event.preventDefault()
+    // Close the info panel
+    void constStore.updateShowInfo(false)
+    // Push back to current state to prevent actual navigation
+    window.history.pushState(null, '', window.location.href)
+  }
+}
+
+onMounted(() => {
+  if (configStore.isMobile) {
+    window.addEventListener('popstate', handlePopState)
+  }
+})
+
+onUnmounted(() => {
+  if (configStore.isMobile) {
+    window.removeEventListener('popstate', handlePopState)
+  }
+})
 
 const overlayVisible = computed<boolean>({
   get() {
