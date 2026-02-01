@@ -48,22 +48,18 @@
           @click:append-inner="showNewPassword = !showNewPassword"
         ></v-text-field
       ></v-list-item>
-      <v-container>
-        <v-row>
-          <v-col cols="12" class="d-flex justify-end">
-            <v-btn
-              color="primary"
-              variant="flat"
-              :loading="loading"
-              :disabled="!isValidAction"
-              @click="savePassword"
-              class="text-none"
-            >
-              Save Changes
-            </v-btn>
-          </v-col>
-        </v-row>
-      </v-container>
+      <v-card-actions class="justify-end px-4 pb-4">
+        <v-btn
+          color="primary"
+          variant="flat"
+          :loading="loading"
+          :disabled="!isValidAction"
+          @click="savePassword"
+          class="text-none"
+        >
+          Save Changes
+        </v-btn>
+      </v-card-actions>
     </v-card>
   </v-col>
 </template>
