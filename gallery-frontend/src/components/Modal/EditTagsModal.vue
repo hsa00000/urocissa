@@ -187,12 +187,8 @@ onMounted(() => {
       }
 
       // Persist flag changes via editFlags — only send flags that actually changed.
-      const isFavoriteNow = currentValues.some(
-        (v) => isFlagItem(v) && v.value === 'isFavorite'
-      )
-      const isArchivedNow = currentValues.some(
-        (v) => isFlagItem(v) && v.value === 'isArchived'
-      )
+      const isFavoriteNow = currentValues.some((v) => isFlagItem(v) && v.value === 'isFavorite')
+      const isArchivedNow = currentValues.some((v) => isFlagItem(v) && v.value === 'isArchived')
       const flagChanges: { isFavorite?: boolean; isArchived?: boolean } = {}
       if (defaultIsFavorite !== isFavoriteNow) flagChanges.isFavorite = isFavoriteNow
       if (defaultIsArchived !== isArchivedNow) flagChanges.isArchived = isArchivedNow

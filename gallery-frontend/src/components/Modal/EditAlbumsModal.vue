@@ -15,7 +15,7 @@
     >
       <template #default="{ model: proxyModel, actions }">
         <v-card variant="elevated" retain-focus>
-          <template #title>Edit&nbsp;Albums</template>
+          <template #title>Edit Albums</template>
 
           <template #text>
             <v-form v-model="formIsValid" @submit.prevent="submit" validate-on="input">
@@ -56,12 +56,7 @@
                   <v-list-item value="" @click.stop.prevent="createNonEmptyAlbumWithLoading">
                     <template #prepend>
                       <v-list-item-action>
-                        <v-btn
-                          color="transparent"
-                          icon="mdi-plus"
-                          density="comfortable"
-                          flat
-                        />
+                        <v-btn color="transparent" icon="mdi-plus" density="comfortable" flat />
                       </v-list-item-action>
                       <v-list-item-title class="wrap"> Create New Album </v-list-item-title>
                     </template>
@@ -102,7 +97,6 @@ const route = useRoute()
 const modalStore = useModalStore('mainId')
 const albumStore = useAlbumStore('mainId')
 const { loading, createAndNavigate } = useCreateAlbumAction()
-
 
 const albumItems = computed<AlbumInfo[]>(() =>
   [...albumStore.albums.values()].map((a) => structuredClone(toRaw(a)))
