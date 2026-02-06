@@ -1,6 +1,7 @@
 import { EnrichedUnifiedData, IsolationId } from '@type/types'
 import { defineStore } from 'pinia'
 import { useDataStore } from './dataStore'
+import { useTagStore } from './tagStore'
 
 export interface EditTagsPayload {
   indexSet: Set<number>
@@ -44,6 +45,16 @@ export const useOptimisticStore = (isolationId: IsolationId) =>
               payload.indexSet.delete(index)
             }
           }
+        }
+
+        const tagStore = useTagStore(isolationId)
+        for (const tag of payload.addTagsArray) {
+          if (!tagStore.tags.some((t) => t.tag === tag)) {
+            tagStore.tags.push({ tag, number: 1 })
+          }
+        }
+        if (payload.addTagsArray.length > 0) {
+          tagStore.tags.sort((a, b) => a.tag.localeCompare(b.tag))
         }
 
         if (
