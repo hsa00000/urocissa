@@ -47,6 +47,8 @@ export const useOptimisticStore = (isolationId: IsolationId) =>
           }
         }
 
+        // Optimistically add newly created tags to the tagStore so they appear
+        // immediately in combobox dropdowns without waiting for a server round-trip.
         const tagStore = useTagStore(isolationId)
         for (const tag of payload.addTagsArray) {
           if (!tagStore.tags.some((t) => t.tag === tag)) {

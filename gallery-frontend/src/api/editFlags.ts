@@ -13,6 +13,14 @@ export interface EditFlagsPayload {
   isTrashed?: boolean
 }
 
+/**
+ * Update boolean flags (isFavorite, isArchived, isTrashed) on one or more items.
+ *
+ * This is the dedicated API for flag mutations, separate from `editTags` which
+ * handles string tags. The edit-tags modals (EditTagsModal / EditBatchTagsModal)
+ * surface these flags as virtual "flag items" in the combobox alongside real tags,
+ * then split the result at submit time: real tags → editTags, flags → editFlags.
+ */
 export async function editFlags(
   indexArray: number[],
   flags: { isFavorite?: boolean; isArchived?: boolean; isTrashed?: boolean },
