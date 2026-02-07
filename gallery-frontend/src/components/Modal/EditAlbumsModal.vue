@@ -35,13 +35,20 @@
                   <v-list-item value="" @click.stop.prevent="createNonEmptyAlbumWithLoading">
                     <template #prepend="{ isActive }">
                       <v-list-item-action>
-                        <v-checkbox-btn :model-value="isActive" :disabled="loading">
-                          <template #input="{ inputNode }">
-                            <v-icon v-if="loading" icon="mdi-loading" class="mdi-spin" />
-                            <v-icon v-else icon="mdi-plus" />
-                            <RenderVNode :node="inputNode" />
-                          </template>
-                        </v-checkbox-btn>
+                        <v-checkbox-btn
+                          v-if="!loading"
+                          :model-value="isActive"
+                          false-icon="mdi-plus"
+                          true-icon="mdi-plus"
+                          indeterminate-icon="mdi-plus"
+                        />
+                        <v-checkbox-btn
+                          v-else
+                          :model-value="isActive"
+                          false-icon="mdi-loading"
+                          true-icon="mdi-loading"
+                          indeterminate-icon="mdi-loading"
+                        />
                       </v-list-item-action>
 
                       <v-list-item-title class="wrap"> Create New Album </v-list-item-title>
@@ -52,10 +59,24 @@
 
                 <template #no-data v-else>
                   <v-list-item value="" @click.stop.prevent="createNonEmptyAlbumWithLoading">
-                    <template #prepend>
+                    <template #prepend="{ isActive }">
                       <v-list-item-action>
-                        <v-btn color="transparent" icon="mdi-plus" density="comfortable" flat />
+                        <v-checkbox-btn
+                          v-if="!loading"
+                          :model-value="isActive"
+                          false-icon="mdi-plus"
+                          true-icon="mdi-plus"
+                          indeterminate-icon="mdi-plus"
+                        />
+                        <v-checkbox-btn
+                          v-else
+                          :model-value="isActive"
+                          false-icon="mdi-loading"
+                          true-icon="mdi-loading"
+                          indeterminate-icon="mdi-loading"
+                        />
                       </v-list-item-action>
+
                       <v-list-item-title class="wrap"> Create New Album </v-list-item-title>
                     </template>
                   </v-list-item>
@@ -85,16 +106,6 @@ import type { AlbumInfo } from '@type/types'
 import { getHashIndexDataFromRoute, getIsolationIdByRoute } from '@utils/getter'
 import { editAlbums } from '@/api/editAlbums'
 import { useCreateAlbumAction } from '@/script/hook/useCreateAlbumAction'
-import { defineComponent } from 'vue'
-import type { PropType, VNode } from 'vue'
-
-const RenderVNode = defineComponent({
-  name: 'RenderVNode',
-  props: {
-    node: { type: Object as PropType<VNode>, required: true }
-  },
-  setup: (props) => () => props.node
-})
 const formIsValid = ref(false)
 const changedAlbums = ref<AlbumInfo[]>([])
 const submit = ref<(() => Promise<void>) | undefined>()
@@ -161,4 +172,17 @@ const createNonEmptyAlbumWithLoading = async () => {
 }
 </script>
 
-<style scoped></style>
+<style scoped>
+:deep(.mdi-loading) {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style>

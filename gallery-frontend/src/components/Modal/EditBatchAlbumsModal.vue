@@ -42,19 +42,24 @@
                 >
                   <template #prepend-item v-if="albumStore.albums.size > 0">
                     <v-list-item value="" @click.stop.prevent="createNonEmptyAlbumWithLoading">
-                      <template #prepend>
+                      <template #prepend="{ isActive }">
                         <v-list-item-action>
-                          <v-btn
+                          <v-checkbox-btn
                             v-if="!loading"
-                            color="transparent"
-                            icon="mdi-plus"
-                            density="comfortable"
-                            flat
+                            :model-value="isActive"
+                            false-icon="mdi-plus"
+                            true-icon="mdi-plus"
+                            indeterminate-icon="mdi-plus"
                           />
-                          <v-btn v-else color="transparent" icon density="comfortable" flat>
-                            <v-progress-circular indeterminate size="24" />
-                          </v-btn>
+                          <v-checkbox-btn
+                            v-else
+                            :model-value="isActive"
+                            false-icon="mdi-loading"
+                            true-icon="mdi-loading"
+                            indeterminate-icon="mdi-loading"
+                          />
                         </v-list-item-action>
+
                         <v-list-item-title class="wrap"> Create New Album </v-list-item-title>
                       </template>
                     </v-list-item>
@@ -63,9 +68,22 @@
 
                   <template #no-data v-else>
                     <v-list-item value="" @click.stop.prevent="createNonEmptyAlbumWithLoading">
-                      <template #prepend>
+                      <template #prepend="{ isActive }">
                         <v-list-item-action>
-                          <v-btn color="transparent" icon="mdi-plus" density="comfortable" flat />
+                          <v-checkbox-btn
+                            v-if="!loading"
+                            :model-value="isActive"
+                            false-icon="mdi-plus"
+                            true-icon="mdi-plus"
+                            indeterminate-icon="mdi-plus"
+                          />
+                          <v-checkbox-btn
+                            v-else
+                            :model-value="isActive"
+                            false-icon="mdi-loading"
+                            true-icon="mdi-loading"
+                            indeterminate-icon="mdi-loading"
+                          />
                         </v-list-item-action>
                         <v-list-item-title class="wrap"> Create New Album </v-list-item-title>
                       </template>
@@ -169,7 +187,6 @@ const createNonEmptyAlbumWithLoading = async () => {
     collectionStore.editModeOn = false
   })
 }
-
 
 watch(
   () => [changedAlbums.value.add, changedAlbums.value.remove],
