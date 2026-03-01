@@ -27,35 +27,110 @@ axiosRetry(workerAxios, {
 
 setupWorkerAxiosInterceptor(workerAxios, postToMainImg.notification)
 
+// ================== Blob Cache ==================
+
+const IMG_CACHE_NAME = 'img-blob-cache-v1'
+
+/**
+ * In-memory cache of fetched image Blobs, keyed by image hash.
+ *
+ * On resize, the main thread clears imgStore.imgUrl and re-queues visible
+ * images. Without this cache every image would repeat the full network fetch.
+ * With this cache the worker skips straight to createImageBitmap → resize,
+ * which is sub-millisecond for typical thumbnails. The cache lives for the
+ * lifetime of the worker (terminated on component unmount via
+ * workerStore.terminateWorker()).
+ */
+const blobCache = new Map<string, Blob>()
+
+function imgCacheKey(hash: string): string {
+  return `https://img-blob-cache.internal/${hash}`
+}
+
+async function getFromDiskCache(hash: string): Promise<Blob | undefined> {
+  if (typeof caches === 'undefined') return undefined
+  try {
+    const cache = await caches.open(IMG_CACHE_NAME)
+    const response = await cache.match(imgCacheKey(hash))
+    if (response) {
+      const blob = await response.blob()
+      if (blob.size > 0) return blob
+      await cache.delete(imgCacheKey(hash))
+    }
+  } catch {
+    // Cache API unavailable
+  }
+  return undefined
+}
+
+async function putToDiskCache(hash: string, blob: Blob): Promise<void> {
+  if (typeof caches === 'undefined') return
+  try {
+    const cache = await caches.open(IMG_CACHE_NAME)
+    await cache.put(imgCacheKey(hash), new Response(blob))
+  } catch {
+    // Non-critical
+  }
+}
+
+async function purgeFromCaches(hash: string): Promise<void> {
+  blobCache.delete(hash)
+  if (typeof caches === 'undefined') return
+  try {
+    const cache = await caches.open(IMG_CACHE_NAME)
+    await cache.delete(imgCacheKey(hash))
+  } catch {
+    // Non-critical
+  }
+}
+
+// ================== Handlers ==================
+
 const handler = createHandler<typeof toImgWorker>({
   async processSmallImage(event: ProcessSmallImagePayload) {
     try {
       const controller = new AbortController()
       controllerMap.set(event.index, controller)
 
-      const headers: Record<string, string> = {}
-      if (event.albumId !== null) headers['x-album-id'] = event.albumId
-      if (event.shareId !== null) headers['x-share-id'] = event.shareId
-      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-      if (event.password) headers['x-share-password'] = event.password
+      // Layer 1: In-memory cache
+      let blob = blobCache.get(event.hash)
 
-      headers.Authorization = `Bearer ${event.hashToken}`
-
-
-      const config = {
-        signal: controller.signal,
-        responseType: 'blob' as const,
-        headers,
-        timestampToken: event.timestampToken
+      // Layer 2: Cache API (disk-persistent)
+      if (blob === undefined) {
+        blob = await getFromDiskCache(event.hash)
+        if (blob !== undefined) {
+          blobCache.set(event.hash, blob)
+        }
       }
 
-      const response = await workerAxios.get<Blob>(
-        getSrc(event.hash, false, 'jpg', event.updatedAt),
-        config
-      )
+      // Layer 3: Network fetch
+      if (blob === undefined) {
+        const headers: Record<string, string> = {}
+        if (event.albumId !== null) headers['x-album-id'] = event.albumId
+        if (event.shareId !== null) headers['x-share-id'] = event.shareId
+        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+        if (event.password) headers['x-share-password'] = event.password
+
+        headers.Authorization = `Bearer ${event.hashToken}`
+
+        const config = {
+          signal: controller.signal,
+          responseType: 'blob' as const,
+          headers,
+          timestampToken: event.timestampToken
+        }
+
+        const response = await workerAxios.get<Blob>(
+          getSrc(event.hash, false, 'jpg', event.updatedAt),
+          config
+        )
+
+        blob = response.data
+        blobCache.set(event.hash, blob)
+        void putToDiskCache(event.hash, blob)
+      }
 
       controllerMap.delete(event.index)
-      const blob = response.data
       const img = await createImageBitmap(blob)
 
       const albumMode = event.albumMode === true
@@ -78,31 +153,50 @@ const handler = createHandler<typeof toImgWorker>({
       postToMainImg.smallImageProcessed({ index: event.index, url: objectUrl })
     } catch (error) {
       if (axios.isCancel(error)) return
+      // Purge potentially corrupt blob from caches so the next attempt re-fetches
+      void purgeFromCaches(event.hash)
       console.error(error)
     }
   },
 
   async processImage(event: ProcessImagePayload) {
     try {
-      const headers: Record<string, string> = {}
-      if (event.albumId !== null) headers['x-album-id'] = event.albumId
-      if (event.shareId !== null) headers['x-share-id'] = event.shareId
-      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-      if (event.password) headers['x-share-password'] = event.password
-      headers.Authorization = `Bearer ${event.hashToken}`
+      // Layer 1: In-memory cache
+      let blob = blobCache.get(event.hash)
 
-
-      const config = {
-        responseType: 'blob' as const,
-        headers,
-        timestampToken: event.timestampToken
+      // Layer 2: Cache API (disk-persistent)
+      if (blob === undefined) {
+        blob = await getFromDiskCache(event.hash)
+        if (blob !== undefined) {
+          blobCache.set(event.hash, blob)
+        }
       }
 
-      const response = await workerAxios.get<Blob>(
-        getSrc(event.hash, false, 'jpg', event.updatedAt),
-        config
-      )
-      const blob = response.data
+      // Layer 3: Network fetch
+      if (blob === undefined) {
+        const headers: Record<string, string> = {}
+        if (event.albumId !== null) headers['x-album-id'] = event.albumId
+        if (event.shareId !== null) headers['x-share-id'] = event.shareId
+        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+        if (event.password) headers['x-share-password'] = event.password
+        headers.Authorization = `Bearer ${event.hashToken}`
+
+        const config = {
+          responseType: 'blob' as const,
+          headers,
+          timestampToken: event.timestampToken
+        }
+
+        const response = await workerAxios.get<Blob>(
+          getSrc(event.hash, false, 'jpg', event.updatedAt),
+          config
+        )
+
+        blob = response.data
+        blobCache.set(event.hash, blob)
+        void putToDiskCache(event.hash, blob)
+      }
+
       const img = await createImageBitmap(blob)
 
       const offscreenCanvas = new OffscreenCanvas(img.width, img.height)
@@ -114,6 +208,8 @@ const handler = createHandler<typeof toImgWorker>({
 
       postToMainImg.imageProcessed({ index: event.index, url: objectUrl })
     } catch (error) {
+      // Purge potentially corrupt blob from caches so the next attempt re-fetches
+      void purgeFromCaches(event.hash)
       console.error(error)
     }
   },
