@@ -72,7 +72,6 @@
     "lodash-es": "^4.17.23",
     "rollup": "^4.59.0",
     "minimatch": "^10.2.3",
-    "serialize-javascript": "^7.0.3",
-    "ajv": "^8.18.0"
+    "serialize-javascript": "^7.0.3"
   }
 }

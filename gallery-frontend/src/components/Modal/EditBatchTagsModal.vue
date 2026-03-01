@@ -38,15 +38,15 @@
                   :menu-props="{ maxWidth: 0 }"
                   autocomplete="off"
                 >
-                  <template #chip="{ props: chipProps, item }">
+                  <template #chip="{ props: chipProps, internalItem }">
                     <v-chip v-bind="chipProps">
-                      <template v-if="isFlagItem(item.raw)" #prepend>
-                        <v-icon size="small" class="me-1">{{ item.raw.icon }}</v-icon>
+                      <template v-if="isFlagItem(internalItem.raw)" #prepend>
+                        <v-icon size="small" class="me-1">{{ internalItem.raw.icon }}</v-icon>
                       </template>
-                      {{ item.title }}
+                      {{ internalItem.title }}
                     </v-chip>
                   </template>
-                  <template #item="{ item, props: itemProps }">
+                  <template #item="{ internalItem, props: itemProps }">
                     <v-list-item v-bind="itemProps">
                       <template #prepend="{ isActive }">
                         <v-list-item-action>
@@ -54,7 +54,7 @@
                         </v-list-item-action>
                       </template>
                       <template #append>
-                        <v-icon v-if="item.raw.isFlag">{{ item.raw.icon }}</v-icon>
+                        <v-icon v-if="internalItem.raw.isFlag">{{ internalItem.raw.icon }}</v-icon>
                       </template>
                     </v-list-item>
                   </template>
@@ -76,15 +76,15 @@
                   :menu-props="{ maxWidth: 0 }"
                   autocomplete="off"
                 >
-                  <template #chip="{ props: chipProps, item }">
+                  <template #chip="{ props: chipProps, internalItem }">
                     <v-chip v-bind="chipProps">
-                      <template v-if="isFlagItem(item.raw)" #prepend>
-                        <v-icon size="small" class="me-1">{{ item.raw.icon }}</v-icon>
+                      <template v-if="isFlagItem(internalItem.raw)" #prepend>
+                        <v-icon size="small" class="me-1">{{ internalItem.raw.icon }}</v-icon>
                       </template>
-                      {{ item.title }}
+                      {{ internalItem.title }}
                     </v-chip>
                   </template>
-                  <template #item="{ item, props: itemProps }">
+                  <template #item="{ internalItem, props: itemProps }">
                     <v-list-item v-bind="itemProps">
                       <template #prepend="{ isActive }">
                         <v-list-item-action>
@@ -92,7 +92,7 @@
                         </v-list-item-action>
                       </template>
                       <template #append>
-                        <v-icon v-if="item.raw.isFlag">{{ item.raw.icon }}</v-icon>
+                        <v-icon v-if="internalItem.raw.isFlag">{{ internalItem.raw.icon }}</v-icon>
                       </template>
                     </v-list-item>
                   </template>

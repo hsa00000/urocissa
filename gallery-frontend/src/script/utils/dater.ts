@@ -17,16 +17,13 @@ export function formatDuration(durationString: string) {
   const seconds = durationInSeconds % 60
 
   // Determine the formatted duration based on the presence of hours, minutes, and seconds
-  let formattedDuration = ''
   if (hours > 0) {
-    formattedDuration = `${hours}:${minutes.toString().padStart(2, '0')}:${seconds
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds
       .toString()
       .padStart(2, '0')}`
   } else {
-    formattedDuration = `${minutes.toString().padStart(2, '0')}:${seconds
+    return `${minutes.toString().padStart(2, '0')}:${seconds
       .toString()
       .padStart(2, '0')}`
   }
-
-  return formattedDuration
 }
