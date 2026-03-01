@@ -21,13 +21,13 @@ inherits = "release"
 lto = false
 
 [dependencies]
-anyhow = "1.0.101"
+anyhow = "1.0.102"
 arrayvec = { version = "0.7.6", features = ["serde"] }
 atomic_float = "1.1.0"
 bitcode = { version = "0.6.9", features = ["arrayvec"] }
 blake3 = "1.8.3"
 bytesize = "2.3.1"
-chrono = "0.4.43"
+chrono = "0.4.44"
 console = "0.16.2"
 crossbeam-queue = "0.3.12"
 dashmap = { version = "6.1.0", features = ["rayon"] }
@@ -38,7 +38,7 @@ filetime = "0.2.27"
 futures = "0.3.32"
 figment = { version = "0.10", features = ["json"] }
 image = "0.25.9"
-image_hasher = "3.1.0"
+image_hasher = "3.1.1"
 jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"] }
 kamadak-exif = "0.6.1"
 log = { version = "0.4.29", features = ["kv"] }
