@@ -17,7 +17,11 @@
         ref="imageContainerRef"
         class="d-flex flex-wrap position-relative flex-grow-1 min-h-0 h-100 pa-1 pb-2 bg-surface-light"
         :class="stopScroll ? 'overflow-y-hidden' : 'overflow-y-scroll'"
-        @scroll="prefetchStore.locateTo === null ? throttledHandleScroll() : () => {}"
+        @scroll="
+          prefetchStore.locateTo === null && locationStore.pendingLocateTarget === null
+            ? throttledHandleScroll()
+            : () => {}
+        "
       >
         <Buffer
           v-if="initializedStore.initialized && prefetchStore.dataLength > 0"
@@ -142,6 +146,23 @@ const albumHomeIsolatedKey = computed(() => {
     return 'undefineBehavior'
   }
 })
+
+// Remove the locate query param after the two-step jump fully completes,
+// so refreshing won't re-trigger the jump.
+// Uses history.replaceState instead of router.replace to avoid changing
+// the reactive route object, which would alter routeKey and remount the page.
+watch(
+  () => locationStore.highlightedIndex,
+  (val) => {
+    if (val !== null) {
+      const url = new URL(window.location.href)
+      if (url.searchParams.has('locate')) {
+        url.searchParams.delete('locate')
+        window.history.replaceState(history.state, '', url)
+      }
+    }
+  }
+)
 
 onMounted(() => {
   filterStore.searchString = props.searchString

@@ -11,6 +11,7 @@ import { useLocationStore } from '@/store/locationStore'
 import { useModalStore } from '@/store/modalStore'
 import { useOptimisticStore } from '@/store/optimisticUpateStore'
 import { useRedirectionStore } from '@/store/redirectionStore'
+import { useScrollTopStore } from '@/store/scrollTopStore'
 import { useTokenStore } from '@/store/tokenStore'
 import { useConstStore } from '@/store/constStore'
 
@@ -35,6 +36,7 @@ export function handleDataWorkerReturn(dataWorker: Worker, isolationId: Isolatio
   const offsetStore = useOffsetStore(isolationId)
   const rowStore = useRowStore(isolationId)
   const locationStore = useLocationStore(isolationId)
+  const scrollTopStore = useScrollTopStore(isolationId)
   const optimisticUpdateStore = useOptimisticStore(isolationId)
 
   const handler = createHandler<typeof fromDataWorker>({
@@ -96,6 +98,19 @@ export function handleDataWorkerReturn(dataWorker: Worker, isolationId: Isolatio
         rowStore.rowData.set(row.rowIndex, row)
         prefetchStore.totalHeight = prefetchStore.totalHeight + offset
         offsetStore.accumulatedAll = offsetStore.accumulatedAll + offset
+      }
+
+      // Second step of two-step locate jump: refine scroll to exact subrow position.
+      const pendingTarget = locationStore.pendingLocateTarget
+      if (pendingTarget !== null && pendingTarget >= row.start && pendingTarget <= row.end) {
+        const elementIndex = pendingTarget - row.start
+        const displayElement = row.displayElements[elementIndex]
+        if (displayElement !== undefined) {
+          scrollTopStore.scrollTop =
+            row.topPixelAccumulated + row.offset + displayElement.displayTopPixelAccumulated
+        }
+        locationStore.pendingLocateTarget = null
+        locationStore.highlightedIndex = pendingTarget
       }
 
       prefetchStore.updateFetchRowTrigger = !prefetchStore.updateFetchRowTrigger

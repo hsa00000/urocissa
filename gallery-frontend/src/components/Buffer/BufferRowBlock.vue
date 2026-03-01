@@ -12,7 +12,7 @@
       <div class="position-relative w-100 h-100 parent">
         <div
           id="click-handler"
-          class="w-100 h-100 position-absolute"
+          :class="['w-100 h-100 position-absolute', { 'locate-highlight': locationStore.highlightedIndex === row.start + subIndex }]"
           :style="{
             pointerEvents: 'none',
             zIndex: 100,
@@ -72,6 +72,7 @@ import HoverGradientDiv from './FunctionalComponent/HoverGradientDiv'
 import { useConfigStore } from '@/store/configStore'
 import { useConstStore } from '@/store/constStore'
 import { useThemeClasses } from '@/style/useThemeClasses'
+import { useLocationStore } from '@/store/locationStore'
 const props = defineProps<{
   row: Row
   isolationId: IsolationId
@@ -87,6 +88,7 @@ const collectionStore = useCollectionStore(props.isolationId)
 const queueStore = useQueueStore(props.isolationId)
 const workerStore = useWorkerStore(props.isolationId)
 const scorllTopStore = useScrollTopStore(props.isolationId)
+const locationStore = useLocationStore(props.isolationId)
 const timeInterval = ref(0)
 const isLongPress = ref(false)
 const pressTimer = ref<number | null>(null)
@@ -164,6 +166,17 @@ const handleClickIcon = (event: MouseEvent, currentIndex: number) => {
   }
 }
 
+watch(
+  () => locationStore.highlightedIndex,
+  (val) => {
+    if (val !== null && val >= props.row.start && val <= props.row.end) {
+      setTimeout(() => {
+        locationStore.highlightedIndex = null
+      }, 2000)
+    }
+  }
+)
+
 onMounted(() => {
   const intervalId = setInterval(() => {
     // this part is crutial: if we do not delay the show of img, the scrub will lag if the img already loading
@@ -207,5 +220,18 @@ onBeforeUnmount(() => {
 
 .icon-hover:hover {
   color: white;
+}
+
+.locate-highlight {
+  animation: locate-pulse 2s ease-out forwards;
+}
+
+@keyframes locate-pulse {
+  0% {
+    box-shadow: inset 0 0 0 4px rgba(255, 193, 7, 0.9);
+  }
+  100% {
+    box-shadow: inset 0 0 0 4px transparent;
+  }
 }
 </style>

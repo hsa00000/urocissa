@@ -4,6 +4,7 @@ import { usePrefetchStore } from '@/store/prefetchStore'
 import { fixedBigRowHeight, layoutBatchNumber } from '@/type/constants'
 import { fetchRowInWorker } from '@/api/fetchRow'
 import { useScrollTopStore } from '@/store/scrollTopStore'
+import { useLocationStore } from '@/store/locationStore'
 import { IsolationId } from '@type/types'
 
 /**
@@ -44,7 +45,11 @@ export function useInitializeScrollPosition(
 
         const jumpTo = prefetchStore.locateTo
         if (jumpTo !== null) {
+          const locationStore = useLocationStore(isolationId)
           const targetRowIndex = Math.floor(jumpTo / layoutBatchNumber)
+          locationStore.locationIndex = jumpTo
+          locationStore.anchor = targetRowIndex
+          locationStore.pendingLocateTarget = jumpTo
           scrollTopStore.scrollTop = targetRowIndex * fixedBigRowHeight
           await fetchRowInWorker(targetRowIndex, isolationId)
           prefetchStore.locateTo = null
