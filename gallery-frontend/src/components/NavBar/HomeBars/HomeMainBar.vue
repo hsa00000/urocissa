@@ -100,9 +100,18 @@ const loading = ref(false)
 
 const handleSearch = async () => {
   filterStore.searchString = searchQuery.value
+
+  const nextQuery = { ...route.query }
+  const v = searchQuery.value
+  if (v === null || v === undefined || v === '') {
+    delete nextQuery.search
+  } else {
+    nextQuery.search = v
+  }
+
   await router.replace({
     path: route.path,
-    query: { search: searchQuery.value }
+    query: nextQuery
   })
 }
 
