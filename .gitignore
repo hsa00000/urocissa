@@ -31,3 +31,5 @@ gallery-backend/upload
 # Ignore OpenCode config files
 .opencode/opencode.json
 .opencode/oh-my-opencode.jsonc
+
+/**/.omc
