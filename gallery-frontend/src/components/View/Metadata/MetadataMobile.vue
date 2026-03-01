@@ -21,6 +21,7 @@
             :index="index - 1"
             :hash="previousHash"
             :isolation-id="isolationId"
+            compact
           />
         </div>
       </swiper-slide>
@@ -33,6 +34,7 @@
             :index="index"
             :hash="hash"
             :isolation-id="isolationId"
+            compact
           />
         </div>
       </swiper-slide>
@@ -45,6 +47,7 @@
             :index="index + 1"
             :hash="nextHash"
             :isolation-id="isolationId"
+            compact
           />
         </div>
       </swiper-slide>

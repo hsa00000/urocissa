@@ -30,7 +30,7 @@
       />
     </v-card-item>
     <div v-if="abstractData.type === 'image' || abstractData.type === 'video'" class="w-100 metadata-body">
-      <v-list class="pa-0 metadata-list" lines="two">
+      <v-list class="pa-0 metadata-list" lines="two" :density="compact ? 'compact' : 'default'">
         <ItemSize :database="abstractData" />
         <ItemPath v-if="showMetadata" :database="abstractData" />
         <ItemDate :database="abstractData" />
@@ -56,7 +56,7 @@
       </v-list>
     </div>
     <div v-if="abstractData.type === 'album'" class="w-100 metadata-body">
-      <v-list class="pa-0 metadata-list" lines="two">
+      <v-list class="pa-0 metadata-list" lines="two" :density="compact ? 'compact' : 'default'">
         <ItemTitle :title="abstractData.title" />
         <ItemCount :album="abstractData" />
         <v-divider></v-divider>
@@ -96,6 +96,7 @@ const props = defineProps<{
   hash: string
   index: number
   abstractData: EnrichedUnifiedData
+  compact?: boolean
 }>()
 
 const showMetadata = computed(() => {
