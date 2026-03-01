@@ -260,7 +260,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-#image-display-col {
+.view-content {
   container-type: size;
   container-name: image-col;
 }
