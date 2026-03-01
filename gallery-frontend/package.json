@@ -27,7 +27,7 @@
     "jwt-decode": "^4.0.0",
     "lodash": "^4.17.23",
     "pinia": "^3.0.4",
-    "swiper": "^12.1.1",
+    "swiper": "^12.1.2",
     "thumbhash": "^0.1.1",
     "typesafe-agent-events": "^1.0.2",
     "vue": "^3.5.28",
@@ -69,6 +69,10 @@
     "trailingComma": "none"
   },
   "overrides": {
-    "lodash-es": "^4.17.23"
+    "lodash-es": "^4.17.23",
+    "rollup": "^4.59.0",
+    "minimatch": "^10.2.3",
+    "serialize-javascript": "^7.0.3",
+    "ajv": "^8.18.0"
   }
 }
