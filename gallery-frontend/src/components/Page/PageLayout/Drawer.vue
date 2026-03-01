@@ -53,10 +53,4 @@ const initializedStore = useInitializedStore('mainId')
 </script>
 
 <style scoped>
-.no-select {
-  user-select: none;
-}
-.no-select * {
-  user-select: none;
-}
 </style>

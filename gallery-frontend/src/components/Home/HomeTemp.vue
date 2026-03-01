@@ -5,7 +5,7 @@
     :width="'100%'"
     class="d-flex"
     id="view-page"
-    transition="false"
+    :transition="false"
     :close-on-back="false"
   >
     <Home isolation-id="tempId" :basic-string="basicString" :search-string="null">

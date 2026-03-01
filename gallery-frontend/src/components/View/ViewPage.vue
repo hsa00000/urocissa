@@ -5,7 +5,7 @@
     width="100%"
     class="d-flex"
     id="view-page"
-    transition="false"
+    :transition="false"
     :close-on-back="false"
   >
     <div v-if="index !== undefined" class="pa-0 h-100 w-100 d-flex position-relative bg-background">

@@ -4,7 +4,7 @@
     v-if="abstractData"
     class="h-100 flex-grow-0 flex-shrink-0 bg-surface"
     :style="{
-      width: constStore.showInfo ? '360px' : '0',
+      width: constStore.showInfo ? undefined : '0',
       zIndex: 1
     }"
   >
@@ -44,11 +44,12 @@ const configStore = useConfigStore(props.isolationId)
 </script>
 
 <style scoped>
+#abstractData-col {
+  width: 360px;
+}
 @media (width <= 720px) {
-  /* On small screens, make the info pane full width.
-     Use !important to override the inline :style binding for width. */
   #abstractData-col {
-    width: 100% !important;
+    width: 100%;
   }
 }
 </style>

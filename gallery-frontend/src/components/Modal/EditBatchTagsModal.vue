@@ -2,7 +2,6 @@
   <v-dialog
     v-if="submit !== undefined"
     v-model="modalStore.showBatchEditTagsModal"
-    variant="flat"
     persistent
     id="batch-edit-tag-overlay"
     max-width="400"

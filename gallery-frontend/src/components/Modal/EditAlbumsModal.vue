@@ -2,7 +2,6 @@
   <v-dialog
     v-if="submit !== undefined"
     v-model="modalStore.showEditAlbumsModal"
-    variant="flat"
     persistent
     id="edit-album-overlay"
     max-width="400"

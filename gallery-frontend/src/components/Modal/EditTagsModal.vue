@@ -2,7 +2,6 @@
   <v-dialog
     v-if="submit !== undefined"
     v-model="modalStore.showEditTagsModal"
-    variant="flat"
     persistent
     id="edit-tag-overlay"
     max-width="400"

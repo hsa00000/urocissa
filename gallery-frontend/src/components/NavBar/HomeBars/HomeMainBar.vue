@@ -123,10 +123,4 @@ const collectionStore = useCollectionStore('mainId')
 </script>
 
 <style scoped>
-.no-select {
-  user-select: none;
-}
-.no-select * {
-  user-select: none;
-}
 </style>

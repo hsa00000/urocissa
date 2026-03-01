@@ -5,7 +5,7 @@
     </router-view>
 
     <div class="card-pair">
-      <v-card class="square rounded-0" style="object-fit: cover; border: 8px solid #fff">
+      <v-card class="square rounded-0" style="object-fit: cover; border: 8px solid rgb(var(--v-theme-surface))">
         <img
           v-if="imgStore.imgOriginal.get(index)"
           id="album-img"

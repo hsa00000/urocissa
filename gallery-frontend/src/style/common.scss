@@ -14,17 +14,17 @@ html {
   min-width: 0 !important;
 }
 
-// Theme-aware placeholder background
-.bg-placeholder {
-  background-color: rgb(var(--v-theme-surface-variant)) !important;
+// Full-height container for auth pages
+.fill-height {
+  min-height: 100vh;
 }
 
-// Alternative: More explicit theme-aware placeholder using CSS custom properties
-.bg-placeholder-grey {
+// Theme-aware placeholder background for image thumbnails
+.bg-placeholder {
   .v-theme--light & {
-    background-color: rgb(var(--v-theme-grey-lighten-2)) !important;
+    background-color: #EEEEEE;
   }
   .v-theme--dark & {
-    background-color: rgb(var(--v-theme-grey-darken-2)) !important;
+    background-color: #616161;
   }
 }

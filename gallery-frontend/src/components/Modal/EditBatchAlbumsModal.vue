@@ -2,7 +2,6 @@
   <v-dialog
     v-if="submit !== undefined"
     v-model="modalStore.showBatchEditAlbumsModal"
-    variant="flat"
     persistent
     id="batch-edit-album-overlay"
     max-width="400"

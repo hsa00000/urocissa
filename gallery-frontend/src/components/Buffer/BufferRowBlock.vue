@@ -19,7 +19,7 @@
             border:
               collectionStore.editModeOn &&
               collectionStore.editModeCollection.has(row.start + subIndex)
-                ? '4px solid #81D4FA'
+                ? '4px solid rgb(var(--v-theme-primary))'
                 : '4px solid transparent'
           }"
           @click="(event: MouseEvent) => handleClick(event, row.start + subIndex)"
@@ -43,7 +43,7 @@
         />
         <div
           id="grey-background-placeholder"
-          :class="`w-100 h-100 ${placeholderBgClass} position-absolute`"
+          class="w-100 h-100 bg-placeholder position-absolute"
           :style="{
             zIndex: 0
           }"
@@ -71,7 +71,6 @@ import DesktopHoverIcon from './FunctionalComponent/DesktopHoverIcon'
 import HoverGradientDiv from './FunctionalComponent/HoverGradientDiv'
 import { useConfigStore } from '@/store/configStore'
 import { useConstStore } from '@/store/constStore'
-import { useThemeClasses } from '@/style/useThemeClasses'
 import { useLocationStore } from '@/store/locationStore'
 const props = defineProps<{
   row: Row
@@ -82,7 +81,6 @@ const router = useRouter()
 const route = useRoute()
 const constStore = useConstStore('mainId')
 const configStore = useConfigStore('mainId')
-const { placeholderBgClass } = useThemeClasses()
 const prefetchStore = usePrefetchStore(props.isolationId)
 const collectionStore = useCollectionStore(props.isolationId)
 const queueStore = useQueueStore(props.isolationId)
@@ -203,12 +201,6 @@ onBeforeUnmount(() => {
 })
 </script>
 <style scoped>
-.no-select {
-  user-select: none;
-}
-.no-select * {
-  user-select: none;
-}
 .parent:not(:hover) .child {
   display: none;
 }

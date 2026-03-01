@@ -124,10 +124,6 @@ const handleLogin = async () => {
 </script>
 
 <style scoped>
-.fill-height {
-  min-height: 100vh;
-}
-
 .login-card {
   max-width: 400px;
 }

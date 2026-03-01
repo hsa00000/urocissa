@@ -49,32 +49,3 @@ const props = defineProps<{
 
 const configStore = useConfigStore(props.isolationId)
 </script>
-
-<style scoped>
-/* Use container (#image-display-col) as query context */
-.nav-btn {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 1;
-  /* Touch/mouse friendly click area */
-  inline-size: 48px;
-  block-size: 50%;
-  /* Remove card background/shadow interference */
-  box-shadow: none;
-}
-
-.nav-left {
-  left: 0;
-}
-.nav-right {
-  right: 0;
-}
-
-/* Shrink nav button height on narrow containers */
-@container image-col (max-width: 600px) {
-  .nav-btn {
-    block-size: 40%;
-  }
-}
-</style>

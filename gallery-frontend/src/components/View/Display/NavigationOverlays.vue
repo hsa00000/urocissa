@@ -1,27 +1,25 @@
 <template>
   <div>
-    <v-card
-      width="100"
+    <v-btn
       v-if="show && previousHash !== undefined"
-      color="transparent"
-      class="navigate-left d-flex align-center justify-center h-50"
-      style="position: absolute; left: 0; top: 50%; transform: translateY(-50%); z-index: 1"
+      variant="plain"
+      class="nav-btn nav-left"
       :to="previousPage"
       replace
+      aria-label="Previous"
     >
       <v-icon>mdi-arrow-left</v-icon>
-    </v-card>
-    <v-card
-      width="100"
+    </v-btn>
+    <v-btn
       v-if="show && nextHash !== undefined"
-      color="transparent"
-      class="navigate-right d-flex align-center justify-center h-50"
-      style="position: absolute; right: 0; top: 50%; transform: translateY(-50%); z-index: 1"
+      variant="plain"
+      class="nav-btn nav-right"
       :to="nextPage"
       replace
+      aria-label="Next"
     >
       <v-icon>mdi-arrow-right</v-icon>
-    </v-card>
+    </v-btn>
   </div>
 </template>
 
@@ -35,3 +33,21 @@ defineProps<{
   show: boolean
 }>()
 </script>
+
+<style scoped>
+.nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  inline-size: 48px;
+  block-size: 50%;
+  box-shadow: none;
+}
+.nav-left {
+  left: 0;
+}
+.nav-right {
+  right: 0;
+}
+</style>
