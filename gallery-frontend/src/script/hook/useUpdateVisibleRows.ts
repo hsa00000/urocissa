@@ -277,7 +277,7 @@ export function useUpdateVisibleRows(
 
         filterRowForLocation(visibleRows, isolationId)
 
-        if (scrollTopStore.useCompensation) {
+        if (scrollTopStore.scrollMode === 'compensation') {
           scrollTopOffsetFix(
             visibleRows,
             Math.max(getScrollUpperBound(prefetchStore.totalHeight, windowHeight.value), 0),

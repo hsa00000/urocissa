@@ -8,13 +8,16 @@ import { useConfigStore } from '@/store/configStore'
 import { compensationThreshold, nativeThreshold } from '@/type/constants'
 
 /**
- * Throttled scroll handler for an image container with dual-mode scrolling.
+ * Throttled scroll handler for an image container with three-mode scrolling.
  *
- * Native mode (scrollTop < compensationThreshold): DOM scrollTop = virtualScrollTop.
+ * nativeTop mode (scrollTop < compensationThreshold): DOM scrollTop = virtualScrollTop.
  * Browser's native top boundary prevents overshooting 0.
  *
- * Compensation mode (scrollTop >= compensationThreshold): DOM scrollTop pinned at
- * bufferHeight/3, deltas absorbed into virtualScrollTop.
+ * compensation mode: DOM scrollTop pinned at bufferHeight/3,
+ * deltas absorbed into virtualScrollTop.
+ *
+ * nativeBottom mode (near bottom): DOM scrollTop = bottomOffset + virtualScrollTop.
+ * Browser's native bottom boundary prevents overshooting the end.
  *
  * @param imageContainerRef - Reference to the scrolling container element.
  * @param lastScrollTop - Reference to the last recorded scroll position.
@@ -58,19 +61,42 @@ export function handleScroll(
           return
         }
 
-        if (!scrollTopStore.useCompensation) {
-          // === Native mode ===
+        if (scrollTopStore.scrollMode === 'nativeTop') {
+          // === Native Top mode ===
           const domScrollTop = imageContainerRef.value.scrollTop
           scrollTopStore.scrollTop = Math.max(0, Math.min(domScrollTop, upperBound))
 
-          // Check: transition to compensation mode
+          // Check: transition to compensation or nativeBottom
           if (scrollTopStore.scrollTop >= compensationThreshold) {
-            scrollTopStore.useCompensation = true
+            if (upperBound - scrollTopStore.scrollTop >= compensationThreshold) {
+              scrollTopStore.scrollMode = 'compensation'
+              imageContainerRef.value.scrollTop = bufferHeight.value / 3
+              lastScrollTop.value = bufferHeight.value / 3
+            } else {
+              scrollTopStore.scrollMode = 'nativeBottom'
+              const bottomOffset = Math.max(bufferHeight.value, prefetchStore.totalHeight) - prefetchStore.totalHeight
+              imageContainerRef.value.scrollTop = bottomOffset + scrollTopStore.scrollTop
+              lastScrollTop.value = bottomOffset + scrollTopStore.scrollTop
+            }
+          }
+        } else if (scrollTopStore.scrollMode === 'nativeBottom') {
+          // === Native Bottom mode ===
+          const bottomOffset = Math.max(bufferHeight.value, prefetchStore.totalHeight) - prefetchStore.totalHeight
+          const domScrollTop = imageContainerRef.value.scrollTop
+          scrollTopStore.scrollTop = Math.max(0, Math.min(domScrollTop - bottomOffset, upperBound))
+
+          // Check: transition away from nativeBottom
+          if (upperBound - scrollTopStore.scrollTop >= compensationThreshold && scrollTopStore.scrollTop >= compensationThreshold) {
+            scrollTopStore.scrollMode = 'compensation'
             imageContainerRef.value.scrollTop = bufferHeight.value / 3
             lastScrollTop.value = bufferHeight.value / 3
+          } else if (scrollTopStore.scrollTop < nativeThreshold) {
+            scrollTopStore.scrollMode = 'nativeTop'
+            imageContainerRef.value.scrollTop = scrollTopStore.scrollTop
+            lastScrollTop.value = scrollTopStore.scrollTop
           }
         } else {
-          // === Compensation mode (current behavior) ===
+          // === Compensation mode ===
           const difference = imageContainerRef.value.scrollTop - lastScrollTop.value
           const result = scrollTopStore.scrollTop + difference
 
@@ -102,11 +128,16 @@ export function handleScroll(
           imageContainerRef.value.scrollTop -= difference
           lastScrollTop.value = imageContainerRef.value.scrollTop
 
-          // Check: transition back to native mode
+          // Check: transition to nativeTop or nativeBottom
           if (scrollTopStore.scrollTop < nativeThreshold) {
-            scrollTopStore.useCompensation = false
+            scrollTopStore.scrollMode = 'nativeTop'
             imageContainerRef.value.scrollTop = scrollTopStore.scrollTop
             lastScrollTop.value = scrollTopStore.scrollTop
+          } else if (upperBound - scrollTopStore.scrollTop < nativeThreshold) {
+            scrollTopStore.scrollMode = 'nativeBottom'
+            const bottomOffset = Math.max(bufferHeight.value, prefetchStore.totalHeight) - prefetchStore.totalHeight
+            imageContainerRef.value.scrollTop = bottomOffset + scrollTopStore.scrollTop
+            lastScrollTop.value = bottomOffset + scrollTopStore.scrollTop
           }
         }
       }

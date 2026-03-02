@@ -50,13 +50,22 @@ export function useInitializeScrollPosition(
           scrollTopStore.scrollTop = targetScrollTop
 
           if (targetScrollTop >= compensationThreshold) {
-            // Start in compensation mode for far targets
-            scrollTopStore.useCompensation = true
-            imageContainer.scrollTop = bufferHeight.value / 3
-            lastScrollTop.value = bufferHeight.value / 3
+            const estimatedUpperBound = prefetchStore.totalHeight - imageContainer.clientHeight
+            if (estimatedUpperBound - targetScrollTop < compensationThreshold) {
+              // Near bottom → nativeBottom
+              scrollTopStore.scrollMode = 'nativeBottom'
+              const bottomOffset = Math.max(bufferHeight.value, prefetchStore.totalHeight) - prefetchStore.totalHeight
+              imageContainer.scrollTop = bottomOffset + targetScrollTop
+              lastScrollTop.value = bottomOffset + targetScrollTop
+            } else {
+              // Far from both edges → compensation
+              scrollTopStore.scrollMode = 'compensation'
+              imageContainer.scrollTop = bufferHeight.value / 3
+              lastScrollTop.value = bufferHeight.value / 3
+            }
           } else {
-            // Start in native mode for near targets
-            scrollTopStore.useCompensation = false
+            // Near top → nativeTop
+            scrollTopStore.scrollMode = 'nativeTop'
             imageContainer.scrollTop = targetScrollTop
             lastScrollTop.value = targetScrollTop
           }
@@ -66,11 +75,20 @@ export function useInitializeScrollPosition(
         } else {
           // Default start or resize: set mode based on current scrollTop
           if (scrollTopStore.scrollTop >= compensationThreshold) {
-            scrollTopStore.useCompensation = true
-            imageContainer.scrollTop = bufferHeight.value / 3
-            lastScrollTop.value = bufferHeight.value / 3
+            const estimatedUpperBound = prefetchStore.totalHeight - imageContainer.clientHeight
+            if (estimatedUpperBound - scrollTopStore.scrollTop < compensationThreshold) {
+              // Near bottom → nativeBottom
+              scrollTopStore.scrollMode = 'nativeBottom'
+              const bottomOffset = Math.max(bufferHeight.value, prefetchStore.totalHeight) - prefetchStore.totalHeight
+              imageContainer.scrollTop = bottomOffset + scrollTopStore.scrollTop
+              lastScrollTop.value = bottomOffset + scrollTopStore.scrollTop
+            } else {
+              scrollTopStore.scrollMode = 'compensation'
+              imageContainer.scrollTop = bufferHeight.value / 3
+              lastScrollTop.value = bufferHeight.value / 3
+            }
           } else {
-            scrollTopStore.useCompensation = false
+            scrollTopStore.scrollMode = 'nativeTop'
             imageContainer.scrollTop = scrollTopStore.scrollTop
             lastScrollTop.value = scrollTopStore.scrollTop
           }

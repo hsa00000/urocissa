@@ -38,16 +38,7 @@
       id="placeholderNone"
       ref="placeholderNoneRef"
       v-if="rowStore.firstRowFetched && visibleRows.length === 0 && windowWidth > 0"
-      :top-pixel="
-        scrollTopStore.useCompensation
-          ? ((lastRowBottom - scrollTopStore.scrollTop + windowHeight) %
-              (placeholderNoneRowRefHeight + 2 * paddingPixel)) +
-            bufferHeight / 3 -
-            windowHeight
-          : ((lastRowBottom - scrollTopStore.scrollTop + windowHeight) %
-              (placeholderNoneRowRefHeight + 2 * paddingPixel)) -
-            windowHeight
-      "
+      :top-pixel="placeholderNoneTopPixel"
       :modify-top-pixel="false"
     />
   </div>
@@ -105,12 +96,28 @@ const placeholderNoneRowRefHeight = computed(() =>
 )
 
 function translateY(topPixelAccumulated: number, offset: number): number {
-  if (scrollTopStore.useCompensation) {
+  if (scrollTopStore.scrollMode === 'compensation') {
     return topPixelAccumulated - scrollTopStore.scrollTop + props.bufferHeight / 3 + offset
+  } else if (scrollTopStore.scrollMode === 'nativeBottom') {
+    const bottomOffset = Math.max(props.bufferHeight, prefetchStore.totalHeight) - prefetchStore.totalHeight
+    return topPixelAccumulated + offset + bottomOffset
   } else {
     return topPixelAccumulated + offset
   }
 }
+
+const placeholderNoneTopPixel = computed(() => {
+  const baseMod = (lastRowBottom.value - scrollTopStore.scrollTop + windowHeight.value) %
+    (placeholderNoneRowRefHeight.value + 2 * paddingPixel)
+  if (scrollTopStore.scrollMode === 'compensation') {
+    return baseMod + props.bufferHeight / 3 - windowHeight.value
+  } else if (scrollTopStore.scrollMode === 'nativeBottom') {
+    const bottomOffset = Math.max(props.bufferHeight, prefetchStore.totalHeight) - prefetchStore.totalHeight
+    return baseMod + bottomOffset - windowHeight.value
+  } else {
+    return baseMod - windowHeight.value
+  }
+})
 const visibleRowsLength = computed(() => visibleRows.value.length)
 const startHeight = computed(() => scrollTopStore.scrollTop)
 const endHeight = computed(() => scrollTopStore.scrollTop + windowHeight.value)
