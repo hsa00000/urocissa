@@ -277,11 +277,13 @@ export function useUpdateVisibleRows(
 
         filterRowForLocation(visibleRows, isolationId)
 
-        scrollTopOffsetFix(
-          visibleRows,
-          Math.max(getScrollUpperBound(prefetchStore.totalHeight, windowHeight.value), 0),
-          isolationId
-        )
+        if (scrollTopStore.useCompensation) {
+          scrollTopOffsetFix(
+            visibleRows,
+            Math.max(getScrollUpperBound(prefetchStore.totalHeight, windowHeight.value), 0),
+            isolationId
+          )
+        }
       }
       updateLastVisibleRow(visibleRows, isolationId)
       updateLocationIndex(visibleRows, scrollTopStore.scrollTop, isolationId)

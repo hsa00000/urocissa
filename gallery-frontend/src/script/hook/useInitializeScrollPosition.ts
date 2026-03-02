@@ -1,7 +1,7 @@
 import { watch, type Ref, type ComputedRef } from 'vue'
 import { useInitializedStore } from '@/store/initializedStore'
 import { usePrefetchStore } from '@/store/prefetchStore'
-import { fixedBigRowHeight, layoutBatchNumber } from '@/type/constants'
+import { compensationThreshold, fixedBigRowHeight, layoutBatchNumber } from '@/type/constants'
 import { fetchRowInWorker } from '@/api/fetchRow'
 import { useScrollTopStore } from '@/store/scrollTopStore'
 import { useLocationStore } from '@/store/locationStore'
@@ -37,22 +37,43 @@ export function useInitializeScrollPosition(
       const scrollTopStore = useScrollTopStore(isolationId)
       const imageContainer = imageContainerRef.value
       if (imageContainer !== null && initializedStore.initialized) {
-        imageContainer.scrollTop = bufferHeight.value / 3
-
-        lastScrollTop.value = bufferHeight.value / 3
-
         clientHeight.value = imageContainer.clientHeight
 
         const jumpTo = prefetchStore.locateTo
         if (jumpTo !== null) {
           const locationStore = useLocationStore(isolationId)
           const targetRowIndex = Math.floor(jumpTo / layoutBatchNumber)
+          const targetScrollTop = targetRowIndex * fixedBigRowHeight
           locationStore.locationIndex = jumpTo
           locationStore.anchor = targetRowIndex
           locationStore.pendingLocateTarget = jumpTo
-          scrollTopStore.scrollTop = targetRowIndex * fixedBigRowHeight
+          scrollTopStore.scrollTop = targetScrollTop
+
+          if (targetScrollTop >= compensationThreshold) {
+            // Start in compensation mode for far targets
+            scrollTopStore.useCompensation = true
+            imageContainer.scrollTop = bufferHeight.value / 3
+            lastScrollTop.value = bufferHeight.value / 3
+          } else {
+            // Start in native mode for near targets
+            scrollTopStore.useCompensation = false
+            imageContainer.scrollTop = targetScrollTop
+            lastScrollTop.value = targetScrollTop
+          }
+
           await fetchRowInWorker(targetRowIndex, isolationId)
           prefetchStore.locateTo = null
+        } else {
+          // Default start or resize: set mode based on current scrollTop
+          if (scrollTopStore.scrollTop >= compensationThreshold) {
+            scrollTopStore.useCompensation = true
+            imageContainer.scrollTop = bufferHeight.value / 3
+            lastScrollTop.value = bufferHeight.value / 3
+          } else {
+            scrollTopStore.useCompensation = false
+            imageContainer.scrollTop = scrollTopStore.scrollTop
+            lastScrollTop.value = scrollTopStore.scrollTop
+          }
         }
       }
     },

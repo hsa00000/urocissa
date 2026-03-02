@@ -6,6 +6,9 @@ export const paddingPixel = 4
 export const fixedBigRowHeight = 2400
 export const layoutBatchNumber = 20
 export const navBarHeight = 68
+export const compensationThreshold = 10000
+export const nativeThreshold = 5000
+
 export const DURATIONS = [
   { label: '30 minutes later', id: 30 },
   { label: '1 hour later', id: 60 },

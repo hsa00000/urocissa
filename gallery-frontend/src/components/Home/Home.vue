@@ -109,11 +109,16 @@ provide('imageContainerRef', imageContainerRef)
 provide('windowWidth', windowWidth)
 provide('windowHeight', windowHeight)
 
+const bufferHeight = computed(() => {
+  return 600000
+})
+
 const throttledHandleScroll = handleScroll(
   imageContainerRef,
   lastScrollTop,
   stopScroll,
   windowHeight,
+  bufferHeight,
   props.isolationId
 )
 
@@ -131,10 +136,6 @@ watch([windowWidth, () => constStore.subRowHeightScale], async () => {
 
   scrollTopStore.scrollTop = locationRowIndex * 2400
   await fetchRowInWorker(locationRowIndex, props.isolationId)
-})
-
-const bufferHeight = computed(() => {
-  return 600000
 })
 
 const albumHomeIsolatedKey = computed(() => {
@@ -201,15 +202,6 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-#image-container {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-#image-container::-webkit-scrollbar {
-  display: none;
-}
-
 img {
   transition: border 0.1s linear;
 }

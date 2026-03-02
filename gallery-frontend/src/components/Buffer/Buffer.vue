@@ -9,10 +9,7 @@
     <BufferPlaceholder
       id="placeholderTop"
       v-if="visibleRows[0] !== undefined && !(prefetchStore.totalHeight <= windowHeight)"
-      :top-pixel="visibleRows[0].topPixelAccumulated! -
-        scrollTopStore.scrollTop +
-        bufferHeight / 3 +
-        visibleRows[0].offset"
+      :top-pixel="translateY(visibleRows[0].topPixelAccumulated!, visibleRows[0].offset)"
       :modify-top-pixel="true"
     />
     <div
@@ -20,7 +17,7 @@
       :key="`${row.start}-${prefetchStore.timestamp}`"
       class="position-absolute w-100"
       :style="{
-        transform: `translateY(${row.topPixelAccumulated! - scrollTopStore.scrollTop + bufferHeight / 3 + row.offset}px)`,
+        transform: `translateY(${translateY(row.topPixelAccumulated!, row.offset)}px)`,
         height: `${row.rowHeight}px`,
         willChange: 'transform'
       }"
@@ -33,11 +30,7 @@
       v-if="visibleRows.length > 0 && !(prefetchStore.totalHeight <= windowHeight)"
       :top-pixel="(()=>{
         const lastData = getArrayValue(visibleRows, visibleRows.length - 1)
-        return lastData.topPixelAccumulated! -
-        scrollTopStore.scrollTop +
-        bufferHeight / 3 +
-        lastData.offset +
-        lastData.rowHeight
+        return translateY(lastData.topPixelAccumulated!, lastData.offset) + lastData.rowHeight
       })()"
       :modify-top-pixel="false"
     />
@@ -46,10 +39,14 @@
       ref="placeholderNoneRef"
       v-if="rowStore.firstRowFetched && visibleRows.length === 0 && windowWidth > 0"
       :top-pixel="
-        ((lastRowBottom - scrollTopStore.scrollTop + windowHeight) %
-          (placeholderNoneRowRefHeight + 2 * paddingPixel)) +
-        bufferHeight / 3 -
-        windowHeight
+        scrollTopStore.useCompensation
+          ? ((lastRowBottom - scrollTopStore.scrollTop + windowHeight) %
+              (placeholderNoneRowRefHeight + 2 * paddingPixel)) +
+            bufferHeight / 3 -
+            windowHeight
+          : ((lastRowBottom - scrollTopStore.scrollTop + windowHeight) %
+              (placeholderNoneRowRefHeight + 2 * paddingPixel)) -
+            windowHeight
       "
       :modify-top-pixel="false"
     />
@@ -106,6 +103,14 @@ const lastRowBottom = ref(0)
 const placeholderNoneRowRefHeight = computed(() =>
   placeholderNoneRef.value ? placeholderNoneRef.value.placeholderRowRefHeight : 0
 )
+
+function translateY(topPixelAccumulated: number, offset: number): number {
+  if (scrollTopStore.useCompensation) {
+    return topPixelAccumulated - scrollTopStore.scrollTop + props.bufferHeight / 3 + offset
+  } else {
+    return topPixelAccumulated + offset
+  }
+}
 const visibleRowsLength = computed(() => visibleRows.value.length)
 const startHeight = computed(() => scrollTopStore.scrollTop)
 const endHeight = computed(() => scrollTopStore.scrollTop + windowHeight.value)
