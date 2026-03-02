@@ -77,7 +77,7 @@ export function getMapValue<K, V>(map: Map<K, V>, key: K): V {
 }
 
 export function getScrollUpperBound(totalHeight: number, windowHeight: number): number {
-  return totalHeight - windowHeight - 4
+  return totalHeight - windowHeight
 }
 
 export async function searchByTag(tag: string, router: Router) {
@@ -124,7 +124,7 @@ export function extractHashFromPath(path: string): string | null {
 export function getSrc(hash: string, original: boolean, ext: string, updatedAt: number) {
   const compressedOrImported = original ? 'imported' : 'compressed'
   const basePath = `/object/${compressedOrImported}/${hash.slice(0, 2)}/${hash}.${ext}`
-  
+
   return `${basePath}?updated_at=${updatedAt}`
 }
 

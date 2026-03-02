@@ -15,7 +15,7 @@
       <div
         id="image-container"
         ref="imageContainerRef"
-        class="d-flex flex-wrap position-relative flex-grow-1 min-h-0 h-100 pa-1 pb-2 bg-surface-light"
+        class="d-flex flex-wrap position-relative flex-grow-1 min-h-0 h-100 pa-1 bg-surface-light"
         :class="stopScroll ? 'overflow-y-hidden' : 'overflow-y-scroll'"
         @scroll="
           prefetchStore.locateTo === null && locationStore.pendingLocateTarget === null
@@ -125,7 +125,7 @@ const stopVirtualScrollWatch = watch(
 )
 
 const bufferHeight = computed(() => {
-  return useVirtualScroll.value ? 600000 : 0
+  return (useVirtualScroll.value ?? false) ? 600000 : 0
 })
 
 provide('bufferHeight', bufferHeight)
