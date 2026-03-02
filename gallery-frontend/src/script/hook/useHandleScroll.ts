@@ -5,6 +5,7 @@ import { useScrollTopStore } from '@/store/scrollTopStore'
 import { throttle } from 'lodash'
 import { ComputedRef, Ref } from 'vue'
 import { useConfigStore } from '@/store/configStore'
+import { useLocationStore } from '@/store/locationStore'
 import { compensationThreshold, nativeThreshold } from '@/type/constants'
 
 /**
@@ -39,13 +40,25 @@ export function handleScroll(
   const throttledHandleScroll = throttle(
     () => {
       if (imageContainerRef.value !== null) {
+        const locationStore = useLocationStore(isolationId)
+
+        // During a scrollbar jump (anchor set), skip scroll processing
+        // to prevent interference while data is being re-fetched
+        if (locationStore.anchor !== null) {
+          console.log('[handleScroll] SKIPPED: anchor=', locationStore.anchor)
+          return
+        }
+
         const configStore = useConfigStore('mainId')
         const mobile = configStore.isMobile
         const scrollTopStore = useScrollTopStore(isolationId)
         const prefetchStore = usePrefetchStore(isolationId)
         const upperBound = getScrollUpperBound(prefetchStore.totalHeight, windowHeight.value)
 
+        console.log('[handleScroll] mode=', scrollTopStore.scrollMode, 'domScrollTop=', imageContainerRef.value.scrollTop, 'virtualScrollTop=', scrollTopStore.scrollTop, 'upperBound=', upperBound, 'totalHeight=', prefetchStore.totalHeight, 'lastScrollTop=', lastScrollTop.value)
+
         if (prefetchStore.totalHeight - windowHeight.value < 0) {
+          console.log('[handleScroll] GUARD: totalHeight < windowHeight, resetting to 0')
           const difference = imageContainerRef.value.scrollTop - lastScrollTop.value
           if (mobile) {
             stopScroll.value = true
@@ -64,7 +77,9 @@ export function handleScroll(
         if (scrollTopStore.scrollMode === 'nativeTop') {
           // === Native Top mode ===
           const domScrollTop = imageContainerRef.value.scrollTop
-          scrollTopStore.scrollTop = Math.max(0, Math.min(domScrollTop, upperBound))
+          const newScrollTop = Math.max(0, Math.min(domScrollTop, upperBound))
+          console.log('[handleScroll:nativeTop] domScrollTop=', domScrollTop, '→ virtualScrollTop=', newScrollTop)
+          scrollTopStore.scrollTop = newScrollTop
 
           // Check: transition to compensation or nativeBottom
           if (scrollTopStore.scrollTop >= compensationThreshold) {

@@ -271,18 +271,30 @@ export function useUpdateVisibleRows(
         isolationId
       )
 
+      console.log('[updateVisibleRows] startHeight=', startHeight.value, 'endHeight=', endHeight.value, 'found=', visibleRows.value.length, 'rows:', visibleRows.value.map(r => ({ idx: r.rowIndex, top: r.topPixelAccumulated, offset: r.offset, height: r.rowHeight })))
+
       if (visibleRows.value.length > 0) {
         // The logic in getCurrentVisibleRows might miss the top and bottom rows, so we add them back
         appendAndPrependRow(visibleRows, isolationId)
 
+        console.log('[updateVisibleRows] after append/prepend:', visibleRows.value.length, 'rows:', visibleRows.value.map(r => ({ idx: r.rowIndex, top: r.topPixelAccumulated, offset: r.offset })))
+
         filterRowForLocation(visibleRows, isolationId)
 
-        if (scrollTopStore.scrollMode === 'compensation') {
-          scrollTopOffsetFix(
-            visibleRows,
-            Math.max(getScrollUpperBound(prefetchStore.totalHeight, windowHeight.value), 0),
-            isolationId
-          )
+        console.log('[updateVisibleRows] after filterRowForLocation:', visibleRows.value.length, 'anchor=', useLocationStore(isolationId).anchor)
+
+        const oldScrollTop = scrollTopStore.scrollTop
+        scrollTopOffsetFix(
+          visibleRows,
+          Math.max(getScrollUpperBound(prefetchStore.totalHeight, windowHeight.value), 0),
+          isolationId
+        )
+
+        // In native modes, also update DOM scrollTop to keep visual position stable
+        const scrollTopDelta = scrollTopStore.scrollTop - oldScrollTop
+        if (scrollTopDelta !== 0 && scrollTopStore.scrollMode !== 'compensation' && imageContainerRef.value) {
+          imageContainerRef.value.scrollTop += scrollTopDelta
+          console.log('[updateVisibleRows] adjusted DOM scrollTop by', scrollTopDelta, '→', imageContainerRef.value.scrollTop)
         }
       }
       updateLastVisibleRow(visibleRows, isolationId)

@@ -38,6 +38,7 @@ export function useInitializeScrollPosition(
       const imageContainer = imageContainerRef.value
       if (imageContainer !== null && initializedStore.initialized) {
         clientHeight.value = imageContainer.clientHeight
+        console.log('[useInitializeScrollPosition] FIRED, scrollTop=', scrollTopStore.scrollTop, 'mode=', scrollTopStore.scrollMode, 'locateTo=', prefetchStore.locateTo)
 
         const jumpTo = prefetchStore.locateTo
         if (jumpTo !== null) {

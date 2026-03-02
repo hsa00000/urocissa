@@ -108,10 +108,13 @@ const stopScroll = ref(false)
 provide('imageContainerRef', imageContainerRef)
 provide('windowWidth', windowWidth)
 provide('windowHeight', windowHeight)
+provide('lastScrollTop', lastScrollTop)
 
 const bufferHeight = computed(() => {
   return 600000
 })
+
+provide('bufferHeight', bufferHeight)
 
 const throttledHandleScroll = handleScroll(
   imageContainerRef,

@@ -99,7 +99,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, inject, Ref, computed, watch, watchEffect, onMounted, onBeforeUnmount } from 'vue'
+import { ref, inject, Ref, ComputedRef, computed, watch, watchEffect, onMounted, onBeforeUnmount } from 'vue'
 import { clamp, debounce } from 'lodash'
 import { useElementSize, useMouseInElement } from '@vueuse/core'
 import { usePrefetchStore } from '@/store/prefetchStore'
@@ -110,7 +110,7 @@ import { useQueueStore } from '@/store/queueStore'
 import { useLocationStore } from '@/store/locationStore'
 import { fetchRowInWorker } from '@/api/fetchRow'
 import { IsolationId, ScrollbarData } from '@type/types'
-import { fixedBigRowHeight, layoutBatchNumber, scrollBarWidth } from '@/type/constants'
+import { compensationThreshold, fixedBigRowHeight, layoutBatchNumber, scrollBarWidth } from '@/type/constants'
 import { useScrollTopStore } from '@/store/scrollTopStore'
 import { getInjectValue, getScrollUpperBound } from '@utils/getter'
 import { useConfigStore } from '@/store/configStore'
@@ -131,6 +131,8 @@ const rowStore = useRowStore(props.isolationId)
 const offsetStore = useOffsetStore(props.isolationId)
 const queueStore = useQueueStore(props.isolationId)
 const windowHeight = getInjectValue<Ref<number>>('windowHeight')
+const lastScrollTop = getInjectValue<Ref<number>>('lastScrollTop')
+const bufferHeight = getInjectValue<ComputedRef<number>>('bufferHeight')
 const configStore = useConfigStore('mainId')
 
 const reachBottom = computed(() => {
@@ -271,6 +273,8 @@ const handleClick = (event?: MouseEvent | TouchEvent) => {
     return
   }
 
+  console.log('[ScrollBar:handleClick] targetRowIndex=', targetRowIndex, 'currentMode=', scrollTopStore.scrollMode)
+
   locationStore.anchor = targetRowIndex
   locationStore.locationIndex = targetRowIndex * layoutBatchNumber
 
@@ -279,6 +283,35 @@ const handleClick = (event?: MouseEvent | TouchEvent) => {
   prefetchStore.clearForResize()
   rowStore.clearForResize()
   scrollTopStore.scrollTop = targetRowIndex * fixedBigRowHeight
+
+  // Update scroll mode and DOM position for the jump
+  const newScrollTop = scrollTopStore.scrollTop
+  const upperBound = getScrollUpperBound(prefetchStore.totalHeight, windowHeight.value)
+
+  console.log('[ScrollBar:handleClick] newScrollTop=', newScrollTop, 'upperBound=', upperBound, 'totalHeight=', prefetchStore.totalHeight, 'windowHeight=', windowHeight.value)
+
+  if (imageContainerRef?.value) {
+    if (newScrollTop >= compensationThreshold) {
+      if (upperBound - newScrollTop >= compensationThreshold) {
+        scrollTopStore.scrollMode = 'compensation'
+        lastScrollTop.value = bufferHeight.value / 3
+        imageContainerRef.value.scrollTop = bufferHeight.value / 3
+        console.log('[ScrollBar:handleClick] → compensation, domScrollTop=', bufferHeight.value / 3)
+      } else {
+        scrollTopStore.scrollMode = 'nativeBottom'
+        const bottomOffset = Math.max(bufferHeight.value, prefetchStore.totalHeight) - prefetchStore.totalHeight
+        lastScrollTop.value = bottomOffset + newScrollTop
+        imageContainerRef.value.scrollTop = bottomOffset + newScrollTop
+        console.log('[ScrollBar:handleClick] → nativeBottom, bottomOffset=', bottomOffset, 'domScrollTop=', bottomOffset + newScrollTop)
+      }
+    } else {
+      scrollTopStore.scrollMode = 'nativeTop'
+      lastScrollTop.value = newScrollTop
+      imageContainerRef.value.scrollTop = newScrollTop
+      console.log('[ScrollBar:handleClick] → nativeTop, domScrollTop=', newScrollTop)
+    }
+  }
+
   currentDateChipIndex.value = targetRowIndex
   hoverLabelRowIndex.value = targetRowIndex
   debouncedFetchRow(targetRowIndex)
