@@ -115,7 +115,7 @@
         <v-container fluid>
           <v-row align="center" dense>
             <v-col>
-              <div class="text-caption text-medium-emphasis text-truncate">
+              <div class="text-body-small text-medium-emphasis text-truncate">
                 Selected:
                 <span class="text-high-emphasis">{{ currentPath || 'Root' }}</span>
               </div>

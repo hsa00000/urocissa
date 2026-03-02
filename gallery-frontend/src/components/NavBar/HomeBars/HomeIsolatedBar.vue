@@ -36,7 +36,7 @@
               hide-details
             >
               <template #label>
-                <span class="text-caption">Search</span>
+                <span class="text-body-small">Search</span>
               </template>
             </v-text-field>
           </v-card-text>

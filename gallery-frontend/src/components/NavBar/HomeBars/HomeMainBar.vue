@@ -39,7 +39,7 @@
               style="margin-right: 10px"
             >
               <template #label>
-                <span class="text-caption">Search</span>
+                <span class="text-body-small">Search</span>
               </template>
             </v-text-field>
           </v-card-text>

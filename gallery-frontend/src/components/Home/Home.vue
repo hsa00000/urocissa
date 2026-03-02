@@ -34,7 +34,7 @@
         />
       </div>
 
-      <div class="flex-grow-0 flex-shrink-0 bg-surface-light">
+      <div class="flex-grow-0 flex-shrink-0 bg-surface-light" style="overflow: visible">
         <ScrollBar :isolation-id="props.isolationId" />
       </div>
     </div>

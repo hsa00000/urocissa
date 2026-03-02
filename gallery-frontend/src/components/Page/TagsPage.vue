@@ -14,7 +14,7 @@
               <v-btn
                 @click="searchByTag(tagsData.tag, router)"
                 slim
-                class="text-caption"
+                class="text-body-small"
                 variant="tonal"
               >
                 {{ tagsData.tag }}

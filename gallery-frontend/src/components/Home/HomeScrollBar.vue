@@ -6,7 +6,8 @@
       ref="scrollbarRef"
       id="scroll-bar"
       :style="{
-        zIndex: `3`,
+        position: 'relative',
+        zIndex: 3,
         cursor: `vertical-text`,
         touchAction: 'none',
         overscrollBehavior: 'contain'
@@ -79,7 +80,7 @@
                 : scrollbarStore.isHovering || scrollbarStore.isDragging)
             "
             id="current-month-sheet"
-            class="position-absolute w-100 d-flex align-center justify-center text-caption bg-surface"
+            class="position-absolute w-100 d-flex align-center justify-center text-body-small bg-surface"
             :style="{
               height: `25px`,
               bottom: `0`,
