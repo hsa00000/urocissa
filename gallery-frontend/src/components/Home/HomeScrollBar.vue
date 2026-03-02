@@ -99,7 +99,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, inject, Ref, ComputedRef, computed, watch, watchEffect, onMounted, onBeforeUnmount } from 'vue'
+import {
+  ref,
+  inject,
+  Ref,
+  ComputedRef,
+  computed,
+  watch,
+  watchEffect,
+  onMounted,
+  onBeforeUnmount
+} from 'vue'
 import { clamp, debounce } from 'lodash'
 import { useElementSize, useMouseInElement } from '@vueuse/core'
 import { usePrefetchStore } from '@/store/prefetchStore'
@@ -110,7 +120,12 @@ import { useQueueStore } from '@/store/queueStore'
 import { useLocationStore } from '@/store/locationStore'
 import { fetchRowInWorker } from '@/api/fetchRow'
 import { IsolationId, ScrollbarData } from '@type/types'
-import { compensationThreshold, fixedBigRowHeight, layoutBatchNumber, scrollBarWidth } from '@/type/constants'
+import {
+  compensationThreshold,
+  fixedBigRowHeight,
+  layoutBatchNumber,
+  scrollBarWidth
+} from '@/type/constants'
 import { useScrollTopStore } from '@/store/scrollTopStore'
 import { getInjectValue, getScrollUpperBound } from '@utils/getter'
 import { useConfigStore } from '@/store/configStore'
@@ -273,7 +288,12 @@ const handleClick = (event?: MouseEvent | TouchEvent) => {
     return
   }
 
-  console.log('[ScrollBar:handleClick] targetRowIndex=', targetRowIndex, 'currentMode=', scrollTopStore.scrollMode)
+  console.log(
+    '[ScrollBar:handleClick] targetRowIndex=',
+    targetRowIndex,
+    'currentMode=',
+    scrollTopStore.scrollMode
+  )
 
   locationStore.anchor = targetRowIndex
   locationStore.locationIndex = targetRowIndex * layoutBatchNumber
@@ -288,22 +308,29 @@ const handleClick = (event?: MouseEvent | TouchEvent) => {
   const newScrollTop = scrollTopStore.scrollTop
   const upperBound = getScrollUpperBound(prefetchStore.totalHeight, windowHeight.value)
 
-  console.log('[ScrollBar:handleClick] newScrollTop=', newScrollTop, 'upperBound=', upperBound, 'totalHeight=', prefetchStore.totalHeight, 'windowHeight=', windowHeight.value)
+  console.log(
+    '[ScrollBar:handleClick] newScrollTop=',
+    newScrollTop,
+    'upperBound=',
+    upperBound,
+    'totalHeight=',
+    prefetchStore.totalHeight,
+    'windowHeight=',
+    windowHeight.value
+  )
 
   if (imageContainerRef?.value) {
     if (bufferHeight.value > 0 && newScrollTop >= compensationThreshold) {
-      if (upperBound - newScrollTop >= compensationThreshold) {
-        scrollTopStore.scrollMode = 'compensation'
-        lastScrollTop.value = bufferHeight.value / 3
-        imageContainerRef.value.scrollTop = bufferHeight.value / 3
-        console.log('[ScrollBar:handleClick] → compensation, domScrollTop=', bufferHeight.value / 3)
-      } else {
-        scrollTopStore.scrollMode = 'nativeBottom'
-        const bottomOffset = Math.max(bufferHeight.value, prefetchStore.totalHeight) - prefetchStore.totalHeight
-        lastScrollTop.value = bottomOffset + newScrollTop
-        imageContainerRef.value.scrollTop = bottomOffset + newScrollTop
-        console.log('[ScrollBar:handleClick] → nativeBottom, bottomOffset=', bottomOffset, 'domScrollTop=', bottomOffset + newScrollTop)
-      }
+      // Always use compensation mode for scrollbar jumps.
+      // Using nativeBottom here causes bouncing because clearForResize()
+      // causes totalHeight to fluctuate as rows re-fetch, which shrinks
+      // the DOM scrollable area and the browser clamps DOM scrollTop.
+      // The scroll handler will transition to the correct native mode
+      // once data stabilizes and the user scrolls.
+      scrollTopStore.scrollMode = 'compensation'
+      lastScrollTop.value = bufferHeight.value / 3
+      imageContainerRef.value.scrollTop = bufferHeight.value / 3
+      console.log('[ScrollBar:handleClick] → compensation, domScrollTop=', bufferHeight.value / 3)
     } else {
       scrollTopStore.scrollMode = 'nativeTop'
       lastScrollTop.value = newScrollTop
@@ -413,11 +440,12 @@ watchEffect(() => {
 
 watch([() => locationStore.locationIndex, reachBottom], () => {
   isScrolling.value = true
-  hoverLabelRowIndex.value = currentBatchIndex.value
   if (reachBottom.value) {
     currentDateChipIndex.value = rowLength.value - 1
+    hoverLabelRowIndex.value = rowLength.value - 1
   } else {
     currentDateChipIndex.value = currentBatchIndex.value
+    hoverLabelRowIndex.value = currentBatchIndex.value
   }
 })
 

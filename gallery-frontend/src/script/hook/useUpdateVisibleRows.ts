@@ -279,7 +279,20 @@ export function useUpdateVisibleRows(
 
         console.log('[updateVisibleRows] after append/prepend:', visibleRows.value.length, 'rows:', visibleRows.value.map(r => ({ idx: r.rowIndex, top: r.topPixelAccumulated, offset: r.offset })))
 
+        const anchorBefore = useLocationStore(isolationId).anchor
         filterRowForLocation(visibleRows, isolationId)
+
+        // After a scrollbar jump, the anchor guard in handleScroll causes it
+        // to skip processing.  Once filterRowForLocation clears the anchor,
+        // no new scroll events fire (DOM scrollTop hasn't changed), so the
+        // mode transition (e.g. compensation → nativeBottom) never happens.
+        // Dispatch a deferred scroll event to let handleScroll run the check.
+        if (anchorBefore !== null && useLocationStore(isolationId).anchor === null && imageContainerRef.value) {
+          const el = imageContainerRef.value
+          setTimeout(() => {
+            el.dispatchEvent(new Event('scroll'))
+          }, 0)
+        }
 
         console.log('[updateVisibleRows] after filterRowForLocation:', visibleRows.value.length, 'anchor=', useLocationStore(isolationId).anchor)
 

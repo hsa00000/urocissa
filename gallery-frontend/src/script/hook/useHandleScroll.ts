@@ -55,7 +55,20 @@ export function handleScroll(
         const prefetchStore = usePrefetchStore(isolationId)
         const upperBound = getScrollUpperBound(prefetchStore.totalHeight, windowHeight.value)
 
-        console.log('[handleScroll] mode=', scrollTopStore.scrollMode, 'domScrollTop=', imageContainerRef.value.scrollTop, 'virtualScrollTop=', scrollTopStore.scrollTop, 'upperBound=', upperBound, 'totalHeight=', prefetchStore.totalHeight, 'lastScrollTop=', lastScrollTop.value)
+        console.log(
+          '[handleScroll] mode=',
+          scrollTopStore.scrollMode,
+          'domScrollTop=',
+          imageContainerRef.value.scrollTop,
+          'virtualScrollTop=',
+          scrollTopStore.scrollTop,
+          'upperBound=',
+          upperBound,
+          'totalHeight=',
+          prefetchStore.totalHeight,
+          'lastScrollTop=',
+          lastScrollTop.value
+        )
 
         if (prefetchStore.totalHeight - windowHeight.value < 0) {
           console.log('[handleScroll] GUARD: totalHeight < windowHeight, resetting to 0')
@@ -78,7 +91,12 @@ export function handleScroll(
           // === Native Top mode ===
           const domScrollTop = imageContainerRef.value.scrollTop
           const newScrollTop = Math.max(0, Math.min(domScrollTop, upperBound))
-          console.log('[handleScroll:nativeTop] domScrollTop=', domScrollTop, '→ virtualScrollTop=', newScrollTop)
+          console.log(
+            '[handleScroll:nativeTop] domScrollTop=',
+            domScrollTop,
+            '→ virtualScrollTop=',
+            newScrollTop
+          )
           scrollTopStore.scrollTop = newScrollTop
 
           // Check: transition to compensation or nativeBottom (only when virtual scroll is active)
@@ -89,19 +107,24 @@ export function handleScroll(
               lastScrollTop.value = bufferHeight.value / 3
             } else {
               scrollTopStore.scrollMode = 'nativeBottom'
-              const bottomOffset = Math.max(bufferHeight.value, prefetchStore.totalHeight) - prefetchStore.totalHeight
+              const bottomOffset =
+                Math.max(bufferHeight.value, prefetchStore.totalHeight) - prefetchStore.totalHeight
               imageContainerRef.value.scrollTop = bottomOffset + scrollTopStore.scrollTop
               lastScrollTop.value = bottomOffset + scrollTopStore.scrollTop
             }
           }
         } else if (scrollTopStore.scrollMode === 'nativeBottom') {
           // === Native Bottom mode ===
-          const bottomOffset = Math.max(bufferHeight.value, prefetchStore.totalHeight) - prefetchStore.totalHeight
+          const bottomOffset =
+            Math.max(bufferHeight.value, prefetchStore.totalHeight) - prefetchStore.totalHeight
           const domScrollTop = imageContainerRef.value.scrollTop
           scrollTopStore.scrollTop = Math.max(0, Math.min(domScrollTop - bottomOffset, upperBound))
 
           // Check: transition away from nativeBottom
-          if (upperBound - scrollTopStore.scrollTop >= compensationThreshold && scrollTopStore.scrollTop >= compensationThreshold) {
+          if (
+            upperBound - scrollTopStore.scrollTop >= compensationThreshold &&
+            scrollTopStore.scrollTop >= compensationThreshold
+          ) {
             scrollTopStore.scrollMode = 'compensation'
             imageContainerRef.value.scrollTop = bufferHeight.value / 3
             lastScrollTop.value = bufferHeight.value / 3
@@ -150,7 +173,8 @@ export function handleScroll(
             lastScrollTop.value = scrollTopStore.scrollTop
           } else if (upperBound - scrollTopStore.scrollTop < nativeThreshold) {
             scrollTopStore.scrollMode = 'nativeBottom'
-            const bottomOffset = Math.max(bufferHeight.value, prefetchStore.totalHeight) - prefetchStore.totalHeight
+            const bottomOffset =
+              Math.max(bufferHeight.value, prefetchStore.totalHeight) - prefetchStore.totalHeight
             imageContainerRef.value.scrollTop = bottomOffset + scrollTopStore.scrollTop
             lastScrollTop.value = bottomOffset + scrollTopStore.scrollTop
           }
