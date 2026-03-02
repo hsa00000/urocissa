@@ -42,7 +42,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, provide, onBeforeUnmount, watch } from 'vue'
+import { ref, onMounted, computed, provide, onBeforeUnmount, watch, shallowRef } from 'vue'
 import { useDataStore } from '@/store/dataStore'
 import { usePrefetchStore } from '@/store/prefetchStore'
 import { useCollectionStore } from '@/store/collectionStore'
@@ -58,7 +58,7 @@ import { useInitializeScrollPosition } from '@/script/hook/useInitializeScrollPo
 import { useImgStore } from '@/store/imgStore'
 import Buffer from '@/components/Buffer/Buffer.vue'
 import ScrollBar from '@/components/Home/HomeScrollBar.vue'
-import { layoutBatchNumber } from '@/type/constants'
+import { layoutBatchNumber, minHeightForScrollModes } from '@/type/constants'
 import { useOffsetStore } from '@/store/offsetStore'
 import { useRowStore } from '@/store/rowStore'
 import { useLocationStore } from '@/store/locationStore'
@@ -110,8 +110,22 @@ provide('windowWidth', windowWidth)
 provide('windowHeight', windowHeight)
 provide('lastScrollTop', lastScrollTop)
 
+// Lock in virtual scroll decision once when totalHeight first becomes non-zero.
+// Once decided, never changes for this component's lifecycle.
+const useVirtualScroll = shallowRef<boolean | null>(null)
+const stopVirtualScrollWatch = watch(
+  () => prefetchStore.totalHeight,
+  (totalHeight) => {
+    if (totalHeight > 0 && useVirtualScroll.value === null) {
+      useVirtualScroll.value = totalHeight >= minHeightForScrollModes
+      stopVirtualScrollWatch()
+    }
+  },
+  { immediate: true }
+)
+
 const bufferHeight = computed(() => {
-  return 600000
+  return useVirtualScroll.value ? 600000 : 0
 })
 
 provide('bufferHeight', bufferHeight)

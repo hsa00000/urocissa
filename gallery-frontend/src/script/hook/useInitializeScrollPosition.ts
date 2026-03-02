@@ -50,7 +50,7 @@ export function useInitializeScrollPosition(
           locationStore.pendingLocateTarget = jumpTo
           scrollTopStore.scrollTop = targetScrollTop
 
-          if (targetScrollTop >= compensationThreshold) {
+          if (bufferHeight.value > 0 && targetScrollTop >= compensationThreshold) {
             const estimatedUpperBound = prefetchStore.totalHeight - imageContainer.clientHeight
             if (estimatedUpperBound - targetScrollTop < compensationThreshold) {
               // Near bottom → nativeBottom
@@ -75,7 +75,7 @@ export function useInitializeScrollPosition(
           prefetchStore.locateTo = null
         } else {
           // Default start or resize: set mode based on current scrollTop
-          if (scrollTopStore.scrollTop >= compensationThreshold) {
+          if (bufferHeight.value > 0 && scrollTopStore.scrollTop >= compensationThreshold) {
             const estimatedUpperBound = prefetchStore.totalHeight - imageContainer.clientHeight
             if (estimatedUpperBound - scrollTopStore.scrollTop < compensationThreshold) {
               // Near bottom → nativeBottom

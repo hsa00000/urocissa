@@ -8,6 +8,7 @@ export const layoutBatchNumber = 20
 export const navBarHeight = 68
 export const compensationThreshold = 10000
 export const nativeThreshold = 5000
+export const minHeightForScrollModes = 50000
 
 export const DURATIONS = [
   { label: '30 minutes later', id: 30 },

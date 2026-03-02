@@ -291,7 +291,7 @@ const handleClick = (event?: MouseEvent | TouchEvent) => {
   console.log('[ScrollBar:handleClick] newScrollTop=', newScrollTop, 'upperBound=', upperBound, 'totalHeight=', prefetchStore.totalHeight, 'windowHeight=', windowHeight.value)
 
   if (imageContainerRef?.value) {
-    if (newScrollTop >= compensationThreshold) {
+    if (bufferHeight.value > 0 && newScrollTop >= compensationThreshold) {
       if (upperBound - newScrollTop >= compensationThreshold) {
         scrollTopStore.scrollMode = 'compensation'
         lastScrollTop.value = bufferHeight.value / 3

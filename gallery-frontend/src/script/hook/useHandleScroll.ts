@@ -81,8 +81,8 @@ export function handleScroll(
           console.log('[handleScroll:nativeTop] domScrollTop=', domScrollTop, '→ virtualScrollTop=', newScrollTop)
           scrollTopStore.scrollTop = newScrollTop
 
-          // Check: transition to compensation or nativeBottom
-          if (scrollTopStore.scrollTop >= compensationThreshold) {
+          // Check: transition to compensation or nativeBottom (only when virtual scroll is active)
+          if (bufferHeight.value > 0 && scrollTopStore.scrollTop >= compensationThreshold) {
             if (upperBound - scrollTopStore.scrollTop >= compensationThreshold) {
               scrollTopStore.scrollMode = 'compensation'
               imageContainerRef.value.scrollTop = bufferHeight.value / 3
