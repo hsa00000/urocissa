@@ -69,28 +69,29 @@
             borderBottom: '1px solid rgb(var(--v-theme-primary))'
           }"
         >
-          <!-- Chip to show the current view year and month label. Only render while mouse is over the scrollbar. -->
-
-          <v-sheet
-            v-if="
-              hoverLabelDate !== undefined &&
-              scrollbarRef &&
-              (configStore.isMobile
-                ? scrollbarStore.isDragging
-                : scrollbarStore.isHovering || scrollbarStore.isDragging)
-            "
-            id="current-month-sheet"
-            class="position-absolute w-100 d-flex align-center justify-center text-body-small bg-surface"
-            :style="{
-              height: `25px`,
-              bottom: `0`,
-              left: `-${scrollBarWidth + 8}px`,
-              zIndex: 4,
-              userSelect: 'none'
-            }"
-          >
-            {{ hoverLabelDate }}
-          </v-sheet>
+        </v-sheet>
+        <!-- Chip to show the current view year and month label. Positioned independently to stay within scrollbar bounds. -->
+        <v-sheet
+          v-if="
+            hoverLabelDate !== undefined &&
+            hoverLabelRowIndex !== undefined &&
+            scrollbarRef &&
+            (configStore.isMobile
+              ? scrollbarStore.isDragging
+              : scrollbarStore.isHovering || scrollbarStore.isDragging)
+          "
+          id="current-month-sheet"
+          class="position-absolute d-flex align-center justify-center text-body-small bg-surface"
+          :style="{
+            height: `25px`,
+            width: `${scrollBarWidth}px`,
+            top: `${labelTop}px`,
+            left: `-${scrollBarWidth + 8}px`,
+            zIndex: 4,
+            userSelect: 'none'
+          }"
+        >
+          {{ hoverLabelDate }}
         </v-sheet>
       </v-sheet>
     </div>
@@ -179,6 +180,17 @@ const hoverLabelDate = computed(() => {
     }
   }
   return label
+})
+
+/**
+ * Compute the clamped top position (in px) for the hover label so it never overflows the scrollbar.
+ */
+const labelTop = computed(() => {
+  const h = hoverLabelRowIndex.value
+  if (h === undefined) return 0
+  const blockBottom =
+    (h / rowLength.value) * scrollbarHeight.value + scrollbarHeight.value / rowLength.value
+  return clamp(blockBottom - chipSize, 0, scrollbarHeight.value - chipSize)
 })
 
 const displayScrollbarDataArrayYear: Ref<ScrollbarData[]> = ref([])
