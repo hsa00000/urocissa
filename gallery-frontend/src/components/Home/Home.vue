@@ -15,7 +15,7 @@
       <div
         id="image-container"
         ref="imageContainerRef"
-        class="d-flex flex-wrap position-relative flex-grow-1 min-h-0 h-100 pa-1 bg-surface-light"
+        class="d-flex flex-wrap position-relative flex-grow-1 min-h-0 h-100 pa-1 bg-surface-light hide-native-scrollbar"
         :class="stopScroll ? 'overflow-y-hidden' : 'overflow-y-scroll'"
         @scroll="
           prefetchStore.locateTo === null && locationStore.pendingLocateTarget === null
@@ -219,6 +219,15 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.hide-native-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-native-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 img {
   transition: border 0.1s linear;
 }
