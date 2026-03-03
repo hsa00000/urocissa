@@ -262,6 +262,10 @@ export function useUpdateVisibleRows(
   const rowStore = useRowStore(isolationId)
   const scrollTopStore = useScrollTopStore(isolationId)
 
+  // Track totalHeight across frames so nativeBottom mode can compensate for
+  // bottomOffset changes caused by row-offset streaming.
+  let previousTotalHeight = prefetchStore.totalHeight
+
   const updateVisibleRows = () => {
     if (imageContainerRef.value) {
       visibleRows.value = getCurrentVisibleRows(
@@ -303,17 +307,32 @@ export function useUpdateVisibleRows(
           isolationId
         )
 
-        // In native modes, also update DOM scrollTop to keep visual position stable
+        // In native modes, also update DOM scrollTop to keep visual position stable.
         const scrollTopDelta = scrollTopStore.scrollTop - oldScrollTop
-        if (scrollTopDelta !== 0 && scrollTopStore.scrollMode !== 'compensation' && imageContainerRef.value) {
-          imageContainerRef.value.scrollTop += scrollTopDelta
-          console.log('[updateVisibleRows] adjusted DOM scrollTop by', scrollTopDelta, '→', imageContainerRef.value.scrollTop)
+        const totalHeightDelta = prefetchStore.totalHeight - previousTotalHeight
+
+        if (scrollTopStore.scrollMode === 'nativeTop') {
+          if (scrollTopDelta !== 0 && imageContainerRef.value) {
+            imageContainerRef.value.scrollTop += scrollTopDelta
+            console.log('[updateVisibleRows] adjusted DOM scrollTop by', scrollTopDelta, '→', imageContainerRef.value.scrollTop)
+          }
+        } else if (scrollTopStore.scrollMode === 'nativeBottom') {
+          // In nativeBottom: domScrollTop = virtualScrollTop + bottomOffset.
+          // When totalHeight changes, bottomOffset changes by -totalHeightDelta.
+          // The correct DOM adjustment is scrollTopDelta - totalHeightDelta so that
+          // the visual position of rows in the viewport stays stable.
+          const domAdjustment = scrollTopDelta - totalHeightDelta
+          if (domAdjustment !== 0 && imageContainerRef.value) {
+            imageContainerRef.value.scrollTop += domAdjustment
+            console.log('[updateVisibleRows] nativeBottom adjusted DOM scrollTop by', domAdjustment, '(scrollTopDelta=', scrollTopDelta, 'totalHeightDelta=', totalHeightDelta, ') →', imageContainerRef.value.scrollTop)
+          }
         }
       }
       updateLastVisibleRow(visibleRows, isolationId)
       updateLocationIndex(visibleRows, scrollTopStore.scrollTop, isolationId)
       updateLastRowBottom(visibleRows, lastRowBottom, endHeight.value, isolationId)
     }
+    previousTotalHeight = prefetchStore.totalHeight
   }
 
   // Watch dependencies and trigger updateVisibleRows when any change occurs
