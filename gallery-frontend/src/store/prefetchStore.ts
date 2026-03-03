@@ -27,6 +27,10 @@ export const usePrefetchStore = (isolationId: IsolationId) =>
     }),
     actions: {
       calculateLength(dataLength: number) {
+        if (this.dataLength === dataLength) {
+          console.log('[prefetchStore] calculateLength SKIPPED (same dataLength=', dataLength, ')')
+          return
+        }
         this.dataLength = dataLength
         this.rowLength = Math.ceil(dataLength / layoutBatchNumber)
         this.totalHeight = Math.ceil(dataLength / layoutBatchNumber) * fixedBigRowHeight
