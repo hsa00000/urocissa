@@ -215,6 +215,8 @@ onBeforeUnmount(() => {
   optimisticUpateStore.clearAll()
   tagStore.clearAll()
   albumStore.clearAll()
+  scrollTopStore.scrollTop = 0
+  scrollTopStore.scrollMode = 'nativeTop'
 })
 </script>
 
