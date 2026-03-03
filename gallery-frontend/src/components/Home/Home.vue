@@ -139,9 +139,19 @@ const throttledHandleScroll = handleScroll(
   props.isolationId
 )
 
-watch([windowWidth, () => constStore.subRowHeightScale], async () => {
+watch([windowWidth, () => constStore.subRowHeightScale], async ([, newScale], [, oldScale]) => {
+  const newWidth = Math.round(windowWidth.value)
+  const widthChanged = newWidth > 0 && newWidth !== prefetchStore.windowWidth
+  const scaleChanged = newScale !== oldScale
+
+  // Skip phantom resizes: after navigation the ref transitions 0 → actual width,
+  // but if the actual width matches the stored width the layout hasn't changed.
+  if (!widthChanged && !scaleChanged) {
+    return
+  }
+
   locationStore.triggerForResize()
-  prefetchStore.windowWidth = Math.round(windowWidth.value)
+  prefetchStore.windowWidth = newWidth
   prefetchStore.clearForResize()
   rowStore.clearForResize()
   offsetStore.clearAll()
