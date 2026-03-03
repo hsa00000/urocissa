@@ -68,7 +68,7 @@ import { batchNumber, paddingPixel } from '@/type/constants'
 import BufferPlaceholder from '@/components/Buffer/BufferPlaceholder.vue'
 import RowBlock from '@/components/Buffer/BufferRowBlock.vue'
 import { useScrollTopStore } from '@/store/scrollTopStore'
-import { getArrayValue, getInjectValue } from '@utils/getter'
+import { getArrayValue, getBottomOffset, getInjectValue } from '@utils/getter'
 import { IsolationId } from '@type/types'
 import { useRowStore } from '@/store/rowStore'
 
@@ -100,8 +100,7 @@ function translateY(topPixelAccumulated: number, offset: number): number {
   if (scrollTopStore.scrollMode === 'compensation') {
     result = topPixelAccumulated - scrollTopStore.scrollTop + props.bufferHeight / 3 + offset
   } else if (scrollTopStore.scrollMode === 'nativeBottom') {
-    const bottomOffset = Math.max(props.bufferHeight, prefetchStore.totalHeight) - prefetchStore.totalHeight
-    result = topPixelAccumulated + offset + bottomOffset
+    result = topPixelAccumulated + offset + getBottomOffset(props.bufferHeight, prefetchStore.totalHeight)
   } else {
     result = topPixelAccumulated + offset
   }
@@ -115,8 +114,7 @@ const placeholderNoneTopPixel = computed(() => {
   if (scrollTopStore.scrollMode === 'compensation') {
     return baseMod + props.bufferHeight / 3 - windowHeight.value
   } else if (scrollTopStore.scrollMode === 'nativeBottom') {
-    const bottomOffset = Math.max(props.bufferHeight, prefetchStore.totalHeight) - prefetchStore.totalHeight
-    return baseMod + bottomOffset - windowHeight.value
+    return baseMod + getBottomOffset(props.bufferHeight, prefetchStore.totalHeight) - windowHeight.value
   } else {
     return baseMod - windowHeight.value
   }

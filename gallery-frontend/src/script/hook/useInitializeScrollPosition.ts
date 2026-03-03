@@ -6,6 +6,7 @@ import { fetchRowInWorker } from '@/api/fetchRow'
 import { useScrollTopStore } from '@/store/scrollTopStore'
 import { useLocationStore } from '@/store/locationStore'
 import { IsolationId } from '@type/types'
+import { getBottomOffset } from '@utils/getter'
 
 /**
  * Initializes scroll position and client height for the image container.
@@ -55,7 +56,7 @@ export function useInitializeScrollPosition(
             if (estimatedUpperBound - targetScrollTop < compensationThreshold) {
               // Near bottom → nativeBottom
               scrollTopStore.scrollMode = 'nativeBottom'
-              const bottomOffset = Math.max(bufferHeight.value, prefetchStore.totalHeight) - prefetchStore.totalHeight
+              const bottomOffset = getBottomOffset(bufferHeight.value, prefetchStore.totalHeight)
               imageContainer.scrollTop = bottomOffset + targetScrollTop
               lastScrollTop.value = bottomOffset + targetScrollTop
             } else {
@@ -80,7 +81,7 @@ export function useInitializeScrollPosition(
             if (estimatedUpperBound - scrollTopStore.scrollTop < compensationThreshold) {
               // Near bottom → nativeBottom
               scrollTopStore.scrollMode = 'nativeBottom'
-              const bottomOffset = Math.max(bufferHeight.value, prefetchStore.totalHeight) - prefetchStore.totalHeight
+              const bottomOffset = getBottomOffset(bufferHeight.value, prefetchStore.totalHeight)
               imageContainer.scrollTop = bottomOffset + scrollTopStore.scrollTop
               lastScrollTop.value = bottomOffset + scrollTopStore.scrollTop
             } else {

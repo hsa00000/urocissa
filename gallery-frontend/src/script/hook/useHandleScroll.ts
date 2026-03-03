@@ -1,8 +1,8 @@
-import { getScrollUpperBound } from '@utils/getter'
+import { getBottomOffset, getScrollUpperBound } from '@utils/getter'
 import { IsolationId } from '@type/types'
 import { usePrefetchStore } from '@/store/prefetchStore'
 import { useScrollTopStore } from '@/store/scrollTopStore'
-import { throttle } from 'lodash'
+import { clamp, throttle } from 'lodash'
 import { ComputedRef, Ref } from 'vue'
 import { useConfigStore } from '@/store/configStore'
 import { useLocationStore } from '@/store/locationStore'
@@ -37,11 +37,14 @@ export function handleScroll(
   bufferHeight: ComputedRef<number>,
   isolationId: IsolationId
 ) {
+  const locationStore = useLocationStore(isolationId)
+  const configStore = useConfigStore('mainId')
+  const scrollTopStore = useScrollTopStore(isolationId)
+  const prefetchStore = usePrefetchStore(isolationId)
+
   const throttledHandleScroll = throttle(
     () => {
       if (imageContainerRef.value !== null) {
-        const locationStore = useLocationStore(isolationId)
-
         // During a scrollbar jump (anchor set), skip scroll processing
         // to prevent interference while data is being re-fetched
         if (locationStore.anchor !== null) {
@@ -49,10 +52,7 @@ export function handleScroll(
           return
         }
 
-        const configStore = useConfigStore('mainId')
         const mobile = configStore.isMobile
-        const scrollTopStore = useScrollTopStore(isolationId)
-        const prefetchStore = usePrefetchStore(isolationId)
         const upperBound = getScrollUpperBound(prefetchStore.totalHeight, windowHeight.value)
 
         console.log(
@@ -82,6 +82,7 @@ export function handleScroll(
           } else {
             scrollTopStore.scrollTop = 0
           }
+          scrollTopStore.settling = false
           imageContainerRef.value.scrollTop -= difference
           lastScrollTop.value = imageContainerRef.value.scrollTop
           return
@@ -101,12 +102,9 @@ export function handleScroll(
           // the full virtual position and the heights have stabilized.
           if (scrollTopStore.settling) {
             if (scrollTopStore.scrollTop > domScrollTop) {
-              const capped = Math.max(0, Math.min(scrollTopStore.scrollTop, upperBound))
+              const capped = clamp(scrollTopStore.scrollTop, 0, upperBound)
               scrollTopStore.scrollTop = capped
-              const domTarget = Math.max(
-                0,
-                Math.min(capped, prefetchStore.totalHeight - windowHeight.value)
-              )
+              const domTarget = clamp(capped, 0, prefetchStore.totalHeight - windowHeight.value)
               imageContainerRef.value.scrollTop = domTarget
               lastScrollTop.value = imageContainerRef.value.scrollTop
               console.log(
@@ -122,7 +120,7 @@ export function handleScroll(
             }
           }
 
-          const newScrollTop = Math.max(0, Math.min(domScrollTop, upperBound))
+          const newScrollTop = clamp(domScrollTop, 0, upperBound)
           console.log(
             '[handleScroll:nativeTop] domScrollTop=',
             domScrollTop,
@@ -139,18 +137,16 @@ export function handleScroll(
               lastScrollTop.value = bufferHeight.value / 3
             } else {
               scrollTopStore.scrollMode = 'nativeBottom'
-              const bottomOffset =
-                Math.max(bufferHeight.value, prefetchStore.totalHeight) - prefetchStore.totalHeight
+              const bottomOffset = getBottomOffset(bufferHeight.value, prefetchStore.totalHeight)
               imageContainerRef.value.scrollTop = bottomOffset + scrollTopStore.scrollTop
               lastScrollTop.value = bottomOffset + scrollTopStore.scrollTop
             }
           }
         } else if (scrollTopStore.scrollMode === 'nativeBottom') {
           // === Native Bottom mode ===
-          const bottomOffset =
-            Math.max(bufferHeight.value, prefetchStore.totalHeight) - prefetchStore.totalHeight
+          const bottomOffset = getBottomOffset(bufferHeight.value, prefetchStore.totalHeight)
           const domScrollTop = imageContainerRef.value.scrollTop
-          scrollTopStore.scrollTop = Math.max(0, Math.min(domScrollTop - bottomOffset, upperBound))
+          scrollTopStore.scrollTop = clamp(domScrollTop - bottomOffset, 0, upperBound)
 
           // Check: transition away from nativeBottom
           if (
@@ -205,8 +201,7 @@ export function handleScroll(
             lastScrollTop.value = scrollTopStore.scrollTop
           } else if (upperBound - scrollTopStore.scrollTop < nativeThreshold) {
             scrollTopStore.scrollMode = 'nativeBottom'
-            const bottomOffset =
-              Math.max(bufferHeight.value, prefetchStore.totalHeight) - prefetchStore.totalHeight
+            const bottomOffset = getBottomOffset(bufferHeight.value, prefetchStore.totalHeight)
             imageContainerRef.value.scrollTop = bottomOffset + scrollTopStore.scrollTop
             lastScrollTop.value = bottomOffset + scrollTopStore.scrollTop
           }

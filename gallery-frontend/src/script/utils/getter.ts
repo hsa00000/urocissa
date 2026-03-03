@@ -80,6 +80,15 @@ export function getScrollUpperBound(totalHeight: number, windowHeight: number): 
   return totalHeight - windowHeight
 }
 
+/**
+ * The pixel offset added to DOM scrollTop when in nativeBottom mode.
+ * Equals 0 when totalHeight >= bufferHeight (content fills the buffer),
+ * or the gap size when the buffer is larger than the content.
+ */
+export function getBottomOffset(bufferHeight: number, totalHeight: number): number {
+  return Math.max(bufferHeight, totalHeight) - totalHeight
+}
+
 export async function searchByTag(tag: string, router: Router) {
   const { meta, params } = router.currentRoute.value
   const searchQuery = { search: `tag:${escapeAndWrap(tag)}` }
