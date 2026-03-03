@@ -31,6 +31,7 @@ export const usePrefetchStore = (isolationId: IsolationId) =>
         this.rowLength = Math.ceil(dataLength / layoutBatchNumber)
         this.totalHeight = Math.ceil(dataLength / layoutBatchNumber) * fixedBigRowHeight
         this.totalHeightOriginal = this.totalHeight
+        console.trace('[prefetchStore] calculateLength → totalHeight=', this.totalHeight, 'dataLength=', dataLength)
       },
       clearAll() {
         this.timestamp = null
@@ -39,11 +40,13 @@ export const usePrefetchStore = (isolationId: IsolationId) =>
         this.dataLength = 0
         this.locateTo = null
         this.updateVisibleRowTrigger = !this.updateVisibleRowTrigger
+        console.trace('[prefetchStore] clearAll → totalHeight=', this.totalHeight)
       },
       clearForResize() {
         this.totalHeight = Math.ceil(this.dataLength / layoutBatchNumber) * fixedBigRowHeight
         this.totalHeightOriginal = this.totalHeight
         this.updateVisibleRowTrigger = !this.updateVisibleRowTrigger
+        console.trace('[prefetchStore] clearForResize → totalHeight=', this.totalHeight, 'dataLength=', this.dataLength)
       }
     }
   })()

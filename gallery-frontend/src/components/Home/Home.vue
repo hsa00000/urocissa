@@ -118,6 +118,7 @@ const stopVirtualScrollWatch = watch(
   (totalHeight) => {
     if (totalHeight > 0 && useVirtualScroll.value === null) {
       useVirtualScroll.value = totalHeight >= minHeightForScrollModes
+      console.log('[useVirtualScroll] LOCKED IN:', useVirtualScroll.value, 'totalHeight=', totalHeight)
       stopVirtualScrollWatch()
     }
   },
@@ -125,7 +126,9 @@ const stopVirtualScrollWatch = watch(
 )
 
 const bufferHeight = computed(() => {
-  return (useVirtualScroll.value ?? false) ? 600000 : 0
+  const val = (useVirtualScroll.value ?? false) ? 600000 : 0
+  console.log('[bufferHeight] computed:', val, 'useVirtualScroll=', useVirtualScroll.value)
+  return val
 })
 
 provide('bufferHeight', bufferHeight)
@@ -144,12 +147,16 @@ watch([windowWidth, () => constStore.subRowHeightScale], async ([, newScale], [,
   const widthChanged = newWidth > 0 && newWidth !== prefetchStore.windowWidth
   const scaleChanged = newScale !== oldScale
 
+  console.log('[resizeWatcher] FIRED newWidth=', newWidth, 'storedWidth=', prefetchStore.windowWidth, 'widthChanged=', widthChanged, 'scaleChanged=', scaleChanged)
+
   // Skip phantom resizes: after navigation the ref transitions 0 → actual width,
   // but if the actual width matches the stored width the layout hasn't changed.
   if (!widthChanged && !scaleChanged) {
+    console.log('[resizeWatcher] SKIPPED (no actual change)')
     return
   }
 
+  console.log('[resizeWatcher] PROCEEDING with clearForResize')
   locationStore.triggerForResize()
   prefetchStore.windowWidth = newWidth
   prefetchStore.clearForResize()
