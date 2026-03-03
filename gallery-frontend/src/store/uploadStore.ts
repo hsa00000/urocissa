@@ -1,4 +1,3 @@
-// src/store/uploadStore.ts
 import { defineStore } from 'pinia'
 import axios, { type AxiosProgressEvent } from 'axios'
 import { useMessageStore } from './messageStore'

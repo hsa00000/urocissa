@@ -31,11 +31,7 @@ const regenerateThumbnailByFrame = async () => {
       const currentFrameBlob = await currentFrameStore.getCapture()
       if (currentFrameBlob) {
         const formData = new FormData()
-
-        // Append the hash first
         formData.append('hash', hash)
-
-        // Append the frame file
         formData.append('frame', currentFrameBlob)
         messageStore.info('Regenerating thumbnail...')
 

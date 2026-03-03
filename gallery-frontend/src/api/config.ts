@@ -40,6 +40,5 @@ export const exportConfig = async (): Promise<AppConfig> => {
 }
 
 export const importConfig = async (config: AppConfig): Promise<void> => {
-  // Refactor: path to /post/config/import
   await axios.post('/post/config/import', config)
 }

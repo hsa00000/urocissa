@@ -2,7 +2,7 @@
   <v-list-item>
     <template #prepend>
       <v-avatar>
-        <v-icon >mdi-image-album</v-icon>
+        <v-icon>mdi-image-album</v-icon>
       </v-avatar>
     </template>
     <v-list-item-subtitle class="text-wrap">

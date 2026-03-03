@@ -5,7 +5,7 @@
     @click="handleClick"
     target="_blank"
   >
-    <v-list-item-title class="wrap">{{ 'View Original File' }}</v-list-item-title>
+    <v-list-item-title class="wrap">View Original File</v-list-item-title>
   </v-list-item>
 </template>
 <script setup lang="ts">

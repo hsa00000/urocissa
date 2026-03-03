@@ -27,7 +27,7 @@
         <DesktopHoverIcon
           class="icon-hover child"
           v-if="!mobile"
-          :on-click="(event: MouseEvent) => handleClickIcon(event, row.start + subIndex)"
+          :on-click="(event: MouseEvent) => handleEnterEditMode(event, row.start + subIndex)"
         />
         <HoverGradientDiv :mobile="mobile" />
         <MainBlock
@@ -85,7 +85,7 @@ const prefetchStore = usePrefetchStore(props.isolationId)
 const collectionStore = useCollectionStore(props.isolationId)
 const queueStore = useQueueStore(props.isolationId)
 const workerStore = useWorkerStore(props.isolationId)
-const scorllTopStore = useScrollTopStore(props.isolationId)
+const scrollTopStore = useScrollTopStore(props.isolationId)
 const locationStore = useLocationStore(props.isolationId)
 const timeInterval = ref(0)
 const isLongPress = ref(false)
@@ -96,7 +96,7 @@ const isScrolling = ref(false)
 const mobile = configStore.isMobile
 
 watch(
-  () => scorllTopStore.scrollTop,
+  () => scrollTopStore.scrollTop,
   () => {
     isScrolling.value = true
 
@@ -121,7 +121,7 @@ const handlePointerdown = (event: MouseEvent, currentIndex: number) => {
   isLongPress.value = false
   pressTimer.value = window.setTimeout(() => {
     isLongPress.value = true
-    handleLongPressClick(event, currentIndex)
+    handleEnterEditMode(event, currentIndex)
   }, 600)
 }
 
@@ -145,16 +145,7 @@ const handlePointerLeave = () => {
   }
 }
 
-const handleLongPressClick = (event: MouseEvent, currentIndex: number) => {
-  if (!collectionStore.editModeOn) {
-    collectionStore.editModeOn = true
-    collectionStore.addApi(currentIndex)
-    collectionStore.lastClick = currentIndex
-  } else {
-    handleClick(event, currentIndex)
-  }
-}
-const handleClickIcon = (event: MouseEvent, currentIndex: number) => {
+const handleEnterEditMode = (event: MouseEvent, currentIndex: number) => {
   if (!collectionStore.editModeOn) {
     collectionStore.editModeOn = true
     collectionStore.addApi(currentIndex)

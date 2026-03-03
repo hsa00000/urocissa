@@ -71,7 +71,7 @@ const placeholderRowNum = computed(() => {
 })
 
 const placeholderRowNumScaled = computed(() => {
-  return Math.ceil(2 * placeholderRowNum.value)
+  return 2 * placeholderRowNum.value
 })
 
 onMounted(() => {

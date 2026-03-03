@@ -1,13 +1,7 @@
-// src/router.ts
-
 import { RouteRecordRaw } from 'vue-router'
 import 'vue-router'
 
 import TagsPage from '@/components/Page/TagsPage.vue'
-
-// ======================================
-// 1. Define Simple Static Routes
-// ======================================
 
 export const tagsRoute: RouteRecordRaw = {
   path: '/tags',

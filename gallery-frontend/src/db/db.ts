@@ -127,7 +127,6 @@ export async function storeShareInfo(info: ShareInfo): Promise<void> {
     return
   }
 
-
   const db = await openHashDB()
   if (!db) {
     console.error('Failed to open database for storing share info')

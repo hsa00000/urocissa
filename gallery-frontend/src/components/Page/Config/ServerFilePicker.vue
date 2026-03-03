@@ -151,8 +151,7 @@ const emit = defineEmits<(e: 'select', path: string) => void>()
 
 
 // --- Responsiveness ---
-const { mobile } = useDisplay()
-const isMobile = computed(() => mobile.value)
+const { mobile: isMobile } = useDisplay()
 
 // --- State ---
 const currentPath = ref('')

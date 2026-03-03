@@ -94,16 +94,12 @@ const router = useRouter()
 
 const nextHash = computed(() => {
   const nextData = dataStore.data.get(props.index + 1)
-  if (nextData?.type === 'image' || nextData?.type === 'video') return nextData.id
-  if (nextData?.type === 'album') return nextData.id
-  return undefined
+  return nextData?.id
 })
 
 const previousHash = computed(() => {
   const previousData = dataStore.data.get(props.index - 1)
-  if (previousData?.type === 'image' || previousData?.type === 'video') return previousData.id
-  if (previousData?.type === 'album') return previousData.id
-  return undefined
+  return previousData?.id
 })
 
 const nextPage = computed(() => {

@@ -12,8 +12,6 @@ export const useFilterStore = (isolationId: IsolationId) =>
       searchString: null
     }),
     actions: {
-      // Generates the filter JSON string using basicString and searchString
-      // This JSON info is used to send to the backend
       generateFilterJsonString(basicString: string | null): string | null {
         const hasBasicString = typeof basicString === 'string'
         const searchStringStr = typeof this.searchString === 'string' ? this.searchString : null
@@ -40,16 +38,13 @@ export const useFilterStore = (isolationId: IsolationId) =>
           }
         }
 
-        if (hasBasicString && hasSearchString) {
-          try {
-            return generateJsonString(`and(${basicString},${searchStringStr})`)
-          } catch {
-            const s = stripQuotes(searchStringStr)
-            return generateJsonString(`and(${basicString}, any: "${s}")`)
-          }
+        // hasBasicString && hasSearchString
+        try {
+          return generateJsonString(`and(${basicString},${searchStringStr})`)
+        } catch {
+          const s = stripQuotes(searchStringStr ?? '')
+          return generateJsonString(`and(${basicString}, any: "${s}")`)
         }
-
-        return null
       }
     }
   })()

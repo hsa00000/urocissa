@@ -1,5 +1,3 @@
-// src/router.ts
-
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import type { RouteLocationRaw } from 'vue-router'
 import 'vue-router'
@@ -18,10 +16,6 @@ import { loginRoute } from './loginRoute'
 import { shareRoute } from './shareRoute'
 import { configRoute } from './configRoute'
 
-// ======================================
-// Define Simple Static Routes
-// ======================================
-
 const simpleRoutes: RouteRecordRaw[] = [
   { path: '/', redirect: '/home' },
   tagsRoute,
@@ -31,42 +25,16 @@ const simpleRoutes: RouteRecordRaw[] = [
   configRoute
 ]
 
-// ======================================
-// Create Routes Using the Helper Function
-// ======================================
-
-const homePageRoutes = createRoute('home', HomeMain)
-
-const allPageRoutes = createRoute('all', AllPage)
-
-const favoritePageRoutes = createRoute('favorite', FavoritePage)
-
-const archivedPageRoutes = createRoute('archived', ArchivedPage)
-
-const trashedPageRoutes = createRoute('trashed', TrashedPage)
-
-const albumsPageRoutes = createRoute('albums', AlbumsPage)
-
-const videosPageRoutes = createRoute('videos', VideosPage)
-
-// ======================================
-// Combine All Routes
-// ======================================
-
 const routes: RouteRecordRaw[] = [
   ...simpleRoutes,
-  ...homePageRoutes,
-  ...allPageRoutes,
-  ...favoritePageRoutes,
-  ...archivedPageRoutes,
-  ...trashedPageRoutes,
-  ...albumsPageRoutes,
-  ...videosPageRoutes
+  ...createRoute('home', HomeMain),
+  ...createRoute('all', AllPage),
+  ...createRoute('favorite', FavoritePage),
+  ...createRoute('archived', ArchivedPage),
+  ...createRoute('trashed', TrashedPage),
+  ...createRoute('albums', AlbumsPage),
+  ...createRoute('videos', VideosPage)
 ]
-
-// ======================================
-// Create and Export the Router Instance
-// ======================================
 
 const router = createRouter({
   history: createWebHistory(),
@@ -75,12 +43,14 @@ const router = createRouter({
 
 // Update the browser tab title based on the current route
 router.afterEach((to) => {
-  const baseName =
-    typeof to.meta.baseName === 'string'
-      ? to.meta.baseName
-      : typeof to.name === 'string'
-      ? to.name
-      : undefined
+  let baseName: string | undefined
+  if (typeof to.meta.baseName === 'string') {
+    baseName = to.meta.baseName
+  } else if (typeof to.name === 'string') {
+    baseName = to.name
+  } else {
+    baseName = undefined
+  }
 
   const baseTitleMap: Record<string, string> = {
     home: 'Home',
@@ -110,12 +80,14 @@ router.afterEach((to) => {
   // When on a View page, append the hash (or subhash for read-view) to the title
   let suffix = ''
   if (isView) {
-    const maybeHash =
-      typeof to.params.subhash === 'string'
-        ? to.params.subhash
-        : typeof to.params.hash === 'string'
-        ? to.params.hash
-        : undefined
+    let maybeHash: string | undefined
+    if (typeof to.params.subhash === 'string') {
+      maybeHash = to.params.subhash
+    } else if (typeof to.params.hash === 'string') {
+      maybeHash = to.params.hash
+    } else {
+      maybeHash = undefined
+    }
     if (maybeHash != null && maybeHash !== '') {
       suffix = `View ${maybeHash}`
     } else {

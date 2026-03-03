@@ -107,11 +107,7 @@ onBeforeMount(() => {
         album.value = data
       }
     }
-  }
-
-  const album_id = route.params.hash
-  if (typeof album_id === 'string') {
-    basicString.value = `and(album:"${album_id}", trashed:false)`
+    basicString.value = `and(album:"${hash}", trashed:false)`
   }
 })
 </script>

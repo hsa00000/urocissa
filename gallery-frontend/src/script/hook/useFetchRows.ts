@@ -1,4 +1,3 @@
-// useFetchRows.ts
 import { Ref, watch } from 'vue'
 import { useInitializedStore } from '@/store/initializedStore'
 import { fetchRowInWorker } from '@/api/fetchRow'
@@ -16,26 +15,20 @@ import { IsolationId } from '@type/types'
  * @returns The sum of offsets for all rows above the given scroll position.
  */
 function computeOffSetSumOfAboveRowsIndex(scrollTop: number, isolationId: IsolationId) {
-  const aboveRowsIndex: number[] = []
   const rowStore = useRowStore(isolationId)
-
-  for (const row of rowStore.rowData.values()) {
-    if (row.topPixelAccumulated + row.offset < scrollTop) {
-      aboveRowsIndex.push(row.rowIndex)
-    }
-  }
-
   const offsetStore = useOffsetStore(isolationId)
   let offsetSum = 0
 
-  aboveRowsIndex.forEach((rowIndex) => {
-    const offset = offsetStore.offset.get(rowIndex)
-    if (offset !== undefined) {
-      offsetSum += offset
-    } else {
-      console.error('offset is undefined')
+  for (const row of rowStore.rowData.values()) {
+    if (row.topPixelAccumulated + row.offset < scrollTop) {
+      const offset = offsetStore.offset.get(row.rowIndex)
+      if (offset !== undefined) {
+        offsetSum += offset
+      } else {
+        console.error('offset is undefined')
+      }
     }
-  })
+  }
 
   return offsetSum
 }

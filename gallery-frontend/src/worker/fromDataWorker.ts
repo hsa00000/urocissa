@@ -96,7 +96,6 @@ export function handleDataWorkerReturn(dataWorker: Worker, isolationId: Isolatio
         })
 
         rowStore.rowData.set(row.rowIndex, row)
-        console.log('[fetchRowReturn] rowIndex=', index, 'offset=', offset, 'totalHeight:', prefetchStore.totalHeight, '→', prefetchStore.totalHeight + offset)
         prefetchStore.totalHeight = prefetchStore.totalHeight + offset
         offsetStore.accumulatedAll = offsetStore.accumulatedAll + offset
       }

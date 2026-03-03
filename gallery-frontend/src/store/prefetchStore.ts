@@ -32,8 +32,9 @@ export const usePrefetchStore = (isolationId: IsolationId) =>
           return
         }
         this.dataLength = dataLength
-        this.rowLength = Math.ceil(dataLength / layoutBatchNumber)
-        this.totalHeight = Math.ceil(dataLength / layoutBatchNumber) * fixedBigRowHeight
+        const rowLength = Math.ceil(dataLength / layoutBatchNumber)
+        this.rowLength = rowLength
+        this.totalHeight = rowLength * fixedBigRowHeight
         this.totalHeightOriginal = this.totalHeight
         console.trace('[prefetchStore] calculateLength → totalHeight=', this.totalHeight, 'dataLength=', dataLength)
       },

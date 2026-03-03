@@ -90,15 +90,12 @@ function onDragOver(e: DragEvent) {
 function onDrop(e: DragEvent) {
   e.preventDefault()
 
-  // 1. Check if upload is allowed
   if (!isUploadAllowed(e)) return
   visible.value = false
 
-  // 2. Get files from drop event
   const files = Array.from(e.dataTransfer?.files ?? [])
   if (files.length === 0) return
 
-  // 3. Semantic conditions
   const albumId = shareStore.albumId ?? undefined
   const shareId = shareStore.shareId ?? undefined
   const isSharedAlbum = typeof albumId === 'string' && typeof shareId === 'string'
@@ -106,11 +103,9 @@ function onDrop(e: DragEvent) {
   const hashParam = route.params.hash
   const isLevel3RouteWithHash = route.meta.level === 3 && typeof hashParam === 'string'
 
-  // 4. Determine presignedAlbumId (guaranteed to be string | undefined)
   let presignedAlbumId: string | undefined
   if (isSharedAlbum) {
-    const sresolveShareAllowUpload = shareStore.resolvedShare?.share.showUpload
-    if (sresolveShareAllowUpload !== true) {
+    if (shareStore.resolvedShare?.share.showUpload !== true) {
       messageStore.error('Public uploads are not allowed for this album share setting.')
       return
     }
@@ -119,7 +114,6 @@ function onDrop(e: DragEvent) {
     presignedAlbumId = hashParam
   }
 
-  // 5. Perform upload (catch uses unknown to satisfy ESLint rule)
   uploadStore.fileUpload(files, presignedAlbumId).catch((err: unknown) => {
     console.error('Error occurred:', err)
   })

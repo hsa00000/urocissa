@@ -114,14 +114,10 @@ function toggleInfo() {
   void constStore.updateShowInfo(!constStore.showInfo)
 }
 
-function getUserDefinedDescription(abstractData: EnrichedUnifiedData): string {
-  return abstractData.description ?? ''
-}
-
 watch(
   () => props.hash,
   () => {
-    userDefinedDescriptionModel.value = getUserDefinedDescription(props.abstractData)
+    userDefinedDescriptionModel.value = props.abstractData.description ?? ''
   },
   { immediate: true }
 )

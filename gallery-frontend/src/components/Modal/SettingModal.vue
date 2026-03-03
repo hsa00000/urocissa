@@ -98,32 +98,23 @@ const modalStore = useModalStore('mainId')
 const initializedStore = useInitializedStore('mainId')
 const constStore = useConstStore('mainId')
 
-// Read/write computed for subRowHeightScale (source of truth is constStore)
 const subRowHeightScaleValue = computed<number>({
   get: () => constStore.subRowHeightScale,
-  set: (newVal: number | null) => {
-    const value = newVal ?? constStore.subRowHeightScale
-    const clamped = Math.max(250, Math.min(450, value))
-    constStore.updateSubRowHeightScale(clamped).catch((error: unknown) => {
-      console.error('Failed to update subRowHeightScale (via setter):', error)
-    })
-  }
+  set: (newVal: number | null) => { onSubRowHeightScaleUpdate(newVal); }
 })
 
-// Read/write computed for showFilenameChip (source of truth is constStore)
 const showFilenameChipValue = computed<boolean>({
   get: () => constStore.showFilenameChip,
-  set: (newVal: boolean | null) => {
-    constStore.updateShowFilenameChip(newVal ?? true).catch((error: unknown) => {
-      console.error('Failed to update showFilenameChip (via setter):', error)
-    })
-  }
+  set: (newVal: boolean | null) => { onShowFilenameChipUpdate(newVal); }
 })
 
-// Handler invoked when the slider updates its model value
+const viewBarOverlayValue = computed<boolean>({
+  get: () => constStore.viewBarOverlay,
+  set: (newVal: boolean | null) => { onViewBarOverlayUpdate(newVal); }
+})
+
 const onSubRowHeightScaleUpdate = (newValue: number | null) => {
-  const value = newValue ?? constStore.subRowHeightScale
-  const clamped = Math.max(250, Math.min(450, value))
+  const clamped = Math.max(250, Math.min(450, newValue ?? constStore.subRowHeightScale))
   constStore.updateSubRowHeightScale(clamped).catch((error: unknown) => {
     console.error('Failed to update subRowHeightScale:', error)
   })
@@ -135,17 +126,6 @@ const onShowFilenameChipUpdate = (newValue: boolean | null) => {
   })
 }
 
-const viewBarOverlayValue = computed<boolean>({
-  get: () => constStore.viewBarOverlay,
-  set: (newVal: boolean | null) => {
-    if (newVal !== null) {
-      constStore.updateViewBarOverlay(newVal).catch((error: unknown) => {
-        console.error('Failed to update viewBarOverlay (via setter):', error)
-      })
-    }
-  }
-})
-
 const onViewBarOverlayUpdate = (newValue: boolean | null) => {
   if (newValue !== null) {
     constStore.updateViewBarOverlay(newValue).catch((error: unknown) => {
@@ -153,7 +133,5 @@ const onViewBarOverlayUpdate = (newValue: boolean | null) => {
     })
   }
 }
-
-
 
 </script>

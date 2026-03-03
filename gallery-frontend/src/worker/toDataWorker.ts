@@ -88,7 +88,6 @@ self.addEventListener('message', (e) => {
 })
 
 /**
-/**
  * Fetches a batch of data based on the provided batch index and timestamp.
  * Processes the fetched data into UnifiedData instances and accumulates them into a map.
  *
@@ -159,9 +158,7 @@ async function fetchData(
 
     if (item === undefined) {
       console.error(
-        `Error processing item at ${fetchMethod === 'batch' ? 'batchIndex' : 'index'}: ${
-          fetchMethod === 'batch' ? index : index
-        }, ` + `batchNumber: ${batchNumber}, index: ${i}. Item is undefined.`
+        `Error processing item at ${fetchMethod === 'batch' ? 'batchIndex' : 'index'}: ${index}, batchNumber: ${batchNumber}, index: ${i}. Item is undefined.`
       )
       continue
     }

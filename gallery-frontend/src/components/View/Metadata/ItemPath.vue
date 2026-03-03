@@ -26,7 +26,7 @@ const filePathComplete = computed(() => {
 const filePath = computed(() => {
   if (filePathComplete.value != null) {
     const basename = upath.basename(filePathComplete.value)
-    return upath.basename(basename, upath.extname(basename))
+    return upath.trimExt(basename)
   }
   return ''
 })

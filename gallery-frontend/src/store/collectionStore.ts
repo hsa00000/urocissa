@@ -19,9 +19,6 @@ export const useCollectionStore = (isolationId: IsolationId) =>
       },
       addApi(index: number) {
         this.editModeCollection.add(index)
-        if (this.editModeCollection.size === 0) {
-          this.editModeOn = false
-        }
       },
       deleteApi(index: number) {
         this.editModeCollection.delete(index)

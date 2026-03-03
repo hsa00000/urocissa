@@ -13,9 +13,7 @@
     inline
     ref="videoRef"
     crossorigin="anonymous"
-  >
-    >
-  </video>
+  ></video>
 </template>
 
 <script setup lang="ts">

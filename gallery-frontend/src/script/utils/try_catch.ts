@@ -47,9 +47,8 @@ export function tryWithMessageStoreSync<T>(
     if (axios.isAxiosError(error)) {
       return undefined
     }
-    
+
     messageStore.error(errorDisplay(error))
     return undefined
   }
 }
-

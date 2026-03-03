@@ -25,7 +25,6 @@
     </div>
     <div
       v-else
-      fluid
       class="pa-0 h-100 overflow-hidden position-relative"
       style="background-color: black"
     >
@@ -55,40 +54,32 @@ const constStore = useConstStore('mainId')
 
 const overlayVisible = computed<boolean>({
   get() {
-    // The overlay is always visible as long as this component exists.
     return true
   },
   set(val: boolean) {
     if (!val) {
-      // When the overlay is requested to close (e.g., via ESC), navigate back.
       router.back()
     }
   }
 })
 
 const hash = computed(() => {
-  if (props.isolationId === 'mainId') {
-    return route.params.hash as string
-  } else {
-    return route.params.subhash as string
-  }
+  return props.isolationId === 'mainId'
+    ? (route.params.hash as string)
+    : (route.params.subhash as string)
 })
 
-const index = computed(() => {
-  return dataStore.hashMapData.get(hash.value)
-})
+const index = computed(() => dataStore.hashMapData.get(hash.value))
 
 const abstractData = computed(() => {
   if (index.value !== undefined) {
     return dataStore.data.get(index.value)
-  } else {
-    return undefined
   }
+  return undefined
 })
 </script>
 <style scoped>
 .v-container::-webkit-scrollbar {
   display: none;
-  /* Hide scrollbar */
 }
 </style>

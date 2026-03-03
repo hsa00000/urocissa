@@ -91,7 +91,7 @@ export const useConstStore = (isolationId: IsolationId) =>
       },
       async updateLimitRation(value: boolean): Promise<void> {
         this.limitRatio = value
-        await storeLimitRation(this.limitRatio)
+        await storeLimitRation(value)
       },
 
       async loadLimitRation(): Promise<void> {

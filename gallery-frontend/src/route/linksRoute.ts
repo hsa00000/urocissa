@@ -1,5 +1,3 @@
-// src/router.ts
-
 import { RouteRecordRaw } from 'vue-router'
 import 'vue-router'
 

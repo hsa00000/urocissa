@@ -43,7 +43,6 @@ export function useHandleClick(
         }
       }
     } else {
-      // collectionStore.editModeOn === false
       const dataStore = useDataStore(isolationId)
       const abstractData = dataStore.data.get(currentIndex)
       if (abstractData) {
@@ -51,13 +50,9 @@ export function useHandleClick(
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         if (hashOrId !== undefined) {
           const page = route.meta.getChildPage(route, hashOrId)
-          router
-            .push(page)
-
-            .then(() => ({}))
-            .catch((error: unknown) => {
-              console.error('Navigation Error:', error)
-            })
+          router.push(page).catch((error: unknown) => {
+            console.error('Navigation Error:', error)
+          })
         } else {
           console.error('Abstract Data Details:', abstractData)
           throw new Error('Navigation failed: "abstractData.id" is undefined.')

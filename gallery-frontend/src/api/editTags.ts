@@ -25,9 +25,9 @@ export async function editTags(
 
   const payload = {
     indexSet: new Set(indexArray),
-    addTagsArray: [...addTagsArray],
-    removeTagsArray: [...removeTagsArray],
-    timestamp: timestamp
+    addTagsArray,
+    removeTagsArray,
+    timestamp
   }
   optimisticStore.optimisticUpdateTags(payload, true)
 

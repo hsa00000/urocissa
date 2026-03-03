@@ -4,7 +4,7 @@
     value="edit-albums"
     @click="modalStore.showEditAlbumsModal = true"
   >
-    <v-list-item-title class="wrap">{{ 'Edit Albums' }}</v-list-item-title>
+    <v-list-item-title class="wrap">Edit Albums</v-list-item-title>
   </v-list-item>
 </template>
 <script setup lang="ts">

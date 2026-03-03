@@ -85,19 +85,16 @@ const loading = ref(false)
 const showOldPassword = ref(false)
 const showNewPassword = ref(false)
 
-// --- Computed: Status Checks ---
-const hasExistingPassword = computed(() => hasPassword.value)
-
-// Logic: Users can only input old password if one exists on the server.
-const canInputOldPassword = computed(() => hasExistingPassword.value)
-
 // User Intent
 const isDisabling = computed(() => !enabled.value)
 const isUpdating = computed(() => enabled.value && !!newPassword.value)
 
+// Logic: Users can only input old password if one exists on the server.
+const canInputOldPassword = computed(() => hasPassword.value)
+
 // Rule Logic
 const isOldPasswordRequired = computed(() => {
-  if (!hasExistingPassword.value) return false
+  if (!hasPassword.value) return false
   return isDisabling.value || isUpdating.value
 })
 
@@ -109,7 +106,7 @@ const isValidAction = computed(() => {
 
 // UI Helpers
 const oldPasswordPlaceholder = computed(() => {
-  if (!hasExistingPassword.value) return 'Not required'
+  if (!hasPassword.value) return 'Not required'
   return isDisabling.value ? 'Required to disable password' : 'Required to verify identity'
 })
 

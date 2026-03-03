@@ -11,14 +11,10 @@ export async function editUserDefinedDescription(
 ) {
   const dataStore = useDataStore('mainId')
 
-  function getCurrentDescription(): string {
-    return abstractData.description ?? ''
-  }
-
   const prefetchStore = usePrefetchStore(isolationId)
   const timestamp = prefetchStore.timestamp
 
-  if (getCurrentDescription() !== descriptionModelValue) {
+  if ((abstractData.description ?? '') !== descriptionModelValue) {
     const description = descriptionModelValue === '' ? null : descriptionModelValue
 
     await axios.put('/put/set_user_defined_description', {

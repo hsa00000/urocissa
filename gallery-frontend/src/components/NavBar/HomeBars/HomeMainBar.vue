@@ -122,5 +122,3 @@ watchEffect(() => {
 const collectionStore = useCollectionStore('mainId')
 </script>
 
-<style scoped>
-</style>

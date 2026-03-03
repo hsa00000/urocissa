@@ -18,7 +18,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
+import { reactive, onMounted, onBeforeUnmount } from 'vue'
 import { useConfigStore } from '@/store/configStore'
 import { useInitializedStore } from '@/store/initializedStore'
 import type { AppConfig } from '@/api/config'
@@ -30,9 +30,6 @@ import { tryWithMessageStore } from '@/script/utils/try_catch'
 
 const configStore = useConfigStore('mainId')
 const initializedStore = useInitializedStore('mainId')
-
-// UI State
-const loading = ref(false)
 
 // Local State
 const localSettings = reactive<AppConfig>({
@@ -57,7 +54,6 @@ const syncLocalWithStore = () => {
 }
 
 const initData = async () => {
-  loading.value = true
   const result = await tryWithMessageStore('mainId', async () => {
     await configStore.fetchConfig()
     syncLocalWithStore()
@@ -67,8 +63,6 @@ const initData = async () => {
   if (result === true) {
     initializedStore.initialized = true
   }
-
-  loading.value = false
 }
 
 onMounted(initData)

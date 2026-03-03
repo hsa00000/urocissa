@@ -88,7 +88,6 @@ import { ShareFormData } from '@type/types'
 const model = defineModel<ShareFormData>({ required: true })
 
 const settingsItems = [
-
   { title: 'Show Metadata', key: 'showMetadata' },
   { title: 'Allow Download', key: 'showDownload' },
   { title: 'Allow Upload', key: 'showUpload' }

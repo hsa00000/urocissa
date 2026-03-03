@@ -24,10 +24,10 @@ const messageStore = useMessageStore('mainId')
 const reindex = async () => {
   const indexArray = props.indexList
   const regenerateData = {
-    indexArray: indexArray,
+    indexArray,
     timestamp: prefetchStore.timestamp
   }
-  
+
   await tryWithMessageStore('mainId', async () => {
     messageStore.info('Reindexing...')
     await axios.post('/put/reindex', regenerateData, {

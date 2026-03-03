@@ -28,10 +28,7 @@
     <BufferPlaceholder
       id="placeholderBottom"
       v-if="visibleRows.length > 0 && !(prefetchStore.totalHeight <= windowHeight)"
-      :top-pixel="(()=>{
-        const lastData = getArrayValue(visibleRows, visibleRows.length - 1)
-        return translateY(lastData.topPixelAccumulated!, lastData.offset) + lastData.rowHeight
-      })()"
+      :top-pixel="placeholderBottomTopPixel"
       :modify-top-pixel="false"
     />
     <BufferPlaceholder
@@ -107,6 +104,11 @@ function translateY(topPixelAccumulated: number, offset: number): number {
   console.log('[translateY] mode=', scrollTopStore.scrollMode, 'topPixel=', topPixelAccumulated, 'offset=', offset, 'scrollTop=', scrollTopStore.scrollTop, '→', result)
   return result
 }
+
+const placeholderBottomTopPixel = computed(() => {
+  const lastData = getArrayValue(visibleRows.value, visibleRows.value.length - 1)
+  return translateY(lastData.topPixelAccumulated, lastData.offset) + lastData.rowHeight
+})
 
 const placeholderNoneTopPixel = computed(() => {
   const baseMod = (lastRowBottom.value - scrollTopStore.scrollTop + windowHeight.value) %

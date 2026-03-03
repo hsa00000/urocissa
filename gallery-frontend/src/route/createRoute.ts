@@ -1,5 +1,3 @@
-// src/router.ts
-
 import { Component } from 'vue'
 import { RouteRecordRaw } from 'vue-router'
 import 'vue-router'
@@ -22,18 +20,6 @@ type BaseName =
   | 'share'
   | 'links'
 
-// ======================================
-// Define a Helper Function to Create Routes
-// ======================================
-
-/**
- * Creates a main route with an optional child route.
- *
- * @param path - The base path for the route.
- * @param component - The component to be rendered.
- * @param name - The unique name for the route.
- * @returns An array containing the RouteRecordRaw object.
- */
 export function createRoute(baseName: BaseName, component: Component): RouteRecordRaw[] {
   const mainRoute: RouteRecordRaw = {
     path: `/${baseName}`,

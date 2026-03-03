@@ -1,7 +1,8 @@
 import { readAndCompressImage } from '@misskey-dev/browser-image-resizer'
 import { bindActionDispatch, createHandler } from 'typesafe-agent-events'
-import { fromImgWorker, toImgWorker } from '@/worker/workerApi'
 import {
+  fromImgWorker,
+  toImgWorker,
   ProcessAbortPayload,
   ProcessImagePayload,
   ProcessSmallImagePayload

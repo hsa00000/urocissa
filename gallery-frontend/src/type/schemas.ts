@@ -217,8 +217,6 @@ export const PublicConfigSchema = z.object({
   disableImg: z.boolean()
 })
 
-
-
 export const TokenResponseSchema = z.object({
   token: z.string()
 })

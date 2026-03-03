@@ -215,6 +215,7 @@ const props = defineProps<{
 
 const configStore = useConfigStore(props.isolationId)
 const dataStore = useDataStore(props.isolationId)
+const modalStore = useModalStore('mainId')
 const route = useRoute()
 const router = useRouter()
 
@@ -227,7 +228,6 @@ const previousAbstractData = computed(() => dataStore.data.get(props.index - 1))
 const currentSlideIndex = computed(() => (props.previousHash !== undefined ? 1 : 0))
 
 function canHandleNav(): boolean {
-  const modalStore = useModalStore('mainId')
   return (
     configStore.isMobile &&
     ((route.meta.level === 2 && props.isolationId === 'mainId') ||

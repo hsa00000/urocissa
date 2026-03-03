@@ -4,7 +4,7 @@
     value="edit-tags"
     @click="modalStore.showEditTagsModal = true"
   >
-    <v-list-item-title class="wrap">{{ 'Edit Tags' }}</v-list-item-title>
+    <v-list-item-title class="wrap">Edit Tags</v-list-item-title>
   </v-list-item>
 </template>
 <script setup lang="ts">

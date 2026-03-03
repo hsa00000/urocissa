@@ -1,6 +1,5 @@
 <template>
   <v-btn icon="mdi-information-outline" @click="toggle"></v-btn>
-  
 </template>
 <script setup lang="ts">
 import { useConstStore } from '@/store/constStore'

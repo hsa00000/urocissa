@@ -96,9 +96,7 @@ export const useTokenStore = (isolationId: IsolationId) =>
           return
         }
 
-        this._renewingTimestamp = (async () => {
-          await this._updateTimestampToken()
-        })().finally(() => {
+        this._renewingTimestamp = this._updateTimestampToken().finally(() => {
           this._renewingTimestamp = null
         })
 

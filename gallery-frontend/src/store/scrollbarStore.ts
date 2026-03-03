@@ -42,3 +42,4 @@ export const useScrollbarStore = (isolationId: IsolationId) =>
       }
     }
   })()
+

@@ -5,15 +5,13 @@
         <v-icon>mdi-camera-iris</v-icon>
       </v-avatar>
     </template>
-    <v-list-item-title class="text-wrap">{{
-      generateExifMake(props.database.exif)
-    }}</v-list-item-title>
+    <v-list-item-title class="text-wrap">{{ exifMake }}</v-list-item-title>
     <v-list-item-subtitle class="text-wrap">
       <v-row>
-        <v-col cols="auto">{{ formatExifData(props.database.exif).FNumber }}</v-col>
-        <v-col cols="auto">{{ formatExifData(props.database.exif).ExposureTime }}</v-col>
-        <v-col cols="auto">{{ formatExifData(props.database.exif).FocalLength }}</v-col>
-        <v-col cols="auto">{{ formatExifData(props.database.exif).PhotographicSensitivity }}</v-col>
+        <v-col cols="auto">{{ exifFormatted.FNumber }}</v-col>
+        <v-col cols="auto">{{ exifFormatted.ExposureTime }}</v-col>
+        <v-col cols="auto">{{ exifFormatted.FocalLength }}</v-col>
+        <v-col cols="auto">{{ exifFormatted.PhotographicSensitivity }}</v-col>
       </v-row>
     </v-list-item-subtitle>
   </v-list-item>
@@ -21,42 +19,43 @@
 
 <script setup lang="ts">
 import { GalleryImage, GalleryVideo } from '@type/types'
+import { computed } from 'vue'
 
 const props = defineProps<{
   database: GalleryImage | GalleryVideo
 }>()
 
-function generateExifMake(exifData: Record<string, string>): string {
-  let make_formated = ''
-  let model_formated = ''
+interface ExifData {
+  FNumber: string
+  ExposureTime: string
+  FocalLength: string
+  PhotographicSensitivity: string
+}
+
+const exifMake = computed(() => {
+  const exifData = props.database.exif
+  let makeFormatted = ''
+  let modelFormatted = ''
   if (exifData.Make !== undefined) {
-    const make: string = exifData.Make.replace(/"/g, '')
-    make_formated = make
+    makeFormatted = exifData.Make.replace(/"/g, '')
       .split(',')
       .map((part) => part.trim())
       .filter((part) => part !== '')
       .join(', ')
   }
   if (exifData.Model !== undefined) {
-    const model: string = exifData.Model.replace(/"/g, '')
-    model_formated = model
+    modelFormatted = exifData.Model.replace(/"/g, '')
       .split(',')
       .map((part) => part.trim())
       .filter((part) => part !== '')
       .join(', ')
   }
-  return make_formated + ' ' + model_formated
-}
+  return makeFormatted + ' ' + modelFormatted
+})
 
-interface ExifData {
-  FNumber: string // Aperture value as a string, e.g., "f/2.8"
-  ExposureTime: string // Exposure time as a string, e.g., "1/60 s"
-  FocalLength: string // Focal length as a string, e.g., "35 mm"
-  PhotographicSensitivity: string
-}
-
-function formatExifData(exifData: Record<string, string | undefined>): ExifData {
-  const formattedExifData: ExifData = {
+const exifFormatted = computed((): ExifData => {
+  const exifData = props.database.exif
+  return {
     FNumber: exifData.FNumber !== undefined ? exifData.FNumber.replace('f/', 'ƒ/') : '',
     ExposureTime:
       exifData.ExposureTime !== undefined
@@ -69,7 +68,5 @@ function formatExifData(exifData: Record<string, string | undefined>): ExifData 
         ? `ISO ${exifData.PhotographicSensitivity}`
         : ''
   }
-
-  return formattedExifData
-}
+})
 </script>

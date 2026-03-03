@@ -82,13 +82,11 @@ function getCurrentVisibleRows(
     //   between frames, which might cause the previous `findRowInRange` function to
     //   miss these rows if the offsets changed drastically.
 
-    const currentRowsInRange = findRowInRange(
+    return findRowInRange(
       rowStore.rowData,
       startHeight + extraShift,
       endHeight + extraShift
     )
-
-    return currentRowsInRange
   }
 }
 
@@ -287,7 +285,7 @@ export function useUpdateVisibleRows(
         // no new scroll events fire (DOM scrollTop hasn't changed), so the
         // mode transition (e.g. compensation → nativeBottom) never happens.
         // Dispatch a deferred scroll event to let handleScroll run the check.
-        if (anchorBefore !== null && useLocationStore(isolationId).anchor === null && imageContainerRef.value) {
+        if (anchorBefore !== null && useLocationStore(isolationId).anchor === null) {
           const el = imageContainerRef.value
           setTimeout(() => {
             el.dispatchEvent(new Event('scroll'))
@@ -305,7 +303,7 @@ export function useUpdateVisibleRows(
 
         // In native modes, also update DOM scrollTop to keep visual position stable
         const scrollTopDelta = scrollTopStore.scrollTop - oldScrollTop
-        if (scrollTopDelta !== 0 && scrollTopStore.scrollMode !== 'compensation' && imageContainerRef.value) {
+        if (scrollTopDelta !== 0 && scrollTopStore.scrollMode !== 'compensation') {
           imageContainerRef.value.scrollTop += scrollTopDelta
           console.log('[updateVisibleRows] adjusted DOM scrollTop by', scrollTopDelta, '→', imageContainerRef.value.scrollTop)
         }
