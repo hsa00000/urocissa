@@ -168,6 +168,7 @@ watch([windowWidth, () => constStore.subRowHeightScale], async ([, newScale], [,
 
   locationStore.anchor = initializedStore.initialized ? locationRowIndex : null
 
+  scrollTopStore.settling = true
   scrollTopStore.scrollTop = locationRowIndex * 2400
   await fetchRowInWorker(locationRowIndex, props.isolationId)
 })

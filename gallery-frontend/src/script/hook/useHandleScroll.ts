@@ -90,6 +90,38 @@ export function handleScroll(
         if (scrollTopStore.scrollMode === 'nativeTop') {
           // === Native Top mode ===
           const domScrollTop = imageContainerRef.value.scrollTop
+
+          // Guard against browser clamping after clearForResize:
+          // When settling is true, totalHeight is shrinking as real row heights
+          // replace estimates. The browser clamps DOM scrollTop to the new
+          // (smaller) scrollable area. If we blindly follow the clamped DOM
+          // value, virtualScrollTop snaps down and the view "bounces back".
+          // Instead, cap virtual at upperBound so it converges smoothly.
+          // Clear settling once virtual ≤ DOM, meaning DOM can represent
+          // the full virtual position and the heights have stabilized.
+          if (scrollTopStore.settling) {
+            if (scrollTopStore.scrollTop > domScrollTop) {
+              const capped = Math.max(0, Math.min(scrollTopStore.scrollTop, upperBound))
+              scrollTopStore.scrollTop = capped
+              const domTarget = Math.max(
+                0,
+                Math.min(capped, prefetchStore.totalHeight - windowHeight.value)
+              )
+              imageContainerRef.value.scrollTop = domTarget
+              lastScrollTop.value = imageContainerRef.value.scrollTop
+              console.log(
+                '[handleScroll:nativeTop] settling: capping virtual at',
+                capped,
+                'domTarget=',
+                domTarget
+              )
+              return
+            } else {
+              scrollTopStore.settling = false
+              console.log('[handleScroll:nativeTop] settling complete, virtual ≤ DOM')
+            }
+          }
+
           const newScrollTop = Math.max(0, Math.min(domScrollTop, upperBound))
           console.log(
             '[handleScroll:nativeTop] domScrollTop=',

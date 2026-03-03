@@ -302,6 +302,7 @@ const handleClick = (event?: MouseEvent | TouchEvent) => {
   queueStore.clearAll()
   prefetchStore.clearForResize()
   rowStore.clearForResize()
+  scrollTopStore.settling = true
   scrollTopStore.scrollTop = targetRowIndex * fixedBigRowHeight
 
   // Update scroll mode and DOM position for the jump

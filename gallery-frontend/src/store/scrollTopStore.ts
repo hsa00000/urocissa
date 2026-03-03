@@ -8,9 +8,18 @@ export const useScrollTopStore = (isolationId: IsolationId) =>
     state: (): {
       scrollTop: number
       scrollMode: ScrollMode
+      /**
+       * True after clearForResize resets totalHeight to an estimate.
+       * While settling, the nativeTop scroll handler guards against browser
+       * clamping of DOM scrollTop (caused by totalHeight shrinking as real
+       * row heights replace estimates). Cleared once virtual ≤ DOM,
+       * meaning the DOM can fully represent the virtual position.
+       */
+      settling: boolean
     } => ({
       scrollTop: 0,
-      scrollMode: 'nativeTop'
+      scrollMode: 'nativeTop',
+      settling: false
     }),
     actions: {}
   })()
