@@ -97,11 +97,11 @@ function translateY(topPixelAccumulated: number, offset: number): number {
   if (scrollTopStore.scrollMode === 'compensation') {
     result = topPixelAccumulated - scrollTopStore.scrollTop + props.bufferHeight / 3 + offset
   } else if (scrollTopStore.scrollMode === 'nativeBottom') {
-    result = topPixelAccumulated + offset + getBottomOffset(props.bufferHeight, prefetchStore.totalHeight)
+    result =
+      topPixelAccumulated + offset + getBottomOffset(props.bufferHeight, prefetchStore.totalHeight)
   } else {
     result = topPixelAccumulated + offset
   }
-  console.log('[translateY] mode=', scrollTopStore.scrollMode, 'topPixel=', topPixelAccumulated, 'offset=', offset, 'scrollTop=', scrollTopStore.scrollTop, '→', result)
   return result
 }
 
@@ -111,12 +111,15 @@ const placeholderBottomTopPixel = computed(() => {
 })
 
 const placeholderNoneTopPixel = computed(() => {
-  const baseMod = (lastRowBottom.value - scrollTopStore.scrollTop + windowHeight.value) %
+  const baseMod =
+    (lastRowBottom.value - scrollTopStore.scrollTop + windowHeight.value) %
     (placeholderNoneRowRefHeight.value + 2 * paddingPixel)
   if (scrollTopStore.scrollMode === 'compensation') {
     return baseMod + props.bufferHeight / 3 - windowHeight.value
   } else if (scrollTopStore.scrollMode === 'nativeBottom') {
-    return baseMod + getBottomOffset(props.bufferHeight, prefetchStore.totalHeight) - windowHeight.value
+    return (
+      baseMod + getBottomOffset(props.bufferHeight, prefetchStore.totalHeight) - windowHeight.value
+    )
   } else {
     return baseMod - windowHeight.value
   }
