@@ -67,13 +67,12 @@ interface PresetConfig {
 }
 
 const baseContainerClass = 'h-100 w-100 pa-0 min-h-0'
-const baseCardClass = 'overflow-y-auto w-100'
 
 const presetDefaults = {
   full: {
     containerId: 'home-container',
     containerClass: [baseContainerClass, 'overflow-hidden'],
-    cardClass: baseCardClass,
+    cardClass: 'overflow-y-hidden w-100',
     col: { cols: 12, sm: 12, md: 12, lg: 12 },
     fillHeight: true,
     centerContent: false,
@@ -82,7 +81,7 @@ const presetDefaults = {
   card: {
     containerId: 'table-container',
     containerClass: baseContainerClass,
-    cardClass: baseCardClass,
+    cardClass: 'overflow-y-auto w-100',
     col: { cols: 12, sm: 12, md: 10, lg: 8 },
     fillHeight: false,
     centerContent: true,
