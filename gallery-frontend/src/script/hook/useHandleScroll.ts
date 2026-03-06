@@ -70,6 +70,24 @@ export function handleScroll(
           lastScrollTop.value
         )
 
+        if (prefetchStore.totalHeight - windowHeight.value < 0) {
+          console.log('[handleScroll] GUARD: totalHeight < windowHeight, resetting to 0')
+          const difference = imageContainerRef.value.scrollTop - lastScrollTop.value
+          if (mobile) {
+            stopScroll.value = true
+            scrollTopStore.scrollTop = 0
+            setTimeout(() => {
+              stopScroll.value = false
+            }, 100)
+          } else {
+            scrollTopStore.scrollTop = 0
+          }
+          scrollTopStore.settling = false
+          imageContainerRef.value.scrollTop -= difference
+          lastScrollTop.value = imageContainerRef.value.scrollTop
+          return
+        }
+
         if (scrollTopStore.scrollMode === 'nativeTop') {
           // === Native Top mode ===
           const domScrollTop = imageContainerRef.value.scrollTop
@@ -148,7 +166,29 @@ export function handleScroll(
           const difference = imageContainerRef.value.scrollTop - lastScrollTop.value
           const result = scrollTopStore.scrollTop + difference
 
-          scrollTopStore.scrollTop += difference
+          if (result < 0) {
+            if (mobile) {
+              stopScroll.value = true
+              scrollTopStore.scrollTop = 0
+              setTimeout(() => {
+                stopScroll.value = false
+              }, 100)
+            } else {
+              scrollTopStore.scrollTop = 0
+            }
+          } else if (result >= upperBound) {
+            if (mobile) {
+              stopScroll.value = true
+              scrollTopStore.scrollTop = upperBound
+              setTimeout(() => {
+                stopScroll.value = false
+              }, 100)
+            } else {
+              scrollTopStore.scrollTop = upperBound
+            }
+          } else {
+            scrollTopStore.scrollTop += difference
+          }
 
           // Compensate for the change in scrollTop caused by the user's scroll action.
           imageContainerRef.value.scrollTop -= difference
