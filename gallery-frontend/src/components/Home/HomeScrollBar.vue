@@ -151,8 +151,10 @@ const bufferHeight = getInjectValue<ComputedRef<number>>('bufferHeight')
 const configStore = useConfigStore('mainId')
 
 const reachBottom = computed(() => {
-  const upperBound = Math.max(getScrollUpperBound(prefetchStore.totalHeight, windowHeight.value), 0)
-  return upperBound - scrollTopStore.scrollTop < 1
+  return (
+    scrollTopStore.scrollTop ===
+    Math.max(getScrollUpperBound(prefetchStore.totalHeight, windowHeight.value), 0)
+  )
 })
 
 const imageContainerRef = inject<Ref<HTMLElement | null>>('imageContainerRef')
