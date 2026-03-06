@@ -136,7 +136,6 @@ provide('bufferHeight', bufferHeight)
 const throttledHandleScroll = handleScroll(
   imageContainerRef,
   lastScrollTop,
-  stopScroll,
   windowHeight,
   bufferHeight,
   props.isolationId

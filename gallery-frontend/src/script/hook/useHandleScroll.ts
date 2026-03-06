@@ -4,7 +4,6 @@ import { usePrefetchStore } from '@/store/prefetchStore'
 import { useScrollTopStore } from '@/store/scrollTopStore'
 import { clamp, throttle } from 'lodash'
 import { ComputedRef, Ref } from 'vue'
-import { useConfigStore } from '@/store/configStore'
 import { useLocationStore } from '@/store/locationStore'
 import { compensationThreshold, nativeThreshold } from '@/type/constants'
 
@@ -22,7 +21,6 @@ import { compensationThreshold, nativeThreshold } from '@/type/constants'
  *
  * @param imageContainerRef - Reference to the scrolling container element.
  * @param lastScrollTop - Reference to the last recorded scroll position.
- * @param stopScroll - Flag to temporarily stop scrolling for mobile adjustments.
  * @param windowHeight - Reference to the window height for scroll limit calculations.
  * @param bufferHeight - Computed buffer height for compensation mode.
  * @param isolationId - Isolation ID for store access.
@@ -32,13 +30,11 @@ import { compensationThreshold, nativeThreshold } from '@/type/constants'
 export function handleScroll(
   imageContainerRef: Ref<HTMLElement | null>,
   lastScrollTop: Ref<number>,
-  stopScroll: Ref<boolean>,
   windowHeight: Ref<number>,
   bufferHeight: ComputedRef<number>,
   isolationId: IsolationId
 ) {
   const locationStore = useLocationStore(isolationId)
-  const configStore = useConfigStore('mainId')
   const scrollTopStore = useScrollTopStore(isolationId)
   const prefetchStore = usePrefetchStore(isolationId)
 
@@ -52,7 +48,6 @@ export function handleScroll(
           return
         }
 
-        const mobile = configStore.isMobile
         const upperBound = getScrollUpperBound(prefetchStore.totalHeight, windowHeight.value)
 
         console.log(
@@ -146,7 +141,6 @@ export function handleScroll(
         } else {
           // === Compensation mode ===
           const difference = imageContainerRef.value.scrollTop - lastScrollTop.value
-          const result = scrollTopStore.scrollTop + difference
 
           scrollTopStore.scrollTop += difference
 
