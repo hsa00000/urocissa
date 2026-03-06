@@ -248,6 +248,10 @@ onBeforeUnmount(() => {
   display: none;
 }
 
+#image-container {
+  overscroll-behavior: contain;
+}
+
 img {
   transition: border 0.1s linear;
 }
