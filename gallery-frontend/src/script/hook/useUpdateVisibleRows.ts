@@ -288,17 +288,24 @@ export function useUpdateVisibleRows(
           }, 0)
         }
 
-        const oldScrollTop = scrollTopStore.scrollTop
-        scrollTopOffsetFix(
-          visibleRows,
-          Math.max(getScrollUpperBound(prefetchStore.totalHeight, windowHeight.value), 0),
-          isolationId
-        )
+        // In nativeBottom mode, bottomOffset and offset changes cancel each other
+        // out in translateY, so the visual position is inherently stable.
+        // Applying scrollTopOffsetFix would double-count the adjustment (once via
+        // the changed bottomOffset in the scroll handler, once via the offset here),
+        // causing visual jumps/vibration near the bottom boundary.
+        if (scrollTopStore.scrollMode !== 'nativeBottom') {
+          const oldScrollTop = scrollTopStore.scrollTop
+          scrollTopOffsetFix(
+            visibleRows,
+            Math.max(getScrollUpperBound(prefetchStore.totalHeight, windowHeight.value), 0),
+            isolationId
+          )
 
-        // In native modes, also update DOM scrollTop to keep visual position stable
-        const scrollTopDelta = scrollTopStore.scrollTop - oldScrollTop
-        if (scrollTopDelta !== 0 && scrollTopStore.scrollMode !== 'compensation') {
-          imageContainerRef.value.scrollTop += scrollTopDelta
+          // In nativeTop mode, also update DOM scrollTop to keep visual position stable
+          const scrollTopDelta = scrollTopStore.scrollTop - oldScrollTop
+          if (scrollTopDelta !== 0 && scrollTopStore.scrollMode === 'nativeTop') {
+            imageContainerRef.value.scrollTop += scrollTopDelta
+          }
         }
       }
       updateLastVisibleRow(visibleRows, isolationId)
