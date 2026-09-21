@@ -14,7 +14,7 @@
       <ItemArchive :index-list="selection" />
       <ItemFavorite :index-list="selection" />
       <ItemBatchEditTags />
-      <ItemBatchEditAlbums v-if="!isInAlbumsPage" />
+      <ItemBatchEditAlbums v-if="canBatchEditAlbums" />
 
       <v-divider></v-divider>
 
@@ -54,6 +54,7 @@ import ItemRegenerateMetadata from '@Menu/MenuItem/ItemRegenerateMetadata.vue'
 import ItemRestore from '@Menu/MenuItem/ItemRestore.vue'
 
 import { getIsolationIdByRoute } from '@utils/getter'
+import { shouldShowBatchEditAlbums } from './batchMenuVisibility'
 
 const route = useRoute()
 const isolationId = getIsolationIdByRoute(route)
@@ -70,4 +71,6 @@ const prefetchStore = usePrefetchStore(isolationId)
 const isInTrashedPath = computed(() => route.meta.baseName === 'trashed')
 
 const isInAlbumsPage = computed(() => route.meta.baseName === 'albums')
+
+const canBatchEditAlbums = computed(() => shouldShowBatchEditAlbums(route.meta))
 </script>

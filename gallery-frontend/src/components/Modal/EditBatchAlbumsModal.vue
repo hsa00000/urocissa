@@ -139,7 +139,7 @@ const isolationId = getIsolationIdByRoute(route)
 
 const modalStore = useModalStore('mainId')
 const collectionStore = useCollectionStore(isolationId)
-const albumStore = useAlbumStore(isolationId)
+const albumStore = useAlbumStore('mainId')
 const { loading, createAndNavigate } = useCreateAlbumAction()
 
 const formRef = ref<VForm | null>(null)
