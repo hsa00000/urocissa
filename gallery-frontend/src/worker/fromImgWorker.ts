@@ -9,17 +9,16 @@ const workerHandlerMap = new Map<Worker, (e: MessageEvent) => void>()
 
 export function handleImgWorker(imgWorker: Worker, isolationId: IsolationId) {
   const imgStore = useImgStore(isolationId)
-  const imgUrlCache = imgStore.imgUrl
   const messageStore = useMessageStore('mainId')
   const redirectionStore = useRedirectionStore('mainId')
 
   const handler = createHandler<typeof fromImgWorker>({
     smallImageProcessed({ index, url }) {
-      imgUrlCache.set(index, url)
+      imgStore.setThumbnailUrl(index, url)
       publishThumbnailElement(isolationId, index, url)
     },
     imageProcessed({ index, url }) {
-      imgStore.imgOriginal.set(index, url)
+      imgStore.setOriginalUrl(index, url)
     },
     unauthorized: async () => {
       await redirectionStore.redirectionToLogin()

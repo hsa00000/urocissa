@@ -7,6 +7,7 @@ import {
   SlicedData
 } from '@type/types'
 import { createActionCreators } from 'typesafe-agent-events'
+import type { ThumbnailFitMode } from './thumbnailResize'
 
 // ================== Payload Types ==================
 
@@ -17,7 +18,7 @@ export interface ProcessSmallImagePayload {
   width: number
   height: number
   devicePixelRatio: number
-  albumMode?: boolean
+  fitMode: ThumbnailFitMode
   albumId: null | string
   shareId: null | string
   password: null | string

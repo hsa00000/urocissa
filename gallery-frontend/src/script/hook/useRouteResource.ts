@@ -146,10 +146,10 @@ export function useResolvedRouteResource(
       const thumbnail = directImages.imgUrl.get(previous.index)
 
       if (original !== undefined && !collectionImages.imgOriginal.has(current.index)) {
-        collectionImages.imgOriginal.set(current.index, original)
+        collectionImages.setOriginalUrl(current.index, original)
       }
       if (thumbnail !== undefined && !collectionImages.imgUrl.has(current.index)) {
-        collectionImages.imgUrl.set(current.index, thumbnail)
+        collectionImages.setThumbnailUrl(current.index, thumbnail)
       }
     },
     { flush: 'pre' }

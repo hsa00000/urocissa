@@ -21,16 +21,15 @@ interface PendingImageRequest {
 
 interface ImageSource {
   hash: string
-  albumMode: boolean
 }
 
 function getImageSource(abstractData: EnrichedUnifiedData): ImageSource | null {
   if (abstractData.type === 'image' || abstractData.type === 'video') {
-    return { hash: abstractData.id, albumMode: false }
+    return { hash: abstractData.id }
   }
 
   if (abstractData.cover !== null) {
-    return { hash: abstractData.cover, albumMode: true }
+    return { hash: abstractData.cover }
   }
 
   return null
@@ -156,7 +155,7 @@ export function useRowMediaRequests(
         width: request.displayWidth,
         height: request.displayHeight,
         devicePixelRatio: window.devicePixelRatio,
-        ...(source.albumMode ? { albumMode: true } : {}),
+        fitMode: 'cover',
         albumId: shareStore.albumId,
         shareId: shareStore.shareId,
         password: shareStore.password,

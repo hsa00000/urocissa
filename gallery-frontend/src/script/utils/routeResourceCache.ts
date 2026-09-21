@@ -84,8 +84,8 @@ export function clearCachedResource(resourceId: string): Set<CollectionIsolation
     dataStore.data.delete(index)
     dataStore.batchFetched.delete(index)
     const imgStore = useImgStore(isolationId)
-    imgStore.imgOriginal.delete(index)
-    imgStore.imgUrl.delete(index)
+    imgStore.deleteOriginalUrl(index)
+    imgStore.deleteThumbnailUrl(index)
   }
 
   for (const isolationId of ['mainId', 'subId', 'tempId', 'shareId'] as const) {

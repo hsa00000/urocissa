@@ -84,7 +84,7 @@ const handler = createHandler<typeof toImgWorker>({
         event.width,
         event.height,
         event.devicePixelRatio,
-        event.albumMode === true
+        event.fitMode
       )
 
       const objectUrl = URL.createObjectURL(converted)

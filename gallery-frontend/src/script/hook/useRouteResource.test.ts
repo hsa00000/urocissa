@@ -135,8 +135,8 @@ describe('route resource resolver', () => {
 
     detail.data.set(0, image(id.value))
     detail.hashMapData.set(id.value, 0)
-    detailImages.imgOriginal.set(0, 'blob:direct-original')
-    detailImages.imgUrl.set(0, 'blob:direct-thumbnail')
+    detailImages.setOriginalUrl(0, 'blob:direct-original')
+    detailImages.setThumbnailUrl(0, 'blob:direct-thumbnail')
 
     const resolved = useResolvedRouteResource(id, 'mainId', 'detailId')
     expect(resolved.resource.value).toMatchObject({ isolationId: 'detailId', index: 0 })
@@ -148,6 +148,9 @@ describe('route resource resolver', () => {
     expect(resolved.resource.value).toMatchObject({ isolationId: 'mainId', index: 7 })
     expect(mainImages.imgOriginal.get(7)).toBe('blob:direct-original')
     expect(mainImages.imgUrl.get(7)).toBe('blob:direct-thumbnail')
+
+    detailImages.clearAll()
+    mainImages.clearAll()
   })
 
   it('keeps the collection row when the direct snapshot finishes later', async () => {

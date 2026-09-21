@@ -14,7 +14,6 @@
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",
-    "@misskey-dev/browser-image-resizer": "^2024.1.0",
     "@vueuse/core": "^14.3.0",
     "axios": "^1.18.0",
     "axios-retry": "^4.5.0",
