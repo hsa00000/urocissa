@@ -13,7 +13,7 @@
   "dependencies": {
     "@mdi/font": "^7.4.47",
     "nuxt": "4.5.1",
-    "vue": "^3.5.34",
+    "vue": "^3.5.44",
     "vue-router": "^5.0.7"
   },
   "devDependencies": {
@@ -25,26 +25,31 @@
     "esbuild": "^0.25.0",
     "tar": "^7.5.21",
     "@isaacs/brace-expansion": "^5.0.1",
-    "brace-expansion": "^5.0.9",
+    "brace-expansion": "^5.0.12",
     "nanotar": "^0.3.0",
     "lodash": "^4.18.0",
     "rollup": "^4.59.0",
     "minimatch": "^10.2.3",
-    "devalue": "^5.8.1",
+    "devalue": "^5.9.3",
     "serialize-javascript": "^7.0.5",
-    "simple-git": "^3.32.3",
     "unhead": "^3.2.3",
     "svgo": "^4.1.0",
     "nanoid": "^3.3.18",
-    "vite": "8.1.5",
+    "vite": "8.3.5",
     "picomatch": "^4.0.4",
     "node-forge": "^1.4.0",
     "defu": "^6.1.5",
     "yaml": "^2.8.3",
     "h3": "^1.15.9",
     "srvx": "^0.11.13",
-    "@nuxt/devtools": "^3.3.1",
+    "@nuxt/devtools": "^3.4.3",
     "postcss": "^8.5.23",
-    "undici": "^8.9.0"
+    "undici": "^8.10.2",
+    "postcss-selector-parser": "^7.1.7",
+    "source-map-js": "^1.2.2",
+    "launch-editor": "^2.14.2",
+    "shell-quote": "^1.12.0",
+    "seroval": "^1.7.0",
+    "braces": "npm:@dieub/braces-depth-guard@3.0.3-pn.0"
   }
 }
